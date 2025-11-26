@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useBudget } from "@/contexts/BudgetContext";
 import { useGamification } from "@/contexts/GamificationContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { XP_REWARDS, BADGES } from "@/utils/gamify";
@@ -24,13 +25,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import dayjs from "dayjs";
 
 export function AddExpenseModal() {
   const { addExpense, state: expenseState } = useExpenses();
+  const { addBudget, updateBudget, getBudgetByMonth } = useBudget();
   const { rewardXP, unlockBadge } = useGamification();
   const { settings } = useSettings();
   const [open, setOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     amount: "",
     type: "expense" as "expense" | "income",
@@ -42,7 +45,7 @@ export function AddExpenseModal() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.amount || !formData.category || !formData.paymentMethod) {
       toast.error("Please fill in all required fields");
       return;
@@ -61,7 +64,45 @@ export function AddExpenseModal() {
 
     addExpense(expense);
 
-    // Gamification rewards
+    // Update or Create Budget logic
+    const currentMonth = dayjs().format("YYYY-MM");
+    const existingBudget = getBudgetByMonth(currentMonth);
+    const amount = parseFloat(formData.amount);
+
+    if (formData.type === "income") {
+      if (existingBudget) {
+        // Update existing budget: Add income to total
+        updateBudget({
+          ...existingBudget,
+          total: existingBudget.total + amount,
+        });
+        toast.success("Budget increased by income amount!");
+      } else {
+        // Create new budget from income
+        addBudget({
+          period: "monthly",
+          month: currentMonth,
+          total: amount,
+          categoryLimits: {},
+          rollover: false,
+        });
+        toast.success("Budget automatically created from income!");
+      }
+    } else if (formData.type === "expense") {
+      if (!existingBudget) {
+        addBudget({
+          period: "monthly",
+          month: currentMonth,
+          total: amount,
+          categoryLimits: {
+            [formData.category]: amount
+          },
+          rollover: false,
+        });
+        toast.success("Budget automatically created from expense!");
+      }
+    }
+
     if (formData.type === "expense") {
       rewardXP(XP_REWARDS.ADD_EXPENSE, "Added expense");
     } else {
@@ -75,7 +116,7 @@ export function AddExpenseModal() {
     }
 
     toast.success(`${formData.type === "expense" ? "Expense" : "Income"} added successfully!`);
-    
+
     // Reset form
     setFormData({
       amount: "",
@@ -85,7 +126,7 @@ export function AddExpenseModal() {
       paymentMethod: "",
       notes: "",
     });
-    
+
     setOpen(false);
   };
 
@@ -124,7 +165,7 @@ export function AddExpenseModal() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount *</Label>
+            <Label htmlFor="amount">{formData.type === "income" ? "Amount Earned *" : "Amount *"}</Label>
             <Input
               id="amount"
               type="number"
@@ -137,48 +178,67 @@ export function AddExpenseModal() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
+            <Label htmlFor="category">{formData.type === "income" ? "Source *" : "Category *"}</Label>
             <Select
               value={formData.category}
               onValueChange={(value) => setFormData({ ...formData, category: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder={formData.type === "income" ? "Select source" : "Select category"} />
               </SelectTrigger>
               <SelectContent>
-                {settings.categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
+                {formData.type === "income" ? (
+                  <>
+                    <SelectItem value="Job">Job</SelectItem>
+                    <SelectItem value="Freelancing">Freelancing</SelectItem>
+                    <SelectItem value="Others">Others</SelectItem>
+                    <SelectItem value="Person (interest)">Person (interest)</SelectItem>
+                    <SelectItem value="Money Lender">Money Lender</SelectItem>
+                  </>
+                ) : (
+                  settings.categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Payment Method *</Label>
+            <Label htmlFor="paymentMethod">{formData.type === "income" ? "Credit Type *" : "Payment Method *"}</Label>
             <Select
               value={formData.paymentMethod}
               onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select payment method" />
+                <SelectValue placeholder={formData.type === "income" ? "Select credit type" : "Select payment method"} />
               </SelectTrigger>
               <SelectContent>
-                {settings.paymentMethods.map((method) => (
-                  <SelectItem key={method} value={method}>
-                    {method}
-                  </SelectItem>
-                ))}
+                {formData.type === "income" ? (
+                  <>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                  </>
+                ) : (
+                  settings.paymentMethods.map((method) => (
+                    <SelectItem key={method} value={method}>
+                      {method}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="merchant">Merchant</Label>
+            <Label htmlFor="merchant">{formData.type === "income" ? "Sender / Company Name" : "Merchant"}</Label>
             <Input
               id="merchant"
-              placeholder="Where did you spend?"
+              placeholder={formData.type === "income" ? "Name of Sender or Company" : "Where did you spend?"}
               value={formData.merchant}
               onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
             />

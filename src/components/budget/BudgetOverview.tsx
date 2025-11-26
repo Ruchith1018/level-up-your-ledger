@@ -3,7 +3,7 @@ import { useBudget } from "@/contexts/BudgetContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { PiggyBank, TrendingUp, TrendingDown } from "lucide-react";
+import { PiggyBank, TrendingUp, TrendingDown, Pencil, AlertTriangle } from "lucide-react";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import { BudgetForm } from "./BudgetForm";
@@ -32,9 +32,10 @@ export function BudgetOverview() {
     );
   }
 
-  const budgetUsed = (totalExpense / currentBudget.total) * 100;
-  const remaining = currentBudget.total - totalExpense;
-  const isOverBudget = budgetUsed > 100;
+  const effectiveTotal = currentBudget.total;
+  const budgetUsed = (totalExpense / effectiveTotal) * 100;
+  const remaining = effectiveTotal - totalExpense;
+  const isOverBudget = remaining < 0;
 
   return (
     <Card>
@@ -45,14 +46,32 @@ export function BudgetOverview() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
+          className="text-center relative"
         >
-          <div className="text-5xl font-bold mb-2">
-            ${totalExpense.toFixed(2)}
+          <div className="absolute right-0 top-0">
+            <BudgetForm
+              initialData={currentBudget}
+              trigger={
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              }
+            />
+          </div>
+          <div className={`text-5xl font-bold mb-2 ${isOverBudget ? "text-destructive" : ""}`}>
+            {remaining < 0 ? "-" : ""}${Math.abs(remaining).toFixed(2)}
           </div>
           <div className="text-muted-foreground">
-            of ${currentBudget.total.toFixed(2)} budget
+            remaining of ${effectiveTotal.toFixed(2)} budget
           </div>
+
+          {isOverBudget && (
+            <div className="flex items-center justify-center gap-2 text-destructive font-bold mt-2 animate-pulse">
+              <AlertTriangle className="w-5 h-5" />
+              <span>You are in debt!</span>
+            </div>
+          )}
+
           <div className="mt-4">
             <Progress
               value={Math.min(budgetUsed, 100)}
@@ -65,7 +84,7 @@ export function BudgetOverview() {
           <div className="bg-secondary/10 rounded-lg p-4">
             <div className="flex items-center gap-2 text-secondary mb-1">
               <TrendingUp className="w-4 h-4" />
-              <span className="text-sm font-medium">Income</span>
+              <span className="text-sm font-medium">Income in this month</span>
             </div>
             <div className="text-2xl font-bold">${totalIncome.toFixed(2)}</div>
           </div>
@@ -78,17 +97,11 @@ export function BudgetOverview() {
                 }`}
             >
               <TrendingDown className="w-4 h-4" />
-              <span className="text-sm font-medium">Remaining</span>
+              <span className="text-sm font-medium">Expense</span>
             </div>
-            <div className="text-2xl font-bold">${Math.abs(remaining).toFixed(2)}</div>
+            <div className="text-2xl font-bold">${totalExpense.toFixed(2)}</div>
           </div>
         </div>
-
-        {isOverBudget && (
-          <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm">
-            ⚠️ You've exceeded your budget by ${(totalExpense - currentBudget.total).toFixed(2)}
-          </div>
-        )}
       </CardContent>
     </Card>
   );

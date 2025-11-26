@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useBudget } from "@/contexts/BudgetContext";
+import { Budget } from "@/types";
 import {
     Dialog,
     DialogContent,
@@ -11,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Trash2, AlertCircle } from "lucide-react";
+import { PlusCircle, Trash2, AlertCircle, Pencil } from "lucide-react";
 import dayjs from "dayjs";
 
 interface CategoryLimit {
@@ -19,8 +20,13 @@ interface CategoryLimit {
     limit: number;
 }
 
-export function BudgetForm({ trigger }: { trigger?: React.ReactNode }) {
-    const { addBudget } = useBudget();
+interface BudgetFormProps {
+    trigger?: React.ReactNode;
+    initialData?: Budget;
+}
+
+export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
+    const { addBudget, updateBudget } = useBudget();
     const [open, setOpen] = useState(false);
     const [totalBudget, setTotalBudget] = useState<string>("");
     const [categoryLimits, setCategoryLimits] = useState<CategoryLimit[]>([
@@ -29,6 +35,25 @@ export function BudgetForm({ trigger }: { trigger?: React.ReactNode }) {
     const [errors, setErrors] = useState<string[]>([]);
 
     const currentMonth = dayjs().format("YYYY-MM");
+    const isEditing = !!initialData;
+
+    useEffect(() => {
+        if (open && initialData) {
+            setTotalBudget(initialData.total.toString());
+            const limits = Object.entries(initialData.categoryLimits).map(
+                ([category, limit]) => ({
+                    category,
+                    limit,
+                })
+            );
+            setCategoryLimits(limits.length > 0 ? limits : [{ category: "", limit: 0 }]);
+        } else if (open && !initialData) {
+            // Reset form when opening in create mode
+            setTotalBudget("");
+            setCategoryLimits([{ category: "", limit: 0 }]);
+            setErrors([]);
+        }
+    }, [open, initialData]);
 
     const handleAddCategory = () => {
         setCategoryLimits([...categoryLimits, { category: "", limit: 0 }]);
@@ -112,13 +137,21 @@ export function BudgetForm({ trigger }: { trigger?: React.ReactNode }) {
                 limits[cl.category.trim()] = cl.limit;
             });
 
-        addBudget({
-            period: "monthly",
-            month: currentMonth,
-            total,
-            categoryLimits: limits,
-            rollover: false,
-        });
+        if (isEditing && initialData) {
+            updateBudget({
+                ...initialData,
+                total,
+                categoryLimits: limits,
+            });
+        } else {
+            addBudget({
+                period: "monthly",
+                month: currentMonth,
+                total,
+                categoryLimits: limits,
+                rollover: false,
+            });
+        }
 
         // Reset form
         setTotalBudget("");
@@ -137,13 +170,17 @@ export function BudgetForm({ trigger }: { trigger?: React.ReactNode }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                {trigger || <Button>Create Budget</Button>}
+                {trigger || (
+                    <Button variant={isEditing ? "outline" : "default"} size={isEditing ? "icon" : "default"}>
+                        {isEditing ? <Pencil className="w-4 h-4" /> : "Create Budget"}
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Create Monthly Budget</DialogTitle>
+                    <DialogTitle>{isEditing ? "Edit Monthly Budget" : "Create Monthly Budget"}</DialogTitle>
                     <DialogDescription>
-                        Set your budget for {dayjs(currentMonth).format("MMMM YYYY")}
+                        {isEditing ? "Update" : "Set"} your budget for {dayjs(initialData?.month || currentMonth).format("MMMM YYYY")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -323,7 +360,7 @@ export function BudgetForm({ trigger }: { trigger?: React.ReactNode }) {
                         <Button type="button" variant="outline" onClick={handleCancel}>
                             Cancel
                         </Button>
-                        <Button type="submit">Create Budget</Button>
+                        <Button type="submit">{isEditing ? "Update Budget" : "Create Budget"}</Button>
                     </div>
                 </form>
             </DialogContent>
