@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Subscriptions from "./pages/Subscriptions";
 import Settings from "./pages/Settings";
 import ThemeShopPage from "./pages/ThemeShopPage";
+import IntroPage from "./pages/IntroPage";
 import NotFound from "./pages/NotFound";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TutorialProvider } from "@/contexts/TutorialContext";
@@ -34,6 +35,7 @@ const App = () => (
                 <BrowserRouter>
                   <TutorialProvider>
                     <Routes>
+                      <Route path="/intro" element={<IntroPage />} />
                       <Route path="/" element={<Index />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/analytics" element={<Analytics />} />

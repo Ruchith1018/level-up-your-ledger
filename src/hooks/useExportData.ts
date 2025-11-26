@@ -26,6 +26,7 @@ export function useExportData() {
                 userName: settings.userName || "",
                 hasCompletedOnboarding: settings.hasCompletedOnboarding || false,
                 hasCompletedTutorial: settings.hasCompletedTutorial || false,
+                hasSeenIntro: settings.hasSeenIntro || false,
             },
             purchasedThemes: JSON.parse(localStorage.getItem("gft_purchased_themes") || "[]"),
         };

@@ -48,6 +48,7 @@ export interface AppSettings {
   userName?: string;
   hasCompletedOnboarding?: boolean;
   hasCompletedTutorial?: boolean;
+  hasSeenIntro?: boolean;
 }
 
 export interface Subscription {

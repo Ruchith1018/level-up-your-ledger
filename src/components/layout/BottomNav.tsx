@@ -41,6 +41,9 @@ export function BottomNav() {
 
     // if (location.pathname === "/") return null;
 
+    // Hide on intro page
+    if (location.pathname === "/intro") return null;
+
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border md:hidden">
             <div className="flex items-center justify-around p-2 pb-safe">
