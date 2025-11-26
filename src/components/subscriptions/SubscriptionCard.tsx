@@ -41,6 +41,7 @@ export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: S
 
     if (transactionId) {
       markAsPaid(subscription.id, transactionId);
+      toast.success("Payment recorded successfully!");
     }
   };
 

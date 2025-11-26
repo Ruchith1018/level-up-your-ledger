@@ -12,10 +12,10 @@ export function addXP(
   const updatedUser = { ...user };
   updatedUser.xp += xpGain;
 
-  // Add to history
+  // Add to history (initialize if undefined)
   updatedUser.history = [
     { date: new Date().toISOString(), xpEarned: xpGain, reason },
-    ...updatedUser.history.slice(0, 49), // Keep last 50 entries
+    ...(updatedUser.history || []).slice(0, 49), // Keep last 50 entries
   ];
 
   // Level up
@@ -31,13 +31,13 @@ export function addXP(
 export function checkStreak(lastCheckIn: string): { streak: number; isNewDay: boolean } {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const lastCheck = new Date(lastCheckIn);
   lastCheck.setHours(0, 0, 0, 0);
-  
+
   const diffTime = today.getTime() - lastCheck.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
+
   return {
     streak: diffDays,
     isNewDay: diffDays > 0,
