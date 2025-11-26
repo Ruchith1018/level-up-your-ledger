@@ -30,11 +30,14 @@ export function XPBar() {
             <span className="whitespace-nowrap">{state.streak} day{state.streak !== 1 && "s"}</span>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground font-medium ml-auto sm:ml-0">
+        <div className="hidden sm:block text-sm text-muted-foreground font-medium">
           {state.xp} / {nextLevelXP} XP
         </div>
       </div>
       <Progress value={progress} className="h-3" />
+      <div className="sm:hidden text-xs text-muted-foreground font-medium text-right mt-1.5">
+        {state.xp} / {nextLevelXP} XP
+      </div>
     </motion.div>
   );
 }

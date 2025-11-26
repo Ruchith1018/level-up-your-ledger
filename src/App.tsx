@@ -16,6 +16,8 @@ import Settings from "./pages/Settings";
 import ThemeShopPage from "./pages/ThemeShopPage";
 import NotFound from "./pages/NotFound";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { TutorialProvider } from "@/contexts/TutorialContext";
+import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 
 const queryClient = new QueryClient();
 
@@ -30,17 +32,20 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/subscriptions" element={<Subscriptions />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/shop" element={<ThemeShopPage />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <BottomNav />
+                  <TutorialProvider>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/subscriptions" element={<Subscriptions />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/shop" element={<ThemeShopPage />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    <BottomNav />
+                    <TutorialOverlay />
+                  </TutorialProvider>
                 </BrowserRouter>
               </GamificationProvider>
             </SubscriptionProvider>

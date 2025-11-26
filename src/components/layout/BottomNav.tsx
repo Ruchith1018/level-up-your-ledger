@@ -11,30 +11,35 @@ export function BottomNav() {
             label: "Analytics",
             icon: BarChart3,
             path: "/analytics",
+            id: "nav-analytics-mobile"
         },
         {
             label: "Subs",
             icon: Calendar,
             path: "/subscriptions",
+            id: "nav-subscriptions-mobile"
         },
         {
             label: "Home",
             icon: Home,
             path: "/dashboard",
+            id: "nav-home-mobile"
         },
         {
             label: "Shop",
             icon: Palette,
             path: "/shop",
+            id: "nav-shop-mobile"
         },
         {
             label: "Settings",
             icon: Settings,
             path: "/settings",
+            id: "nav-settings-mobile"
         },
     ];
 
-    if (location.pathname === "/") return null;
+    // if (location.pathname === "/") return null;
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border md:hidden">
@@ -44,6 +49,7 @@ export function BottomNav() {
                     return (
                         <button
                             key={item.path}
+                            id={item.id}
                             onClick={() => navigate(item.path)}
                             className={cn(
                                 "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors min-w-[64px]",

@@ -31,6 +31,7 @@ export function ExportImport() {
         userName: settings.userName || "",
         hasCompletedOnboarding: settings.hasCompletedOnboarding || false,
       },
+      purchasedThemes: JSON.parse(localStorage.getItem("gft_purchased_themes") || "[]"),
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -97,6 +98,9 @@ export function ExportImport() {
         }
         if (data.settings) {
           localStorage.setItem("gft_settings_v1", JSON.stringify(data.settings));
+        }
+        if (data.purchasedThemes) {
+          localStorage.setItem("gft_purchased_themes", JSON.stringify(data.purchasedThemes));
         }
 
         toast.success("Data imported successfully! Refreshing...");

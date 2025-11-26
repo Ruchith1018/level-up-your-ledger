@@ -19,14 +19,14 @@ export default function Analytics() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Analytics</h1>
+              <h1 id="analytics-title" className="text-2xl font-bold">Analytics</h1>
               <p className="text-sm text-muted-foreground">Detailed insights into your spending</p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6 pb-24">
+      <main id="analytics-content" className="container mx-auto px-4 py-6 space-y-6 pb-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

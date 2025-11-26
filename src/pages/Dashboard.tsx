@@ -37,10 +37,10 @@ export default function Dashboard() {
               </div>
             </motion.div>
             <div className="hidden md:flex gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/analytics")}>
+              <Button id="nav-analytics-desktop" variant="ghost" size="icon" onClick={() => navigate("/analytics")}>
                 <BarChart3 className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => navigate("/subscriptions")}>
+              <Button id="nav-subscriptions-desktop" variant="ghost" size="icon" onClick={() => navigate("/subscriptions")}>
                 <Calendar className="w-5 h-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => navigate("/shop")}>

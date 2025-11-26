@@ -127,7 +127,7 @@ export default function Subscriptions() {
               </div>
             </div>
             <div className="hidden md:block">
-              <Button onClick={() => setOpen(true)}>
+              <Button id="add-subscription-btn-desktop" onClick={() => setOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Subscription
               </Button>
@@ -321,6 +321,7 @@ export default function Subscriptions() {
       </main>
 
       <Button
+        id="add-subscription-btn-mobile"
         onClick={() => setOpen(true)}
         size="lg"
         className="md:hidden fixed bottom-20 right-6 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40 p-0"

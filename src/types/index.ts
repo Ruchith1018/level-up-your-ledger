@@ -47,6 +47,7 @@ export interface AppSettings {
   customAvatar?: string;
   userName?: string;
   hasCompletedOnboarding?: boolean;
+  hasCompletedTutorial?: boolean;
 }
 
 export interface Subscription {

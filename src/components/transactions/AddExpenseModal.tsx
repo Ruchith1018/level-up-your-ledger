@@ -71,6 +71,7 @@ export function AddExpenseModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
+          id="add-expense-btn"
           size="lg"
           className="fixed bottom-20 md:bottom-6 right-6 h-12 w-12 md:h-14 md:w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40 p-0"
         >

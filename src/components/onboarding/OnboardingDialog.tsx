@@ -15,9 +15,12 @@ import { toast } from "sonner";
 import dayjs from "dayjs";
 import { Sparkles, Target, Upload } from "lucide-react";
 
+import { useTutorial } from "@/contexts/TutorialContext";
+
 export function OnboardingDialog() {
     const { settings, updateSettings } = useSettings();
     const { addBudget } = useBudget();
+    const { startTutorial } = useTutorial();
     const [step, setStep] = useState(1);
     const [userName, setUserName] = useState("");
     const [budgetAmount, setBudgetAmount] = useState("");
@@ -61,6 +64,7 @@ export function OnboardingDialog() {
             hasCompletedOnboarding: true,
         });
         toast.success(`Welcome to FinanceQuest, ${userName}! 🎉`);
+        startTutorial();
     };
 
     const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
