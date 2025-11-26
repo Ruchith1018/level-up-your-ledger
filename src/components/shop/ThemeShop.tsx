@@ -9,6 +9,13 @@ import { motion } from "framer-motion";
 
 const THEMES = [
   {
+    id: "default",
+    name: "Default Theme",
+    description: "The original look and feel",
+    price: 0,
+    colors: { primary: "hsl(221 83% 53%)", secondary: "hsl(142 76% 36%)", accent: "hsl(262 83% 58%)" },
+  },
+  {
     id: "ocean",
     name: "Ocean Breeze",
     description: "Calm blue tones inspired by the sea",
@@ -54,7 +61,7 @@ export function ThemeShop() {
   });
 
   const purchaseTheme = (theme: typeof THEMES[0]) => {
-    if (purchasedThemes.includes(theme.id)) {
+    if (theme.id === "default" || purchasedThemes.includes(theme.id)) {
       applyTheme(theme);
       return;
     }
@@ -69,14 +76,24 @@ export function ThemeShop() {
   };
 
   const applyTheme = (theme: typeof THEMES[0]) => {
+    if (theme.id === "default") {
+      updateSettings({ premiumTheme: undefined });
+      const root = document.documentElement;
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--secondary");
+      root.style.removeProperty("--accent");
+      toast.success("Default theme applied!");
+      return;
+    }
+
     updateSettings({ premiumTheme: theme.id });
-    
+
     // Apply theme colors to CSS variables
     const root = document.documentElement;
     root.style.setProperty("--primary", theme.colors.primary);
     root.style.setProperty("--secondary", theme.colors.secondary);
     root.style.setProperty("--accent", theme.colors.accent);
-    
+
     toast.success(`${theme.name} theme applied!`);
   };
 
@@ -94,8 +111,8 @@ export function ThemeShop() {
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2">
           {THEMES.map((theme, index) => {
-            const isPurchased = purchasedThemes.includes(theme.id);
-            const isActive = settings.premiumTheme === theme.id;
+            const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
+            const isActive = (theme.id === "default" && !settings.premiumTheme) || settings.premiumTheme === theme.id;
 
             return (
               <motion.div

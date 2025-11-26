@@ -11,16 +11,43 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { toast } from "sonner";
 import { useState } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useExportData } from "@/hooks/useExportData";
+
 export default function Settings() {
   const navigate = useNavigate();
   const { settings, updateSettings } = useSettings();
   const [name, setName] = useState(settings.userName || "");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const { exportJSON } = useExportData();
 
   const handleNameUpdate = () => {
     if (name.trim()) {
       updateSettings({ ...settings, userName: name.trim() });
       toast.success("Profile name updated successfully!");
     }
+  };
+
+  const handleExportAndProceed = () => {
+    exportJSON();
+    setShowDeleteDialog(false);
+    setTimeout(() => setShowConfirmDelete(true), 1000); // Small delay for UX
+  };
+
+  const handleDeleteAccount = () => {
+    localStorage.clear();
+    toast.success("Account deleted. Resetting app...");
+    setTimeout(() => (window.location.href = "/"), 1500);
   };
 
   return (
@@ -134,7 +161,71 @@ export default function Settings() {
         >
           <ExportImport />
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              <CardDescription>Irreversible actions for your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-destructive">Delete Account</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete all data and reset the app
+                  </p>
+                </div>
+                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                  Delete Account
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Export Required</AlertDialogTitle>
+              <AlertDialogDescription>
+                Before you delete your account, you must export your data. This ensures you have a backup if you ever want to restore it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleExportAndProceed}>
+                Export Data
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete Forever
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
-    </div>
+    </div >
   );
 }
