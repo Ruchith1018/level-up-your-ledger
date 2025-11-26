@@ -1,12 +1,17 @@
 import { ExportImport } from "@/components/export/ExportImport";
 import { ThemeShop } from "@/components/shop/ThemeShop";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Moon, Sun, Laptop } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { settings, updateSettings } = useSettings();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,6 +35,61 @@ export default function Settings() {
           animate={{ opacity: 1, y: 0 }}
         >
           <ThemeShop />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>Customize how the app looks on your device</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Theme</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Select your preferred theme
+                    </p>
+                  </div>
+                  <Select
+                    value={settings.theme}
+                    onValueChange={(value: "light" | "dark" | "system") =>
+                      updateSettings({ theme: value })
+                    }
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">
+                        <div className="flex items-center gap-2">
+                          <Sun className="w-4 h-4" />
+                          <span>Light</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dark">
+                        <div className="flex items-center gap-2">
+                          <Moon className="w-4 h-4" />
+                          <span>Dark</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="system">
+                        <div className="flex items-center gap-2">
+                          <Laptop className="w-4 h-4" />
+                          <span>System</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         <motion.div

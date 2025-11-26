@@ -1,9 +1,5 @@
 import { useState } from "react";
-import { useExpenses } from "@/contexts/ExpenseContext";
-import { useBudget } from "@/contexts/BudgetContext";
-import { useGamification } from "@/contexts/GamificationContext";
 import { useSettings } from "@/contexts/SettingsContext";
-import { XP_REWARDS, BADGES } from "@/utils/gamify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,13 +21,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import dayjs from "dayjs";
+import { useTransaction } from "@/hooks/useTransaction";
 
 export function AddExpenseModal() {
-  const { addExpense, state: expenseState } = useExpenses();
-  const { addBudget, updateBudget, getBudgetByMonth } = useBudget();
-  const { rewardXP, unlockBadge } = useGamification();
   const { settings } = useSettings();
+  const { addTransaction } = useTransaction();
   const [open, setOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -51,71 +45,14 @@ export function AddExpenseModal() {
       return;
     }
 
-    const expense = {
+    addTransaction({
       type: formData.type,
       amount: parseFloat(formData.amount),
-      currency: settings.currency,
       category: formData.category,
       merchant: formData.merchant,
       paymentMethod: formData.paymentMethod,
-      date: new Date().toISOString(),
       notes: formData.notes,
-    };
-
-    addExpense(expense);
-
-    // Update or Create Budget logic
-    const currentMonth = dayjs().format("YYYY-MM");
-    const existingBudget = getBudgetByMonth(currentMonth);
-    const amount = parseFloat(formData.amount);
-
-    if (formData.type === "income") {
-      if (existingBudget) {
-        // Update existing budget: Add income to total
-        updateBudget({
-          ...existingBudget,
-          total: existingBudget.total + amount,
-        });
-        toast.success("Budget increased by income amount!");
-      } else {
-        // Create new budget from income
-        addBudget({
-          period: "monthly",
-          month: currentMonth,
-          total: amount,
-          categoryLimits: {},
-          rollover: false,
-        });
-        toast.success("Budget automatically created from income!");
-      }
-    } else if (formData.type === "expense") {
-      if (!existingBudget) {
-        addBudget({
-          period: "monthly",
-          month: currentMonth,
-          total: amount,
-          categoryLimits: {
-            [formData.category]: amount
-          },
-          rollover: false,
-        });
-        toast.success("Budget automatically created from expense!");
-      }
-    }
-
-    if (formData.type === "expense") {
-      rewardXP(XP_REWARDS.ADD_EXPENSE, "Added expense");
-    } else {
-      rewardXP(XP_REWARDS.ADD_INCOME, "Added income");
-    }
-
-    // Check for first transaction badge
-    if (expenseState.items.length === 0) {
-      unlockBadge(BADGES.FIRST_STEPS.id);
-      rewardXP(XP_REWARDS.FIRST_TRANSACTION, "First transaction!");
-    }
-
-    toast.success(`${formData.type === "expense" ? "Expense" : "Income"} added successfully!`);
+    });
 
     // Reset form
     setFormData({
@@ -140,7 +77,7 @@ export function AddExpenseModal() {
           <Plus className="h-6 w-6" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto w-[90%] max-w-lg rounded-lg">
         <DialogHeader>
           <DialogTitle>Add Transaction</DialogTitle>
           <DialogDescription>Record a new expense or income transaction</DialogDescription>

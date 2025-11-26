@@ -12,13 +12,13 @@ export function DailySpendingChart() {
   const data = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
     const dateStr = `${currentMonth}-${day.toString().padStart(2, "0")}`;
-    
+
     const dayExpenses = state.items.filter(
       (e) => dayjs(e.date).format("YYYY-MM-DD") === dateStr && e.type === "expense"
     );
-    
+
     const total = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
-    
+
     return {
       day,
       amount: total,
@@ -34,12 +34,12 @@ export function DailySpendingChart() {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="day" 
+            <XAxis
+              dataKey="day"
               stroke="hsl(var(--foreground))"
               label={{ value: 'Day of Month', position: 'insideBottom', offset: -5 }}
             />
-            <YAxis 
+            <YAxis
               stroke="hsl(var(--foreground))"
               label={{ value: 'Amount ($)', angle: -90, position: 'insideLeft' }}
             />
@@ -51,10 +51,10 @@ export function DailySpendingChart() {
                 borderRadius: "0.5rem",
               }}
             />
-            <Line 
-              type="monotone" 
-              dataKey="amount" 
-              stroke="hsl(var(--primary))" 
+            <Line
+              type="monotone"
+              dataKey="amount"
+              stroke="hsl(var(--primary))"
               strokeWidth={2}
               dot={{ fill: "hsl(var(--primary))", r: 4 }}
               activeDot={{ r: 6 }}

@@ -25,12 +25,15 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
+import dayjs from "dayjs";
+
 export default function Subscriptions() {
   const navigate = useNavigate();
-  const { state, addSubscription, deleteSubscription, toggleActive, getUpcomingSubscriptions } =
+  const { state, addSubscription, updateSubscription, deleteSubscription, toggleActive, getUpcomingSubscriptions } =
     useSubscriptions();
   const { settings } = useSettings();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
@@ -51,7 +54,7 @@ export default function Subscriptions() {
       return;
     }
 
-    addSubscription({
+    const subscriptionData = {
       title: formData.title,
       amount: parseFloat(formData.amount),
       billingDate: formData.billingDate,
@@ -60,9 +63,26 @@ export default function Subscriptions() {
       category: formData.category || "Subscription",
       reminderDaysBefore: formData.reminderDaysBefore,
       active: true,
-    });
+    };
 
-    toast.success("Subscription added successfully!");
+    if (editingId) {
+      const existingSub = state.subscriptions.find(s => s.id === editingId);
+      if (existingSub) {
+        updateSubscription({
+          ...existingSub,
+          ...subscriptionData,
+        });
+        toast.success("Subscription updated successfully!");
+      }
+    } else {
+      if (dayjs(formData.billingDate).isBefore(dayjs(), 'day')) {
+        toast.error("Billing date cannot be in the past for new subscriptions");
+        return;
+      }
+      addSubscription(subscriptionData);
+      toast.success("Subscription added successfully!");
+    }
+
     setFormData({
       title: "",
       amount: "",
@@ -72,7 +92,22 @@ export default function Subscriptions() {
       category: "",
       reminderDaysBefore: 3,
     });
+    setEditingId(null);
     setOpen(false);
+  };
+
+  const handleEdit = (subscription: any) => {
+    setEditingId(subscription.id);
+    setFormData({
+      title: subscription.title,
+      amount: subscription.amount.toString(),
+      billingDate: subscription.billingDate,
+      interval: subscription.interval,
+      paymentMethod: subscription.paymentMethod,
+      category: subscription.category,
+      reminderDaysBefore: subscription.reminderDaysBefore,
+    });
+    setOpen(true);
   };
 
   return (
@@ -91,17 +126,31 @@ export default function Subscriptions() {
                 </p>
               </div>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(val) => {
+              setOpen(val);
+              if (!val) {
+                setEditingId(null);
+                setFormData({
+                  title: "",
+                  amount: "",
+                  billingDate: "",
+                  interval: "monthly",
+                  paymentMethod: "",
+                  category: "",
+                  reminderDaysBefore: 3,
+                });
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Subscription
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[85vh] overflow-y-auto w-[90%] max-w-lg rounded-lg">
                 <DialogHeader>
-                  <DialogTitle>Add Subscription</DialogTitle>
-                  <DialogDescription>Track a new recurring payment</DialogDescription>
+                  <DialogTitle>{editingId ? "Edit Subscription" : "Add Subscription"}</DialogTitle>
+                  <DialogDescription>{editingId ? "Update subscription details" : "Track a new recurring payment"}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
@@ -153,6 +202,7 @@ export default function Subscriptions() {
                     <Input
                       id="billingDate"
                       type="date"
+                      min={!editingId ? new Date().toISOString().split('T')[0] : undefined}
                       value={formData.billingDate}
                       onChange={(e) => setFormData({ ...formData, billingDate: e.target.value })}
                       required
@@ -209,7 +259,7 @@ export default function Subscriptions() {
                       Cancel
                     </Button>
                     <Button type="submit" className="flex-1">
-                      Add Subscription
+                      {editingId ? "Update Subscription" : "Add Subscription"}
                     </Button>
                   </div>
                 </form>
@@ -263,6 +313,7 @@ export default function Subscriptions() {
                   deleteSubscription(subscription.id);
                   toast.success("Subscription deleted");
                 }}
+                onEdit={() => handleEdit(subscription)}
               />
             ))}
           </div>

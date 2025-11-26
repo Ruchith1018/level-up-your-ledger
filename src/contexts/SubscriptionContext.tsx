@@ -12,7 +12,9 @@ type SubscriptionAction =
   | { type: "ADD"; payload: Omit<Subscription, "id" | "createdAt"> }
   | { type: "UPDATE"; payload: Subscription }
   | { type: "DELETE"; payload: { id: string } }
-  | { type: "TOGGLE_ACTIVE"; payload: { id: string } };
+  | { type: "TOGGLE_ACTIVE"; payload: { id: string } }
+  | { type: "MARK_PAID"; payload: { id: string; transactionId: string } }
+  | { type: "REVERT_PAYMENT"; payload: { id: string } };
 
 interface SubscriptionContextType {
   state: SubscriptionState;
@@ -21,6 +23,8 @@ interface SubscriptionContextType {
   deleteSubscription: (id: string) => void;
   toggleActive: (id: string) => void;
   getUpcomingSubscriptions: () => Subscription[];
+  markAsPaid: (id: string, transactionId: string) => void;
+  revertPayment: (id: string) => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -49,6 +53,40 @@ function reducer(state: SubscriptionState, action: SubscriptionAction): Subscrip
         subscriptions: state.subscriptions.map((s) =>
           s.id === action.payload.id ? { ...s, active: !s.active } : s
         ),
+      };
+    case "MARK_PAID":
+      return {
+        subscriptions: state.subscriptions.map((s) => {
+          if (s.id === action.payload.id) {
+            const nextDate = dayjs(s.billingDate)
+              .add(1, s.interval === "monthly" ? "month" : "year")
+              .format("YYYY-MM-DD");
+            return {
+              ...s,
+              lastPaidDate: new Date().toISOString(),
+              lastPaymentTransactionId: action.payload.transactionId,
+              billingDate: nextDate,
+            };
+          }
+          return s;
+        }),
+      };
+    case "REVERT_PAYMENT":
+      return {
+        subscriptions: state.subscriptions.map((s) => {
+          if (s.id === action.payload.id) {
+            const prevDate = dayjs(s.billingDate)
+              .subtract(1, s.interval === "monthly" ? "month" : "year")
+              .format("YYYY-MM-DD");
+            return {
+              ...s,
+              lastPaidDate: undefined,
+              lastPaymentTransactionId: undefined,
+              billingDate: prevDate,
+            };
+          }
+          return s;
+        }),
       };
     default:
       return state;
@@ -102,6 +140,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         deleteSubscription,
         toggleActive,
         getUpcomingSubscriptions,
+        markAsPaid: (id: string, transactionId: string) => dispatch({ type: "MARK_PAID", payload: { id, transactionId } }),
+        revertPayment: (id: string) => dispatch({ type: "REVERT_PAYMENT", payload: { id } }),
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-import { DailySpendingChart } from "@/components/charts/DailySpendingChart";
+import { DailySpendingTrend } from "@/components/charts/DailySpendingTrend";
 import { SpendingHeatmap } from "@/components/charts/SpendingHeatmap";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/charts/MonthlyTrendChart";
@@ -31,7 +31,7 @@ export default function Analytics() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <DailySpendingChart />
+          <DailySpendingTrend />
         </motion.div>
 
         <motion.div

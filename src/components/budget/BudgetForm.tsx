@@ -176,7 +176,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto w-[90%] rounded-lg">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? "Edit Monthly Budget" : "Create Monthly Budget"}</DialogTitle>
                     <DialogDescription>

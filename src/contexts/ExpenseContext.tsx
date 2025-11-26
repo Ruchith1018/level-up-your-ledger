@@ -9,14 +9,14 @@ interface ExpenseState {
 }
 
 type ExpenseAction =
-  | { type: "ADD"; payload: Omit<Expense, "id" | "createdAt"> }
+  | { type: "ADD"; payload: Omit<Expense, "createdAt"> | Omit<Expense, "id" | "createdAt"> }
   | { type: "UPDATE"; payload: Expense }
   | { type: "DELETE"; payload: { id: string } }
   | { type: "LOAD"; payload: Expense[] };
 
 interface ExpenseContextType {
   state: ExpenseState;
-  addExpense: (expense: Omit<Expense, "id" | "createdAt">) => void;
+  addExpense: (expense: Omit<Expense, "createdAt"> | Omit<Expense, "id" | "createdAt">) => void;
   updateExpense: (expense: Expense) => void;
   deleteExpense: (id: string) => void;
   getExpensesByMonth: (month: string) => Expense[];
@@ -30,7 +30,7 @@ function reducer(state: ExpenseState, action: ExpenseAction): ExpenseState {
   switch (action.type) {
     case "ADD":
       const newExp: Expense = {
-        id: uuid(),
+        id: action.payload.id || uuid(),
         createdAt: new Date().toISOString(),
         ...action.payload,
       };

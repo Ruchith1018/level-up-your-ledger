@@ -58,6 +58,8 @@ export interface Subscription {
   active: boolean;
   category: string;
   createdAt: string;
+  lastPaidDate?: string;
+  lastPaymentTransactionId?: string;
 }
 
 export interface Theme {

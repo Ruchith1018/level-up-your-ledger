@@ -38,6 +38,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     defaultSettings
   );
 
+  React.useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+
+    if (settings.theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      root.classList.add(systemTheme);
+      return;
+    }
+
+    root.classList.add(settings.theme);
+  }, [settings.theme]);
+
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings({ ...settings, ...newSettings });
   };

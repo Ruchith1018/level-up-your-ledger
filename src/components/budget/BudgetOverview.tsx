@@ -75,7 +75,7 @@ export function BudgetOverview() {
           <div className="mt-4">
             <Progress
               value={Math.min(budgetUsed, 100)}
-              className={`h-3 ${isOverBudget ? "bg-destructive/20" : ""}`}
+              className={`h-3 bg-muted ${isOverBudget ? "bg-destructive/20" : ""}`}
             />
           </div>
         </motion.div>
@@ -88,14 +88,8 @@ export function BudgetOverview() {
             </div>
             <div className="text-2xl font-bold">${totalIncome.toFixed(2)}</div>
           </div>
-          <div
-            className={`rounded-lg p-4 ${remaining >= 0 ? "bg-success/10" : "bg-destructive/10"
-              }`}
-          >
-            <div
-              className={`flex items-center gap-2 mb-1 ${remaining >= 0 ? "text-success" : "text-destructive"
-                }`}
-            >
+          <div className="rounded-lg p-4 bg-destructive/10">
+            <div className="flex items-center gap-2 mb-1 text-destructive">
               <TrendingDown className="w-4 h-4" />
               <span className="text-sm font-medium">Expense</span>
             </div>
