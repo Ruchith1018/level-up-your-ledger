@@ -1,0 +1,210 @@
+import { useState } from "react";
+import { useExpenses } from "@/contexts/ExpenseContext";
+import { useGamification } from "@/contexts/GamificationContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { XP_REWARDS, BADGES } from "@/utils/gamify";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+
+export function AddExpenseModal() {
+  const { addExpense, state: expenseState } = useExpenses();
+  const { rewardXP, unlockBadge } = useGamification();
+  const { settings } = useSettings();
+  const [open, setOpen] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    amount: "",
+    type: "expense" as "expense" | "income",
+    category: "",
+    merchant: "",
+    paymentMethod: "",
+    notes: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.amount || !formData.category || !formData.paymentMethod) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const expense = {
+      type: formData.type,
+      amount: parseFloat(formData.amount),
+      currency: settings.currency,
+      category: formData.category,
+      merchant: formData.merchant,
+      paymentMethod: formData.paymentMethod,
+      date: new Date().toISOString(),
+      notes: formData.notes,
+    };
+
+    addExpense(expense);
+
+    // Gamification rewards
+    if (formData.type === "expense") {
+      rewardXP(XP_REWARDS.ADD_EXPENSE, "Added expense");
+    } else {
+      rewardXP(XP_REWARDS.ADD_INCOME, "Added income");
+    }
+
+    // Check for first transaction badge
+    if (expenseState.items.length === 0) {
+      unlockBadge(BADGES.FIRST_STEPS.id);
+      rewardXP(XP_REWARDS.FIRST_TRANSACTION, "First transaction!");
+    }
+
+    toast.success(`${formData.type === "expense" ? "Expense" : "Income"} added successfully!`);
+    
+    // Reset form
+    setFormData({
+      amount: "",
+      type: "expense",
+      category: "",
+      merchant: "",
+      paymentMethod: "",
+      notes: "",
+    });
+    
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          size="lg"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Transaction</DialogTitle>
+          <DialogDescription>Record a new expense or income transaction</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="type">Type</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) =>
+                setFormData({ ...formData, type: value as "expense" | "income" })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">Expense</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount *</Label>
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category *</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {settings.categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method *</Label>
+            <Select
+              value={formData.paymentMethod}
+              onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                {settings.paymentMethods.map((method) => (
+                  <SelectItem key={method} value={method}>
+                    {method}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="merchant">Merchant</Label>
+            <Input
+              id="merchant"
+              placeholder="Where did you spend?"
+              value={formData.merchant}
+              onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              placeholder="Add any notes..."
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1">
+              Add Transaction
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
