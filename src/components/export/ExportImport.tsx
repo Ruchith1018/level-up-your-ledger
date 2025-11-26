@@ -7,12 +7,14 @@ import { useExpenses } from "@/contexts/ExpenseContext";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useGamification } from "@/contexts/GamificationContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useSubscriptions } from "@/contexts/SubscriptionContext";
 import dayjs from "dayjs";
 
 export function ExportImport() {
   const { state: expenseState } = useExpenses();
   const { state: budgetState } = useBudget();
   const { state: gamifyState } = useGamification();
+  const { state: subscriptionState } = useSubscriptions();
   const { settings } = useSettings();
   const [importing, setImporting] = useState(false);
 
@@ -22,6 +24,7 @@ export function ExportImport() {
       exportedAt: new Date().toISOString(),
       expenses: expenseState.items,
       budgets: budgetState.budgets,
+      subscriptions: subscriptionState.subscriptions,
       gamification: gamifyState,
       settings,
     };
@@ -83,6 +86,8 @@ export function ExportImport() {
         // Store data
         localStorage.setItem("gft_expenses_v1", JSON.stringify({ items: data.expenses }));
         localStorage.setItem("gft_budgets_v1", JSON.stringify({ budgets: data.budgets || [] }));
+        localStorage.setItem("gft_subscriptions_v1", JSON.stringify({ subscriptions: data.subscriptions || [] }));
+
         if (data.gamification) {
           localStorage.setItem("gft_gamify_v1", JSON.stringify(data.gamification));
         }
