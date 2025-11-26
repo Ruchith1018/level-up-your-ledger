@@ -5,13 +5,16 @@ import { TransactionList } from "@/components/transactions/TransactionList";
 import { BudgetOverview } from "@/components/budget/BudgetOverview";
 import { CategoryBudgets } from "@/components/budget/CategoryBudgets";
 import { AddExpenseModal } from "@/components/transactions/AddExpenseModal";
+import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 import { motion } from "framer-motion";
-import { Wallet, BarChart3, Calendar, Settings } from "lucide-react";
+import { Wallet, BarChart3, Calendar, Settings, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,12 +36,15 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Gamified Finance Tracker</p>
               </div>
             </motion.div>
-            <div className="flex gap-2">
+            <div className="hidden md:flex gap-2">
               <Button variant="ghost" size="icon" onClick={() => navigate("/analytics")}>
                 <BarChart3 className="w-5 h-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => navigate("/subscriptions")}>
                 <Calendar className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/shop")}>
+                <Palette className="w-5 h-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
                 <Settings className="w-5 h-5" />
@@ -49,6 +55,16 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6 pb-24">
+        {settings.userName && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-4"
+          >
+            <h2 className="text-2xl font-bold">Welcome, {settings.userName}! 👋</h2>
+            <p className="text-sm text-muted-foreground">Let's track your finances today</p>
+          </motion.div>
+        )}
         <XPBar />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -65,6 +81,7 @@ export default function Dashboard() {
       </main>
 
       <AddExpenseModal />
+      <OnboardingDialog />
     </div>
   );
 }

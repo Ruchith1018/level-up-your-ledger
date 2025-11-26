@@ -26,7 +26,11 @@ export function ExportImport() {
       budgets: budgetState.budgets,
       subscriptions: subscriptionState.subscriptions,
       gamification: gamifyState,
-      settings,
+      settings: {
+        ...settings,
+        userName: settings.userName || "",
+        hasCompletedOnboarding: settings.hasCompletedOnboarding || false,
+      },
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

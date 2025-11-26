@@ -68,12 +68,12 @@ export function DailySpendingTrend() {
 
     return (
         <Card className="col-span-1 lg:col-span-2 bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-col md:flex-row md:items-center justify-between pb-2">
                 <div>
-                    <CardTitle className="text-lg font-medium text-muted-foreground">Daily Spending Trend</CardTitle>
+                    <CardTitle className="text-lg font-medium text-muted-foreground whitespace-nowrap">Daily Spending Trend</CardTitle>
                     <div className="text-3xl font-bold mt-1">${totalSpent.toFixed(2)}</div>
                 </div>
-                <div className="flex gap-2 bg-secondary/30 p-1 rounded-lg">
+                <div className="hidden md:flex gap-2 bg-secondary/30 p-1 rounded-lg">
                     {(["week", "month", "year"] as TimeRange[]).map((range) => (
                         <Button
                             key={range}
@@ -90,7 +90,7 @@ export function DailySpendingTrend() {
             <CardContent>
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={data}>
+                        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -101,17 +101,18 @@ export function DailySpendingTrend() {
                             <XAxis
                                 dataKey="displayDate"
                                 stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
+                                fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
                                 minTickGap={30}
                             />
                             <YAxis
                                 stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
+                                fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
                                 tickFormatter={(value) => `$${value}`}
+                                width={40}
                             />
                             <Tooltip
                                 contentStyle={{
@@ -135,6 +136,21 @@ export function DailySpendingTrend() {
                             />
                         </AreaChart>
                     </ResponsiveContainer>
+                </div>
+                <div className="flex md:hidden justify-center mt-4">
+                    <div className="flex gap-2 bg-secondary/30 p-1 rounded-lg">
+                        {(["week", "month", "year"] as TimeRange[]).map((range) => (
+                            <Button
+                                key={range}
+                                variant={timeRange === range ? "secondary" : "ghost"}
+                                size="sm"
+                                onClick={() => setTimeRange(range)}
+                                className="text-xs capitalize h-7 px-3"
+                            >
+                                {range}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
             </CardContent>
         </Card>

@@ -45,6 +45,8 @@ export interface AppSettings {
   paymentMethods: string[];
   premiumTheme?: string;
   customAvatar?: string;
+  userName?: string;
+  hasCompletedOnboarding?: boolean;
 }
 
 export interface Subscription {

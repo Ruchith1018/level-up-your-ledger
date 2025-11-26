@@ -116,7 +116,7 @@ export default function Subscriptions() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hidden md:flex">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
@@ -125,6 +125,12 @@ export default function Subscriptions() {
                   Manage your recurring payments
                 </p>
               </div>
+            </div>
+            <div className="hidden md:block">
+              <Button onClick={() => setOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Subscription
+              </Button>
             </div>
             <Dialog open={open} onOpenChange={(val) => {
               setOpen(val);
@@ -141,12 +147,6 @@ export default function Subscriptions() {
                 });
               }
             }}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Subscription
-                </Button>
-              </DialogTrigger>
               <DialogContent className="max-h-[85vh] overflow-y-auto w-[90%] max-w-lg rounded-lg">
                 <DialogHeader>
                   <DialogTitle>{editingId ? "Edit Subscription" : "Add Subscription"}</DialogTitle>
@@ -269,7 +269,7 @@ export default function Subscriptions() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-6 space-y-6 pb-24">
         {upcomingSubs.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -319,6 +319,14 @@ export default function Subscriptions() {
           </div>
         )}
       </main>
+
+      <Button
+        onClick={() => setOpen(true)}
+        size="lg"
+        className="md:hidden fixed bottom-20 right-6 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40 p-0"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
     </div>
   );
 }

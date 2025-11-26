@@ -1,5 +1,5 @@
 import { useExpenses } from "@/contexts/ExpenseContext";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import dayjs from "dayjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -78,14 +78,20 @@ export function CategoryPieChart() {
                 }}
                 itemStyle={{ color: "hsl(var(--foreground))" }}
               />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                iconType="circle"
-                formatter={(value) => <span className="text-sm text-muted-foreground">{value}</span>}
-              />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+        {/* Custom Legend */}
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-2">
+          {data.map((entry, index) => (
+            <div key={entry.name} className="flex items-center gap-1.5">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+              />
+              <span className="text-sm text-muted-foreground">{entry.name}</span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

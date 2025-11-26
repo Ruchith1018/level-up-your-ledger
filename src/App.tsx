@@ -13,7 +13,9 @@ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Subscriptions from "./pages/Subscriptions";
 import Settings from "./pages/Settings";
+import ThemeShopPage from "./pages/ThemeShopPage";
 import NotFound from "./pages/NotFound";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 const queryClient = new QueryClient();
 
@@ -34,9 +36,11 @@ const App = () => (
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/subscriptions" element={<Subscriptions />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/shop" element={<ThemeShopPage />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  <BottomNav />
                 </BrowserRouter>
               </GamificationProvider>
             </SubscriptionProvider>
