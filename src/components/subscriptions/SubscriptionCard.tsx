@@ -26,8 +26,8 @@ export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: S
   const isDue = daysUntilDue <= subscription.reminderDaysBefore;
   const isUpcoming = isDue && daysUntilDue >= 0;
   const isOverdue = daysUntilDue < 0;
-  // Only show "Paid" (Undo) if we have a transaction ID AND it's not time to pay again
-  const isPaid = !!subscription.lastPaymentTransactionId && !isDue;
+  // Show "Paid" (Undo) if we have a transaction ID
+  const isPaid = !!subscription.lastPaymentTransactionId;
 
   const handlePay = () => {
     const transactionId = addTransaction({
