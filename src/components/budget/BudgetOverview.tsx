@@ -6,31 +6,16 @@ import { Button } from "@/components/ui/button";
 import { PiggyBank, TrendingUp, TrendingDown } from "lucide-react";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
+import { BudgetForm } from "./BudgetForm";
 
 export function BudgetOverview() {
   const { getTotalByType } = useExpenses();
-  const { getCurrentBudget, addBudget } = useBudget();
+  const { getCurrentBudget } = useBudget();
   const currentMonth = dayjs().format("YYYY-MM");
 
   const currentBudget = getCurrentBudget();
   const totalExpense = getTotalByType("expense", currentMonth);
   const totalIncome = getTotalByType("income", currentMonth);
-
-  const createDefaultBudget = () => {
-    addBudget({
-      period: "monthly",
-      month: currentMonth,
-      total: 5000,
-      categoryLimits: {
-        "Food & Dining": 1000,
-        Transportation: 500,
-        Shopping: 800,
-        Entertainment: 400,
-        "Bills & Utilities": 1500,
-      },
-      rollover: false,
-    });
-  };
 
   if (!currentBudget) {
     return (
@@ -41,7 +26,7 @@ export function BudgetOverview() {
         <CardContent className="text-center py-8">
           <PiggyBank className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground mb-4">No budget set for this month</p>
-          <Button onClick={createDefaultBudget}>Create Budget</Button>
+          <BudgetForm trigger={<Button>Create Budget</Button>} />
         </CardContent>
       </Card>
     );
@@ -85,14 +70,12 @@ export function BudgetOverview() {
             <div className="text-2xl font-bold">${totalIncome.toFixed(2)}</div>
           </div>
           <div
-            className={`rounded-lg p-4 ${
-              remaining >= 0 ? "bg-success/10" : "bg-destructive/10"
-            }`}
+            className={`rounded-lg p-4 ${remaining >= 0 ? "bg-success/10" : "bg-destructive/10"
+              }`}
           >
             <div
-              className={`flex items-center gap-2 mb-1 ${
-                remaining >= 0 ? "text-success" : "text-destructive"
-              }`}
+              className={`flex items-center gap-2 mb-1 ${remaining >= 0 ? "text-success" : "text-destructive"
+                }`}
             >
               <TrendingDown className="w-4 h-4" />
               <span className="text-sm font-medium">Remaining</span>
