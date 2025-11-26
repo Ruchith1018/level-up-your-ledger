@@ -30,9 +30,9 @@ function reducer(state: ExpenseState, action: ExpenseAction): ExpenseState {
   switch (action.type) {
     case "ADD":
       const newExp: Expense = {
-        id: action.payload.id || uuid(),
         createdAt: new Date().toISOString(),
         ...action.payload,
+        id: "id" in action.payload && action.payload.id ? action.payload.id : uuid(),
       };
       return { items: [newExp, ...state.items] };
     case "UPDATE":
