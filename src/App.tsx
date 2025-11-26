@@ -30,7 +30,7 @@ const App = () => (
             <SubscriptionProvider>
               <GamificationProvider>
                 <Toaster />
-                <Sonner />
+                <Sonner position="top-center" />
                 <BrowserRouter>
                   <TutorialProvider>
                     <Routes>

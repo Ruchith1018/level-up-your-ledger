@@ -10,12 +10,22 @@ import { BudgetForm } from "./BudgetForm";
 
 export function BudgetOverview() {
   const { getTotalByType } = useExpenses();
-  const { getCurrentBudget } = useBudget();
+  const { getCurrentBudget, getBudgetByMonth } = useBudget();
   const currentMonth = dayjs().format("YYYY-MM");
 
   const currentBudget = getCurrentBudget();
   const totalExpense = getTotalByType("expense", currentMonth);
   const totalIncome = getTotalByType("income", currentMonth);
+
+  // Calculate Rollover
+  const previousMonth = dayjs().subtract(1, 'month').format("YYYY-MM");
+  const previousBudget = getBudgetByMonth(previousMonth);
+  let rolloverAmount = 0;
+
+  if (previousBudget && previousBudget.rollover) {
+    const previousExpenses = getTotalByType("expense", previousMonth);
+    rolloverAmount = Math.max(0, previousBudget.total - previousExpenses);
+  }
 
   if (!currentBudget) {
     return (
@@ -32,7 +42,7 @@ export function BudgetOverview() {
     );
   }
 
-  const effectiveTotal = currentBudget.total;
+  const effectiveTotal = currentBudget.total + rolloverAmount;
   const budgetUsed = (totalExpense / effectiveTotal) * 100;
   const remaining = effectiveTotal - totalExpense;
   const isOverBudget = remaining < 0;
@@ -63,6 +73,11 @@ export function BudgetOverview() {
           </div>
           <div className="text-muted-foreground">
             remaining of ${effectiveTotal.toFixed(2)} budget
+            {rolloverAmount > 0 && (
+              <span className="block text-xs text-emerald-500 mt-1 font-medium">
+                (Includes ${rolloverAmount.toFixed(2)} rollover from last month)
+              </span>
+            )}
           </div>
 
           {isOverBudget && (
@@ -91,7 +106,7 @@ export function BudgetOverview() {
           <div className="rounded-lg p-4 bg-destructive/10">
             <div className="flex items-center gap-2 mb-1 text-destructive">
               <TrendingDown className="w-4 h-4" />
-              <span className="text-sm font-medium">Expense</span>
+              <span className="text-sm font-medium">Expenses in this month</span>
             </div>
             <div className="text-2xl font-bold">${totalExpense.toFixed(2)}</div>
           </div>
