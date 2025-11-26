@@ -43,4 +43,32 @@ export interface AppSettings {
   theme: "light" | "dark" | "system";
   categories: string[];
   paymentMethods: string[];
+  premiumTheme?: string;
+  customAvatar?: string;
+}
+
+export interface Subscription {
+  id: string;
+  title: string;
+  amount: number;
+  billingDate: string;
+  interval: "monthly" | "yearly";
+  paymentMethod: string;
+  reminderDaysBefore: number;
+  active: boolean;
+  category: string;
+  createdAt: string;
+}
+
+export interface Theme {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  preview: string;
 }

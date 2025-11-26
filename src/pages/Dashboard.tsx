@@ -3,11 +3,16 @@ import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/charts/MonthlyTrendChart";
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { BudgetOverview } from "@/components/budget/BudgetOverview";
+import { CategoryBudgets } from "@/components/budget/CategoryBudgets";
 import { AddExpenseModal } from "@/components/transactions/AddExpenseModal";
 import { motion } from "framer-motion";
-import { Wallet } from "lucide-react";
+import { Wallet, BarChart3, Calendar, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -28,6 +33,17 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Gamified Finance Tracker</p>
               </div>
             </motion.div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/analytics")}>
+                <BarChart3 className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/subscriptions")}>
+                <Calendar className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
+                <Settings className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -37,10 +53,13 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BudgetOverview />
-          <CategoryPieChart />
+          <CategoryBudgets />
         </div>
 
-        <MonthlyTrendChart />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CategoryPieChart />
+          <MonthlyTrendChart />
+        </div>
 
         <TransactionList />
       </main>
