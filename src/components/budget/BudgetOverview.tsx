@@ -51,6 +51,20 @@ export function BudgetOverview() {
   const remaining = effectiveTotal - totalExpense;
   const isOverBudget = remaining < 0;
 
+  const getFontSizeClass = (amount: number, type: 'main' | 'sub') => {
+    const length = amount.toFixed(2).length;
+    if (type === 'main') {
+      if (length > 13) return "text-2xl sm:text-4xl";
+      if (length > 10) return "text-3xl sm:text-5xl";
+      return "text-4xl sm:text-5xl";
+    }
+    // sub cards - more aggressive scaling for 2-column grid
+    if (length > 11) return "text-sm";
+    if (length > 8) return "text-base sm:text-lg";
+    if (length > 6) return "text-lg sm:text-xl";
+    return "text-xl sm:text-2xl";
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -72,7 +86,7 @@ export function BudgetOverview() {
               }
             />
           </div>
-          <div className={`text-5xl font-bold mb-2 ${isOverBudget ? "text-destructive" : ""}`}>
+          <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-bold mb-2 break-words transition-all duration-200 ${isOverBudget ? "text-destructive" : ""}`}>
             {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
           </div>
           <div className="text-muted-foreground">
@@ -100,19 +114,19 @@ export function BudgetOverview() {
         </motion.div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-secondary/10 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-secondary mb-1">
-              <TrendingUp className="w-4 h-4" />
-              <span className="text-sm font-medium">Income in this month</span>
+          <div className="bg-secondary/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[120px]">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-secondary mb-2">
+              <TrendingUp className="w-4 h-4 shrink-0" />
+              <span className="text-xs sm:text-sm font-medium leading-tight">Income in this month</span>
             </div>
-            <div className="text-2xl font-bold">{currencySymbol}{totalIncome.toFixed(2)}</div>
+            <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
           </div>
-          <div className="rounded-lg p-4 bg-destructive/10">
-            <div className="flex items-center gap-2 mb-1 text-destructive">
-              <TrendingDown className="w-4 h-4" />
-              <span className="text-sm font-medium">Expenses in this month</span>
+          <div className="rounded-lg p-4 bg-destructive/10 flex flex-col items-center justify-center text-center min-h-[120px]">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-destructive mb-2">
+              <TrendingDown className="w-4 h-4 shrink-0" />
+              <span className="text-xs sm:text-sm font-medium leading-tight">Expenses in this month</span>
             </div>
-            <div className="text-2xl font-bold">{currencySymbol}{totalExpense.toFixed(2)}</div>
+            <div className={`${getFontSizeClass(totalExpense, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(2)}</div>
           </div>
         </div>
       </CardContent>

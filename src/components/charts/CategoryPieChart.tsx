@@ -45,6 +45,14 @@ export function CategoryPieChart() {
     );
   }
 
+  const getFontSizeClass = (amount: number) => {
+    const length = amount.toFixed(0).length;
+    if (length > 9) return "text-sm";
+    if (length > 7) return "text-base";
+    if (length > 5) return "text-lg";
+    return "text-2xl";
+  };
+
   return (
     <Card className="col-span-1">
       <CardHeader>
@@ -52,8 +60,8 @@ export function CategoryPieChart() {
       </CardHeader>
       <CardContent>
         <div className="h-[300px] relative">
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-            <div className="text-2xl font-bold">{currencySymbol}{totalExpense.toFixed(0)}</div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none w-[100px] flex flex-col items-center justify-center">
+            <div className={`${getFontSizeClass(totalExpense)} font-bold transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(0)}</div>
             <div className="text-xs text-muted-foreground">Total</div>
           </div>
           <ResponsiveContainer width="100%" height="100%">
