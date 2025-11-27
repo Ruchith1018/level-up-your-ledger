@@ -11,9 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import { Sparkles, Target, Upload } from "lucide-react";
+import { Sparkles, Target, Upload, Coins } from "lucide-react";
+import { CURRENCIES } from "@/constants/currencies";
 
 import { useTutorial } from "@/contexts/TutorialContext";
 
@@ -23,6 +31,7 @@ export function OnboardingDialog() {
     const { startTutorial } = useTutorial();
     const [step, setStep] = useState(1);
     const [userName, setUserName] = useState("");
+    const [currency, setCurrency] = useState("USD");
     const [budgetAmount, setBudgetAmount] = useState("");
 
     const isOpen = !settings.hasCompletedOnboarding;
@@ -33,6 +42,15 @@ export function OnboardingDialog() {
             return;
         }
         setStep(2);
+    };
+
+    const handleCurrencySubmit = () => {
+        if (!currency) {
+            toast.error("Please select a currency");
+            return;
+        }
+        updateSettings({ ...settings, currency });
+        setStep(3);
     };
 
     const handleCreateBudget = () => {
@@ -61,6 +79,7 @@ export function OnboardingDialog() {
         updateSettings({
             ...settings,
             userName: userName.trim(),
+            currency: currency, // Ensure currency is saved
             hasCompletedOnboarding: true,
         });
         toast.success(`Welcome to FinanceQuest, ${userName}! 🎉`);
@@ -137,6 +156,40 @@ export function OnboardingDialog() {
                     <>
                         <DialogHeader>
                             <div className="flex items-center justify-center mb-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                                    <Coins className="w-8 h-8 text-white" />
+                                </div>
+                            </div>
+                            <DialogTitle className="text-center text-2xl">Select Currency</DialogTitle>
+                            <DialogDescription className="text-center">
+                                Choose the currency you want to use for tracking your finances.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Currency</Label>
+                                <Select value={currency} onValueChange={setCurrency}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {CURRENCIES.map((c) => (
+                                            <SelectItem key={c.code} value={c.code}>
+                                                {c.name} ({c.symbol})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <Button onClick={handleCurrencySubmit} className="w-full">
+                                Continue
+                            </Button>
+                        </div>
+                    </>
+                ) : step === 3 ? (
+                    <>
+                        <DialogHeader>
+                            <div className="flex items-center justify-center mb-4">
                                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
                                     <Upload className="w-8 h-8 text-white" />
                                 </div>
@@ -164,7 +217,7 @@ export function OnboardingDialog() {
                                     </Button>
                                 </label>
                             </div>
-                            <Button onClick={() => setStep(3)} className="w-full" variant="ghost">
+                            <Button onClick={() => setStep(4)} className="w-full" variant="ghost">
                                 No, Start Fresh
                             </Button>
                         </div>
@@ -184,7 +237,7 @@ export function OnboardingDialog() {
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="budget">Monthly Budget ({settings.currency})</Label>
+                                <Label htmlFor="budget">Monthly Budget ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</Label>
                                 <Input
                                     id="budget"
                                     type="number"

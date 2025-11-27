@@ -4,11 +4,15 @@ import dayjs from "dayjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 
 type TimeRange = "week" | "month" | "year";
 
 export function DailySpendingTrend() {
     const { state } = useExpenses();
+    const { settings } = useSettings();
+    const currencySymbol = getCurrencySymbol(settings.currency);
     const [timeRange, setTimeRange] = useState<TimeRange>("month");
 
     const data = useMemo(() => {
@@ -71,7 +75,7 @@ export function DailySpendingTrend() {
             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between pb-2">
                 <div>
                     <CardTitle className="text-lg font-medium text-muted-foreground whitespace-nowrap">Daily Spending Trend</CardTitle>
-                    <div className="text-3xl font-bold mt-1">${totalSpent.toFixed(2)}</div>
+                    <div className="text-3xl font-bold mt-1">{currencySymbol}{totalSpent.toFixed(2)}</div>
                 </div>
                 <div className="hidden md:flex gap-2 bg-secondary/30 p-1 rounded-lg">
                     {(["week", "month", "year"] as TimeRange[]).map((range) => (
@@ -111,7 +115,7 @@ export function DailySpendingTrend() {
                                 fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
-                                tickFormatter={(value) => `$${value}`}
+                                tickFormatter={(value) => `${currencySymbol}${value}`}
                                 width={40}
                             />
                             <Tooltip
@@ -121,7 +125,7 @@ export function DailySpendingTrend() {
                                     borderRadius: "0.5rem",
                                 }}
                                 itemStyle={{ color: "#3b82f6" }}
-                                formatter={(value: number) => [`$${value.toFixed(2)}`, "Spent"]}
+                                formatter={(value: number) => [`${currencySymbol}${value.toFixed(2)}`, "Spent"]}
                                 labelStyle={{ color: "hsl(var(--foreground))" }}
                             />
                             <Area

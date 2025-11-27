@@ -11,7 +11,8 @@ interface BudgetState {
 type BudgetAction =
   | { type: "ADD"; payload: Omit<Budget, "id" | "createdAt"> }
   | { type: "UPDATE"; payload: Budget }
-  | { type: "DELETE"; payload: { id: string } };
+  | { type: "DELETE"; payload: { id: string } }
+  | { type: "CONVERT_CURRENCY"; payload: { rate: number } };
 
 interface BudgetContextType {
   state: BudgetState;
@@ -20,6 +21,7 @@ interface BudgetContextType {
   deleteBudget: (id: string) => void;
   getCurrentBudget: () => Budget | undefined;
   getBudgetByMonth: (month: string) => Budget | undefined;
+  convertBudgets: (rate: number) => void;
 }
 
 const BudgetContext = createContext<BudgetContextType | null>(null);
@@ -42,6 +44,23 @@ function reducer(state: BudgetState, action: BudgetAction): BudgetState {
     case "DELETE":
       return {
         budgets: state.budgets.filter((b) => b.id !== action.payload.id),
+      };
+    case "CONVERT_CURRENCY":
+      return {
+        budgets: state.budgets.map((b) => {
+          const newCategoryLimits: Record<string, number> = {};
+          if (b.categoryLimits) {
+            Object.entries(b.categoryLimits).forEach(([category, limit]) => {
+              newCategoryLimits[category] = Number((limit * action.payload.rate).toFixed(2));
+            });
+          }
+
+          return {
+            ...b,
+            total: Number((b.total * action.payload.rate).toFixed(2)),
+            categoryLimits: newCategoryLimits,
+          };
+        }),
       };
     default:
       return state;
@@ -88,6 +107,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
         deleteBudget,
         getCurrentBudget,
         getBudgetByMonth,
+        convertBudgets: (rate: number) => dispatch({ type: "CONVERT_CURRENCY", payload: { rate } }),
       }}
     >
       {children}

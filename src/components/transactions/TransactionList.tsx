@@ -1,4 +1,6 @@
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
@@ -10,6 +12,8 @@ dayjs.extend(relativeTime);
 
 export function TransactionList() {
   const { state, deleteExpense } = useExpenses();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const recentTransactions = state.items.slice(0, 10);
 
   if (recentTransactions.length === 0) {
@@ -44,11 +48,10 @@ export function TransactionList() {
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === "income"
-                      ? "bg-secondary/10 text-secondary"
-                      : "bg-destructive/10 text-destructive"
-                  }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${transaction.type === "income"
+                    ? "bg-secondary/10 text-secondary"
+                    : "bg-destructive/10 text-destructive"
+                    }`}
                 >
                   {transaction.type === "income" ? (
                     <ArrowUpRight className="w-5 h-5" />
@@ -66,11 +69,10 @@ export function TransactionList() {
               </div>
               <div className="flex items-center gap-3">
                 <div
-                  className={`font-semibold ${
-                    transaction.type === "income" ? "text-secondary" : "text-destructive"
-                  }`}
+                  className={`font-semibold ${transaction.type === "income" ? "text-secondary" : "text-destructive"
+                    }`}
                 >
-                  {transaction.type === "income" ? "+" : "-"}${transaction.amount.toFixed(2)}
+                  {transaction.type === "income" ? "+" : "-"}{currencySymbol}{transaction.amount.toFixed(2)}
                 </div>
                 <Button
                   variant="ghost"

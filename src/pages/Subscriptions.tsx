@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { SubscriptionCard } from "@/components/subscriptions/SubscriptionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export default function Subscriptions() {
   const { state, addSubscription, updateSubscription, deleteSubscription, toggleActive, getUpcomingSubscriptions } =
     useSubscriptions();
   const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -167,15 +169,21 @@ export default function Subscriptions() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="amount">Amount *</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        required
-                      />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                          {currencySymbol}
+                        </span>
+                        <Input
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.amount}
+                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          required
+                          className="pl-7"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -283,7 +291,7 @@ export default function Subscriptions() {
             <div className="space-y-2">
               {upcomingSubs.map((sub) => (
                 <div key={sub.id} className="text-sm">
-                  <span className="font-medium">{sub.title}</span> - ${sub.amount.toFixed(2)}
+                  <span className="font-medium">{sub.title}</span> - {currencySymbol}{sub.amount.toFixed(2)}
                 </div>
               ))}
             </div>

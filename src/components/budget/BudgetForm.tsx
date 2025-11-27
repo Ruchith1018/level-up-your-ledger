@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useBudget } from "@/contexts/BudgetContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { Budget } from "@/types";
 import {
     Dialog,
@@ -29,6 +31,8 @@ interface BudgetFormProps {
 
 export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
     const { addBudget, updateBudget } = useBudget();
+    const { settings } = useSettings();
+    const currencySymbol = getCurrencySymbol(settings.currency);
     const [open, setOpen] = useState(false);
     const [totalBudget, setTotalBudget] = useState<string>("");
     const [categoryLimits, setCategoryLimits] = useState<CategoryLimit[]>([
@@ -111,7 +115,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
 
         if (categorySum > total) {
             newErrors.push(
-                `Category limits ($${categorySum.toFixed(2)}) exceed total budget ($${total.toFixed(2)})`
+                `Category limits (${currencySymbol}${categorySum.toFixed(2)}) exceed total budget (${currencySymbol}${total.toFixed(2)})`
             );
         }
 
@@ -196,7 +200,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                         <Label htmlFor="totalBudget">Total Monthly Budget</Label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                $
+                                {currencySymbol}
                             </span>
                             <Input
                                 id="totalBudget"
@@ -303,7 +307,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                                     <div className="w-32">
                                         <div className="relative">
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                                $
+                                                {currencySymbol}
                                             </span>
                                             <Input
                                                 type="number"
@@ -336,7 +340,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                             <div className="flex justify-between text-sm p-3 bg-muted rounded-lg">
                                 <span className="text-muted-foreground">Category Total:</span>
                                 <span className="font-semibold">
-                                    $
+                                    {currencySymbol}
                                     {categoryLimits
                                         .filter((cl) => cl.category.trim() !== "")
                                         .reduce((sum, cl) => sum + cl.limit, 0)

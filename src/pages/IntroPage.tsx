@@ -68,7 +68,19 @@ export default function IntroPage() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -100 }}
                             transition={{ duration: 0.3 }}
-                            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
+                            drag="x"
+                            dragConstraints={{ left: 0, right: 0 }}
+                            dragElastic={0.2}
+                            onDragEnd={(e, { offset, velocity }) => {
+                                const swipe = offset.x;
+
+                                if (swipe < -50) {
+                                    nextSlide();
+                                } else if (swipe > 50) {
+                                    prevSlide();
+                                }
+                            }}
+                            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 cursor-grab active:cursor-grabbing"
                         >
                             {/* Icon */}
                             <motion.div
@@ -140,8 +152,8 @@ export default function IntroPage() {
                                     key={index}
                                     onClick={() => setCurrentSlide(index)}
                                     className={`h-2 rounded-full transition-all ${index === currentSlide
-                                            ? "w-8 bg-primary"
-                                            : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                                        ? "w-8 bg-primary"
+                                        : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                                         }`}
                                 />
                             ))}
@@ -163,8 +175,8 @@ export default function IntroPage() {
                                     key={index}
                                     onClick={() => setCurrentSlide(index)}
                                     className={`h-2 rounded-full transition-all ${index === currentSlide
-                                            ? "w-8 bg-primary"
-                                            : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                                        ? "w-8 bg-primary"
+                                        : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                                         }`}
                                 />
                             ))}

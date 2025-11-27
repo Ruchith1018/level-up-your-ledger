@@ -1,5 +1,7 @@
 import { useExpenses } from "@/contexts/ExpenseContext";
 import { useBudget } from "@/contexts/BudgetContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,8 @@ import { BudgetForm } from "./BudgetForm";
 export function BudgetOverview() {
   const { getTotalByType } = useExpenses();
   const { getCurrentBudget, getBudgetByMonth } = useBudget();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
 
   const currentBudget = getCurrentBudget();
@@ -69,13 +73,13 @@ export function BudgetOverview() {
             />
           </div>
           <div className={`text-5xl font-bold mb-2 ${isOverBudget ? "text-destructive" : ""}`}>
-            {remaining < 0 ? "-" : ""}${Math.abs(remaining).toFixed(2)}
+            {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
           </div>
           <div className="text-muted-foreground">
-            remaining of ${effectiveTotal.toFixed(2)} budget
+            remaining of {currencySymbol}{effectiveTotal.toFixed(2)} budget
             {rolloverAmount > 0 && (
               <span className="block text-xs text-emerald-500 mt-1 font-medium">
-                (Includes ${rolloverAmount.toFixed(2)} rollover from last month)
+                (Includes {currencySymbol}{rolloverAmount.toFixed(2)} rollover from last month)
               </span>
             )}
           </div>
@@ -101,14 +105,14 @@ export function BudgetOverview() {
               <TrendingUp className="w-4 h-4" />
               <span className="text-sm font-medium">Income in this month</span>
             </div>
-            <div className="text-2xl font-bold">${totalIncome.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{totalIncome.toFixed(2)}</div>
           </div>
           <div className="rounded-lg p-4 bg-destructive/10">
             <div className="flex items-center gap-2 mb-1 text-destructive">
               <TrendingDown className="w-4 h-4" />
               <span className="text-sm font-medium">Expenses in this month</span>
             </div>
-            <div className="text-2xl font-bold">${totalExpense.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{totalExpense.toFixed(2)}</div>
           </div>
         </div>
       </CardContent>

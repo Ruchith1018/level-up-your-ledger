@@ -14,7 +14,8 @@ type SubscriptionAction =
   | { type: "DELETE"; payload: { id: string } }
   | { type: "TOGGLE_ACTIVE"; payload: { id: string } }
   | { type: "MARK_PAID"; payload: { id: string; transactionId: string } }
-  | { type: "REVERT_PAYMENT"; payload: { id: string } };
+  | { type: "REVERT_PAYMENT"; payload: { id: string } }
+  | { type: "CONVERT_CURRENCY"; payload: { rate: number } };
 
 interface SubscriptionContextType {
   state: SubscriptionState;
@@ -25,6 +26,7 @@ interface SubscriptionContextType {
   getUpcomingSubscriptions: () => Subscription[];
   markAsPaid: (id: string, transactionId: string) => void;
   revertPayment: (id: string) => void;
+  convertSubscriptions: (rate: number) => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -88,6 +90,13 @@ function reducer(state: SubscriptionState, action: SubscriptionAction): Subscrip
           return s;
         }),
       };
+    case "CONVERT_CURRENCY":
+      return {
+        subscriptions: state.subscriptions.map((s) => ({
+          ...s,
+          amount: Number((s.amount * action.payload.rate).toFixed(2)),
+        })),
+      };
     default:
       return state;
   }
@@ -142,6 +151,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         getUpcomingSubscriptions,
         markAsPaid: (id: string, transactionId: string) => dispatch({ type: "MARK_PAID", payload: { id, transactionId } }),
         revertPayment: (id: string) => dispatch({ type: "REVERT_PAYMENT", payload: { id } }),
+        convertSubscriptions: (rate: number) => dispatch({ type: "CONVERT_CURRENCY", payload: { rate } }),
       }}
     >
       {children}

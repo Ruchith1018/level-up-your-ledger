@@ -1,3 +1,4 @@
+import { CurrencySelector } from "@/components/settings/CurrencySelector";
 import { ExportImport } from "@/components/export/ExportImport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,12 +107,14 @@ export default function Settings() {
         >
           <Card>
             <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Customize how the app looks on your device</CardDescription>
+              <CardTitle>Appearance & Preferences</CardTitle>
+              <CardDescription>Customize your experience</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <CurrencySelector />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
                   <div className="space-y-0.5">
                     <Label>Theme</Label>
                     <p className="text-sm text-muted-foreground">
@@ -124,7 +127,7 @@ export default function Settings() {
                       updateSettings({ theme: value })
                     }
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                       <SelectValue placeholder="Select theme" />
                     </SelectTrigger>
                     <SelectContent>
@@ -173,14 +176,14 @@ export default function Settings() {
               <CardDescription>Irreversible actions for your account</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-0.5">
                   <Label className="text-destructive">Delete Account</Label>
                   <p className="text-sm text-muted-foreground">
                     Permanently delete all data and reset the app
                   </p>
                 </div>
-                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} className="w-full sm:w-auto">
                   Delete Account
                 </Button>
               </div>
@@ -226,6 +229,6 @@ export default function Settings() {
           </AlertDialogContent>
         </AlertDialog>
       </main>
-    </div >
+    </div>
   );
 }

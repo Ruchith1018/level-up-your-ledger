@@ -57,6 +57,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
         setIsActive(false);
         setCurrentStep(0);
         updateSettings({ ...settings, hasCompletedTutorial: true });
+        navigate('/dashboard');
     };
 
     return (

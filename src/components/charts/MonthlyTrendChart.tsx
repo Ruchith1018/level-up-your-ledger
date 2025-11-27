@@ -1,4 +1,6 @@
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import dayjs from "dayjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +13,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 export function MonthlyTrendChart() {
   const { state } = useExpenses();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const [selectedMonth, setSelectedMonth] = useState<string>(dayjs().format("YYYY-MM"));
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -92,11 +96,11 @@ export function MonthlyTrendChart() {
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `${currencySymbol}${value}`}
                 width={40}
               />
               <Tooltip
-                formatter={(value: number) => [`$${value.toFixed(2)}`, ""]}
+                formatter={(value: number) => [`${currencySymbol}${value.toFixed(2)}`, ""]}
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border))",
@@ -158,7 +162,7 @@ export function MonthlyTrendChart() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{item.category}</span>
                         <span className="text-muted-foreground">
-                          ${item.amount.toFixed(2)} ({item.percentage.toFixed(1)}%)
+                          {currencySymbol}{item.amount.toFixed(2)} ({item.percentage.toFixed(1)}%)
                         </span>
                       </div>
                       <Progress value={item.percentage} className="h-2" />

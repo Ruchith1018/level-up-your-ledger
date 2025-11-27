@@ -2,9 +2,13 @@ import { useExpenses } from "@/contexts/ExpenseContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 
 export function SpendingHeatmap() {
   const { state } = useExpenses();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
 
   // Get spending for each day
@@ -29,7 +33,7 @@ export function SpendingHeatmap() {
     );
     const total = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
     const intensity = total / maxSpending;
-    
+
     return { day, total, intensity };
   });
 
@@ -60,7 +64,7 @@ export function SpendingHeatmap() {
               <div className="text-xs font-semibold">{day}</div>
               {total > 0 && (
                 <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-card border border-border rounded p-2 text-xs -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap shadow-lg z-10">
-                  ${total.toFixed(2)}
+                  {currencySymbol}{total.toFixed(2)}
                 </div>
               )}
             </motion.div>

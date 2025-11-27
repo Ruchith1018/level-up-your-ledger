@@ -1,4 +1,6 @@
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import dayjs from "dayjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +18,8 @@ const COLORS = [
 
 export function CategoryPieChart() {
   const { getExpensesByCategory } = useExpenses();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
   const categoryData = getExpensesByCategory(currentMonth);
 
@@ -48,8 +52,8 @@ export function CategoryPieChart() {
       </CardHeader>
       <CardContent>
         <div className="h-[300px] relative">
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pb-8">
-            <div className="text-2xl font-bold">${totalExpense.toFixed(0)}</div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+            <div className="text-2xl font-bold">{currencySymbol}{totalExpense.toFixed(0)}</div>
             <div className="text-xs text-muted-foreground">Total</div>
           </div>
           <ResponsiveContainer width="100%" height="100%">
@@ -70,7 +74,7 @@ export function CategoryPieChart() {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => `$${value.toFixed(2)}`}
+                formatter={(value: number) => `${currencySymbol}${value.toFixed(2)}`}
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border))",

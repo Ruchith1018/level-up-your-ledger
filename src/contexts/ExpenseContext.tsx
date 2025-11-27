@@ -12,7 +12,8 @@ type ExpenseAction =
   | { type: "ADD"; payload: Omit<Expense, "createdAt"> | Omit<Expense, "id" | "createdAt"> }
   | { type: "UPDATE"; payload: Expense }
   | { type: "DELETE"; payload: { id: string } }
-  | { type: "LOAD"; payload: Expense[] };
+  | { type: "LOAD"; payload: Expense[] }
+  | { type: "CONVERT_CURRENCY"; payload: { rate: number } };
 
 interface ExpenseContextType {
   state: ExpenseState;
@@ -22,6 +23,7 @@ interface ExpenseContextType {
   getExpensesByMonth: (month: string) => Expense[];
   getExpensesByCategory: (month: string) => Record<string, number>;
   getTotalByType: (type: "expense" | "income", month: string) => number;
+  convertExpenses: (rate: number) => void;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | null>(null);
@@ -43,6 +45,13 @@ function reducer(state: ExpenseState, action: ExpenseAction): ExpenseState {
       return { items: state.items.filter((e) => e.id !== action.payload.id) };
     case "LOAD":
       return { items: action.payload };
+    case "CONVERT_CURRENCY":
+      return {
+        items: state.items.map((e) => ({
+          ...e,
+          amount: Number((e.amount * action.payload.rate).toFixed(2)),
+        })),
+      };
     default:
       return state;
   }
@@ -101,6 +110,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         getExpensesByMonth,
         getExpensesByCategory,
         getTotalByType,
+        convertExpenses: (rate: number) => dispatch({ type: "CONVERT_CURRENCY", payload: { rate } }),
       }}
     >
       {children}

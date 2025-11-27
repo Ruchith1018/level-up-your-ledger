@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,8 @@ import { motion, AnimatePresence } from "framer-motion";
 export function CategoryBudgets() {
   const { getCurrentBudget } = useBudget();
   const { getExpensesByCategory } = useExpenses();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
   const [expanded, setExpanded] = useState(false);
   const currentMonth = dayjs().format("YYYY-MM");
 
@@ -50,7 +54,7 @@ export function CategoryBudgets() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">{category}</span>
                   <span className={isOverBudget ? "text-destructive font-semibold" : "text-muted-foreground"}>
-                    ${spent.toFixed(2)} / ${limit.toFixed(2)}
+                    {currencySymbol}{spent.toFixed(2)} / {currencySymbol}{limit.toFixed(2)}
                   </span>
                 </div>
                 <Progress
@@ -59,7 +63,7 @@ export function CategoryBudgets() {
                 />
                 <div className="flex items-center justify-between text-xs">
                   <span className={isOverBudget ? "text-destructive" : "text-muted-foreground"}>
-                    {isOverBudget ? `Over by $${Math.abs(remaining).toFixed(2)}` : `$${remaining.toFixed(2)} left`}
+                    {isOverBudget ? `Over by ${currencySymbol}${Math.abs(remaining).toFixed(2)}` : `${currencySymbol}${remaining.toFixed(2)} left`}
                   </span>
                   <span className={percentage > 80 ? "text-warning" : "text-muted-foreground"}>
                     {percentage.toFixed(0)}%

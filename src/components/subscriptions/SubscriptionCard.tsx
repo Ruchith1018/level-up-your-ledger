@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 import { useTransaction } from "@/hooks/useTransaction";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { getCurrencySymbol } from "@/constants/currencies";
 import { toast } from "sonner";
 
 interface SubscriptionCardProps {
@@ -21,6 +23,8 @@ export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: S
   const { addTransaction } = useTransaction();
   const { markAsPaid, revertPayment } = useSubscriptions();
   const { deleteExpense } = useExpenses();
+  const { settings } = useSettings();
+  const currencySymbol = getCurrencySymbol(settings.currency);
 
   const daysUntilDue = dayjs(subscription.billingDate).diff(dayjs(), "day");
   const isDue = daysUntilDue <= subscription.reminderDaysBefore;
@@ -83,7 +87,7 @@ export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: S
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Amount</span>
-              <span className="font-semibold">${subscription.amount.toFixed(2)}</span>
+              <span className="font-semibold">{currencySymbol}{subscription.amount.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground flex items-center gap-1">

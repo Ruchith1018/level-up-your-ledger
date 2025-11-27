@@ -16,7 +16,7 @@ export function ExportImport() {
     setImporting(true);
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target?.result as string);
 
@@ -24,17 +24,122 @@ export function ExportImport() {
           throw new Error("Invalid backup file format");
         }
 
+        // Check for currency mismatch and convert if needed
+        const currentSettingsStr = localStorage.getItem("gft_settings_v1");
+        const currentSettings = currentSettingsStr ? JSON.parse(currentSettingsStr) : null;
+        const currentCurrency = currentSettings?.currency || "USD";
+        const importedCurrency = data.settings?.currency || "USD";
+
+        if (currentCurrency !== importedCurrency) {
+          toast.info(`Converting data from ${importedCurrency} to ${currentCurrency}...`);
+          try {
+            const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${importedCurrency}`);
+            if (response.ok) {
+              const rateData = await response.json();
+              const rate = rateData.rates[currentCurrency];
+
+              if (rate) {
+                // Convert Expenses
+                data.expenses = data.expenses.map((item: any) => ({
+                  ...item,
+                  amount: Number((item.amount * rate).toFixed(2))
+                }));
+
+                // Convert Budgets (handling both old and new formats temporarily before migration)
+                if (data.budgets) {
+                  data.budgets = data.budgets.map((b: any) => {
+                    const newB = { ...b };
+                    if (newB.total) newB.total = Number((newB.total * rate).toFixed(2));
+                    if (newB.totalBudget) newB.totalBudget = Number((newB.totalBudget * rate).toFixed(2));
+
+                    if (newB.categoryLimits && !Array.isArray(newB.categoryLimits)) {
+                      // New format (Record)
+                      const newLimits: Record<string, number> = {};
+                      Object.entries(newB.categoryLimits).forEach(([k, v]) => {
+                        newLimits[k] = Number(((v as number) * rate).toFixed(2));
+                      });
+                      newB.categoryLimits = newLimits;
+                    } else if (Array.isArray(newB.categoryLimits)) {
+                      // Old format (Array) - will be migrated later but convert values now
+                      newB.categoryLimits = newB.categoryLimits.map((cl: any) => ({
+                        ...cl,
+                        limit: Number((cl.limit * rate).toFixed(2))
+                      }));
+                    }
+                    return newB;
+                  });
+                }
+
+                // Convert Subscriptions
+                if (data.subscriptions) {
+                  data.subscriptions = data.subscriptions.map((sub: any) => ({
+                    ...sub,
+                    amount: Number((sub.amount * rate).toFixed(2))
+                  }));
+                }
+
+                // Update imported settings to match current currency
+                if (data.settings) {
+                  data.settings.currency = currentCurrency;
+                }
+
+                toast.success(`Converted successfully (Rate: ${rate})`);
+              }
+            }
+          } catch (err) {
+            console.error("Currency conversion failed during import", err);
+            toast.warning("Could not convert currency. Importing with original amounts.");
+          }
+        }
+
         // Store data
         localStorage.setItem("gft_expenses_v1", JSON.stringify({ items: data.expenses }));
-        localStorage.setItem("gft_budgets_v1", JSON.stringify({ budgets: data.budgets || [] }));
+
+        // Migrate and store budgets
+        const migratedBudgets = (data.budgets || []).map((b: any) => {
+          const newBudget = { ...b };
+
+          // Migrate totalBudget -> total
+          if (newBudget.totalBudget !== undefined && newBudget.total === undefined) {
+            newBudget.total = newBudget.totalBudget;
+            delete newBudget.totalBudget;
+          }
+
+          // Migrate categoryLimits array -> Record
+          if (Array.isArray(newBudget.categoryLimits)) {
+            const limitsRecord: Record<string, number> = {};
+            newBudget.categoryLimits.forEach((item: any) => {
+              if (item.category && item.limit !== undefined) {
+                limitsRecord[item.category] = item.limit;
+              }
+            });
+            newBudget.categoryLimits = limitsRecord;
+          }
+
+          return newBudget;
+        });
+        localStorage.setItem("gft_budgets_v1", JSON.stringify({ budgets: migratedBudgets }));
+
         localStorage.setItem("gft_subscriptions_v1", JSON.stringify({ subscriptions: data.subscriptions || [] }));
 
         if (data.gamification) {
           localStorage.setItem("gft_gamify_v1", JSON.stringify(data.gamification));
         }
+
         if (data.settings) {
-          localStorage.setItem("gft_settings_v1", JSON.stringify(data.settings));
+          const migratedSettings = {
+            userName: "",
+            hasCompletedOnboarding: false,
+            hasCompletedTutorial: false,
+            hasSeenIntro: false,
+            ...data.settings,
+          };
+          // Ensure we keep the current currency if we intended to (though we updated data.settings.currency above)
+          migratedSettings.currency = currentCurrency;
+
+          localStorage.setItem("gft_settings_v1", JSON.stringify(migratedSettings));
         }
+
         if (data.purchasedThemes) {
           localStorage.setItem("gft_purchased_themes", JSON.stringify(data.purchasedThemes));
         }
