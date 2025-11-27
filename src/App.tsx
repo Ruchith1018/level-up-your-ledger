@@ -8,9 +8,7 @@ import { BudgetProvider } from "@/contexts/BudgetContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import { GoalProvider } from "@/contexts/GoalContext";
 import Index from "./pages/Index";
-import Goals from "./pages/Goals";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Subscriptions from "./pages/Subscriptions";
@@ -31,30 +29,27 @@ const App = () => (
         <ExpenseProvider>
           <BudgetProvider>
             <SubscriptionProvider>
-              <GoalProvider>
-                <GamificationProvider>
-                  <Toaster />
-                  <Sonner position="top-center" />
-                  <BrowserRouter>
-                    <TutorialProvider>
-                      <Routes>
-                        <Route path="/intro" element={<IntroPage />} />
-                        <Route path="/" element={<Index />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/analytics" element={<Analytics />} />
-                        <Route path="/subscriptions" element={<Subscriptions />} />
-                        <Route path="/goals" element={<Goals />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/shop" element={<ThemeShopPage />} />
-                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                      <BottomNav />
-                      <TutorialOverlay />
-                    </TutorialProvider>
-                  </BrowserRouter>
-                </GamificationProvider>
-              </GoalProvider>
+              <GamificationProvider>
+                <Toaster />
+                <Sonner position="top-center" />
+                <BrowserRouter>
+                  <TutorialProvider>
+                    <Routes>
+                      <Route path="/intro" element={<IntroPage />} />
+                      <Route path="/" element={<Index />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/subscriptions" element={<Subscriptions />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/shop" element={<ThemeShopPage />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    <BottomNav />
+                    <TutorialOverlay />
+                  </TutorialProvider>
+                </BrowserRouter>
+              </GamificationProvider>
             </SubscriptionProvider>
           </BudgetProvider>
         </ExpenseProvider>
