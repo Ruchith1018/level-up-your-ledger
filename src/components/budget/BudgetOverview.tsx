@@ -47,16 +47,16 @@ export function BudgetOverview() {
   }
 
   const effectiveTotal = currentBudget.total + rolloverAmount;
-  const budgetUsed = (totalExpense / effectiveTotal) * 100;
   const remaining = effectiveTotal - totalExpense;
+  const budgetUsed = (totalExpense / effectiveTotal) * 100;
   const isOverBudget = remaining < 0;
 
   const getFontSizeClass = (amount: number, type: 'main' | 'sub') => {
     const length = amount.toFixed(2).length;
     if (type === 'main') {
-      if (length > 13) return "text-2xl sm:text-4xl";
-      if (length > 10) return "text-3xl sm:text-5xl";
-      return "text-4xl sm:text-5xl";
+      if (length > 13) return "text-xl sm:text-4xl";
+      if (length > 10) return "text-2xl sm:text-5xl";
+      return "text-3xl sm:text-5xl";
     }
     // sub cards - more aggressive scaling for 2-column grid
     if (length > 11) return "text-sm";
@@ -74,43 +74,92 @@ export function BudgetOverview() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-center relative"
+          className="relative w-full aspect-[1.586/1] rounded-xl overflow-hidden shadow-xl"
         >
-          <div className="absolute right-0 top-0">
-            <BudgetForm
-              initialData={currentBudget}
-              trigger={
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              }
+          {/* Card Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f71] to-[#004e92]">
+            {/* Decorative Lines */}
+            <div className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #ffffff 10px, #ffffff 11px)'
+              }}
             />
           </div>
-          <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-bold mb-2 break-words transition-all duration-200 ${isOverBudget ? "text-destructive" : ""}`}>
-            {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
-          </div>
-          <div className="text-muted-foreground">
-            remaining of {currencySymbol}{effectiveTotal.toFixed(2)} budget
-            {rolloverAmount > 0 && (
-              <span className="block text-xs text-emerald-500 mt-1 font-medium">
-                (Includes {currencySymbol}{rolloverAmount.toFixed(2)} rollover from last month)
-              </span>
-            )}
+
+          {/* Card Content */}
+          <div className="relative h-full p-4 sm:p-6 flex flex-col justify-between text-white">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-medium text-white/80 text-xs sm:text-sm tracking-wider">Budget Card</h3>
+                {/* Chip */}
+                <div className="mt-2 sm:mt-4 w-10 h-7 sm:w-12 sm:h-9 bg-gradient-to-br from-yellow-200 to-yellow-500 rounded-md border border-yellow-600/50 relative overflow-hidden">
+                  <div className="absolute top-1/2 left-0 w-full h-[1px] bg-yellow-700/30" />
+                  <div className="absolute top-0 left-1/2 h-full w-[1px] bg-yellow-700/30" />
+                  <div className="absolute top-1/2 left-1/2 w-3 h-3 sm:w-4 sm:h-4 border border-yellow-700/30 rounded-sm transform -translate-x-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1 sm:gap-2">
+                {/* Edit Button */}
+                <BudgetForm
+                  initialData={currentBudget}
+                  trigger={
+                    <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-8 sm:w-8 text-white hover:bg-white/20 hover:text-white">
+                      <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  }
+                />
+                {/* Contactless Icon */}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6 sm:w-8 sm:h-8 text-white/80 opacity-80" strokeWidth={2}>
+                  <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z" stroke="none" />
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1.5-3.5" />
+                  <path d="M15.5 14.5A2.5 2.5 0 0 1 13 12c0-1.38.5-2 1.5-3.5" />
+                  <path d="M5 12h14" stroke="none" />
+                  <path d="M8.4 8.4a6 6 0 0 1 7.2 0" />
+                  <path d="M5.6 5.6a10 10 0 0 1 12.8 0" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="space-y-0.5 sm:space-y-1">
+              <div className="text-[10px] sm:text-xs text-white/60 uppercase tracking-wider">Remaining Balance</div>
+              <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md`}>
+                {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
+              </div>
+            </div>
+
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-[8px] sm:text-[10px] text-white/60 uppercase tracking-widest mb-0.5">Card Holder</div>
+                  <div className="font-medium tracking-wider uppercase truncate max-w-[120px] sm:max-w-[200px] text-xs sm:text-base">
+                    {settings.userName || "User"}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[8px] sm:text-[10px] text-white/60 uppercase tracking-widest mb-0.5">Expires</div>
+                  <div className="font-medium tracking-wider text-xs sm:text-base">{dayjs().endOf('month').format('MM/YY')}</div>
+                </div>
+              </div>
+
+              {/* Progress Bar styled for card */}
+              <div className="relative w-full h-1 sm:h-1.5 bg-black/30 rounded-full overflow-hidden backdrop-blur-sm">
+                <div
+                  className={`absolute top-0 left-0 h-full transition-all duration-500 ${isOverBudget ? "bg-red-500" : "bg-emerald-400"}`}
+                  style={{ width: `${Math.min(budgetUsed, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
 
+          {/* Over Budget Warning Overlay */}
           {isOverBudget && (
-            <div className="flex items-center justify-center gap-2 text-destructive font-bold mt-2 animate-pulse">
-              <AlertTriangle className="w-5 h-5" />
-              <span>You are in debt!</span>
+            <div className="absolute top-0 left-0 w-full h-full bg-black/20 flex items-center justify-center pointer-events-none">
+              <div className="bg-destructive/90 text-white px-4 py-2 rounded-full font-bold shadow-lg animate-pulse flex items-center gap-2 backdrop-blur-md">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Over Limit!</span>
+              </div>
             </div>
           )}
-
-          <div className="mt-4">
-            <Progress
-              value={Math.min(budgetUsed, 100)}
-              className={`h-3 bg-muted ${isOverBudget ? "bg-destructive/20" : ""}`}
-            />
-          </div>
         </motion.div>
 
         <div className="grid grid-cols-2 gap-4">

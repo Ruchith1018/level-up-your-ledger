@@ -26,8 +26,8 @@ export function CategoryBudgets() {
   }
 
   const entries = Object.entries(budget.categoryLimits);
-  const displayedEntries = expanded ? entries : entries.slice(0, 3);
-  const hasMore = entries.length > 3;
+  const displayedEntries = expanded ? entries : entries.slice(0, 6);
+  const hasMore = entries.length > 6;
 
   return (
     <Card>
@@ -87,7 +87,7 @@ export function CategoryBudgets() {
               </>
             ) : (
               <>
-                Show {entries.length - 3} More <ChevronDown className="ml-1 w-3 h-3" />
+                Show {entries.length - 6} More <ChevronDown className="ml-1 w-3 h-3" />
               </>
             )}
           </Button>
