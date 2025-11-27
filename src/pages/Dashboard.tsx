@@ -7,7 +7,7 @@ import { CategoryBudgets } from "@/components/budget/CategoryBudgets";
 import { AddExpenseModal } from "@/components/transactions/AddExpenseModal";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 import { motion } from "framer-motion";
-import { Wallet, BarChart3, Calendar, Settings, Palette } from "lucide-react";
+import { Wallet, BarChart3, Calendar, Settings, Palette, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -42,6 +42,9 @@ export default function Dashboard() {
               </Button>
               <Button id="nav-subscriptions-desktop" variant="ghost" size="icon" onClick={() => navigate("/subscriptions")}>
                 <Calendar className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/goals")}>
+                <Target className="w-5 h-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => navigate("/shop")}>
                 <Palette className="w-5 h-5" />
