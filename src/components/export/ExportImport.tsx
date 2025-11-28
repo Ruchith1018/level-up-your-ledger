@@ -123,7 +123,29 @@ export function ExportImport() {
         localStorage.setItem("gft_subscriptions_v1", JSON.stringify({ subscriptions: data.subscriptions || [] }));
 
         if (data.gamification) {
-          localStorage.setItem("gft_gamify_v1", JSON.stringify(data.gamification));
+          const defaultGamificationState = {
+            level: 1,
+            xp: 0,
+            totalXP: 0,
+            coins: 0,
+            streak: 0,
+            lastCheckIn: new Date().toISOString(),
+            badges: [],
+            claimedTasks: [],
+            history: [],
+            createdAt: new Date().toISOString(),
+          };
+
+          const migratedGamification = {
+            ...defaultGamificationState,
+            ...data.gamification,
+            // Ensure arrays are actually arrays
+            badges: Array.isArray(data.gamification.badges) ? data.gamification.badges : [],
+            claimedTasks: Array.isArray(data.gamification.claimedTasks) ? data.gamification.claimedTasks : [],
+            history: Array.isArray(data.gamification.history) ? data.gamification.history : [],
+          };
+
+          localStorage.setItem("gft_gamify_v1", JSON.stringify(migratedGamification));
         }
 
         if (data.settings) {

@@ -29,10 +29,12 @@ export interface Budget {
 export interface GamificationState {
   level: number;
   xp: number;
+  totalXP: number;
   coins: number;
   streak: number;
   lastCheckIn: string;
   badges: string[];
+  claimedTasks: string[];
   history: Array<{ date: string; xpEarned: number; reason: string }>;
   createdAt: string;
 }

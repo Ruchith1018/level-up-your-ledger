@@ -21,9 +21,10 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
     // Steps:
     // 1. Dashboard -> Add Expense
-    // 2. Dashboard -> Analytics Nav Item
-    // 3. Dashboard -> Subscriptions Nav Item
-    // 4. Subscriptions -> Add Subscription
+    // 2. Dashboard -> XP Bar
+    // 3. Dashboard -> Analytics Nav Item
+    // 4. Dashboard -> Subscriptions Nav Item
+    // 5. Subscriptions -> Add Subscription
 
     useEffect(() => {
         if (isActive) {
@@ -33,7 +34,9 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
                 navigate('/');
             } else if (currentStep === 3 && location.pathname !== '/' && location.pathname !== '/dashboard') {
                 navigate('/');
-            } else if (currentStep === 4 && location.pathname !== '/subscriptions') {
+            } else if (currentStep === 4 && location.pathname !== '/' && location.pathname !== '/dashboard') {
+                navigate('/');
+            } else if (currentStep === 5 && location.pathname !== '/subscriptions') {
                 navigate('/subscriptions');
             }
         }
@@ -46,7 +49,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     };
 
     const nextStep = () => {
-        if (currentStep < 4) {
+        if (currentStep < 5) {
             setCurrentStep(prev => prev + 1);
         } else {
             endTutorial();

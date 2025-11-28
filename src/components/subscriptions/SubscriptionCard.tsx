@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import { useTransaction } from "@/hooks/useTransaction";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
-import { useExpenses } from "@/contexts/ExpenseContext";
+
 import { useSettings } from "@/contexts/SettingsContext";
 import { getCurrencySymbol } from "@/constants/currencies";
 import { toast } from "sonner";
@@ -20,9 +20,8 @@ interface SubscriptionCardProps {
 }
 
 export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: SubscriptionCardProps) {
-  const { addTransaction } = useTransaction();
+  const { addTransaction, deleteTransaction } = useTransaction();
   const { markAsPaid, revertPayment } = useSubscriptions();
-  const { deleteExpense } = useExpenses();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
 
@@ -51,7 +50,7 @@ export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: S
 
   const handleUndo = () => {
     if (subscription.lastPaymentTransactionId) {
-      deleteExpense(subscription.lastPaymentTransactionId);
+      deleteTransaction(subscription.lastPaymentTransactionId);
       revertPayment(subscription.id);
       toast.success("Payment reverted");
     }

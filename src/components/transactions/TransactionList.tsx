@@ -11,8 +11,11 @@ import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
+import { useTransaction } from "@/hooks/useTransaction";
+
 export function TransactionList() {
-  const { state, deleteExpense } = useExpenses();
+  const { state } = useExpenses();
+  const { deleteTransaction } = useTransaction();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
   const recentTransactions = state.items.slice(0, 10);
@@ -117,7 +120,7 @@ export function TransactionList() {
                           className="h-8"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteExpense(transaction.id);
+                            deleteTransaction(transaction.id);
                           }}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
