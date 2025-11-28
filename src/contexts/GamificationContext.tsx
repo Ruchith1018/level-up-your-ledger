@@ -278,17 +278,28 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       const currentClaimedTasks = prev.claimedTasks || [];
       if (currentClaimedTasks.includes(taskId)) return prev;
 
+      let coinReward = 0;
+      if (taskId.includes("daily_")) coinReward = 1;
+      else if (taskId.includes("weekly_")) coinReward = 3;
+      else if (taskId.includes("monthly_")) coinReward = 5;
+
       let newState = {
         ...initialState,
         ...prev,
         claimedTasks: [...currentClaimedTasks, taskId],
+        coins: (prev.coins || 0) + coinReward,
       };
       newState = addXP(newState, reward, "Task Completed");
       return newState;
     });
 
     if (!state.claimedTasks?.includes(taskId)) {
-      toast.success(`+${reward} XP`, { description: "Task Completed" });
+      let coinReward = 0;
+      if (taskId.includes("daily_")) coinReward = 1;
+      else if (taskId.includes("weekly_")) coinReward = 3;
+      else if (taskId.includes("monthly_")) coinReward = 5;
+
+      toast.success(`+${reward} XP & +${coinReward} Coins`, { description: "Task Completed" });
     }
   };
 
