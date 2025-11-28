@@ -61,7 +61,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-4"
           >
-            <h2 className="text-2xl font-bold">Welcome, {settings.userName}! 👋</h2>
+            <h2 className="text-2xl font-bold">Welcome, {settings.userName}!</h2>
             <p className="text-sm text-muted-foreground">Let's track your finances today</p>
           </motion.div>
         )}

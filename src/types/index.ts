@@ -37,21 +37,15 @@ export interface GamificationState {
   badges: string[];
   claimedTasks: string[];
   history: Array<{ date: string; xpEarned: number; reason: string }>;
+  redemptionHistory: Array<{
+    id: string;
+    date: string;
+    amount: number;
+    coins: number;
+    upiId: string;
+    status: 'pending' | 'completed' | 'failed';
+  }>;
   createdAt: string;
-}
-
-export interface AppSettings {
-  currency: string;
-  locale: string;
-  theme: "light" | "dark" | "system";
-  categories: string[];
-  paymentMethods: string[];
-  premiumTheme?: string;
-  customAvatar?: string;
-  userName?: string;
-  hasCompletedOnboarding?: boolean;
-  hasCompletedTutorial?: boolean;
-  hasSeenIntro?: boolean;
 }
 
 export interface Subscription {
@@ -80,4 +74,18 @@ export interface Theme {
     accent: string;
   };
   preview: string;
+}
+
+export interface AppSettings {
+  currency: string;
+  locale: string;
+  theme: string;
+  cardTheme: string;
+  categories: string[];
+  paymentMethods: string[];
+  premiumTheme?: string;
+  userName?: string;
+  hasCompletedOnboarding?: boolean;
+  hasCompletedTutorial?: boolean;
+  hasSeenIntro?: boolean;
 }

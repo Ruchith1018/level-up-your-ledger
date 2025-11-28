@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { AppSettings } from "@/types";
+import { THEMES } from "@/constants/themes";
 
 interface SettingsContextType {
   settings: AppSettings;
@@ -17,6 +18,7 @@ const defaultSettings: AppSettings = {
   currency: "USD",
   locale: "en-US",
   theme: "system",
+  cardTheme: "default",
   categories: [
     "Food & Dining",
     "Transportation",
@@ -47,11 +49,26 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         ? "dark"
         : "light";
       root.classList.add(systemTheme);
-      return;
+    } else {
+      root.classList.add(settings.theme);
     }
 
-    root.classList.add(settings.theme);
-  }, [settings.theme]);
+    // Apply Premium Theme Colors
+    if (settings.premiumTheme && settings.premiumTheme !== "default") {
+      const theme = THEMES.find(t => t.id === settings.premiumTheme);
+      if (theme) {
+        root.style.setProperty("--primary", theme.colors.primary);
+        root.style.setProperty("--secondary", theme.colors.secondary);
+        root.style.setProperty("--accent", theme.colors.accent);
+      }
+    } else {
+      // Revert to default
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--secondary");
+      root.style.removeProperty("--accent");
+    }
+
+  }, [settings.theme, settings.premiumTheme]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings({ ...settings, ...newSettings });

@@ -53,7 +53,7 @@ All colors MUST be HSL.
     --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(262 83% 58%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(158 64% 52%));
     --gradient-gold: linear-gradient(135deg, hsl(45 93% 47%), hsl(38 92% 50%));
-    
+
     --shadow-soft: 0 2px 8px -2px hsl(222 47% 11% / 0.1);
     --shadow-glow: 0 0 24px hsl(221 83% 53% / 0.2);
 
@@ -114,7 +114,7 @@ All colors MUST be HSL.
     --border: 217 33% 18%;
     --input: 217 33% 18%;
     --ring: 221 83% 53%;
-    
+
     --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
     --shadow-glow: 0 0 24px hsl(221 83% 53% / 0.3);
     --sidebar-background: 240 5.9% 10%;
@@ -141,10 +141,52 @@ All colors MUST be HSL.
     user-select: none;
   }
 
-  input, textarea {
+  input,
+  textarea {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
+  }
+}
+
+@layer utilities {
+  .card-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-shine::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(115deg,
+        transparent 0%,
+        transparent 40%,
+        rgba(255, 255, 255, 0.4) 45%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 55%,
+        transparent 100%);
+    transform: translateX(-150%) skewX(-20deg);
+    animation: shine-flow 5s infinite ease-in-out;
+    pointer-events: none;
+    z-index: 10;
+  }
+}
+
+@keyframes shine-flow {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+
+  20% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+
+  100% {
+    transform: translateX(150%) skewX(-20deg);
   }
 }

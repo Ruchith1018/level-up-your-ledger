@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Download, Upload, FileJson, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { useExportData } from "@/hooks/useExportData";
+import { decryptData } from "@/utils/security";
 
 export function ExportImport() {
   const { exportJSON, exportCSV } = useExportData();
@@ -18,7 +19,14 @@ export function ExportImport() {
 
     reader.onload = async (e) => {
       try {
-        const data = JSON.parse(e.target?.result as string);
+        const fileContent = e.target?.result as string;
+        let data;
+
+        try {
+          data = decryptData(fileContent);
+        } catch (error) {
+          throw new Error("Invalid encrypted file or wrong key");
+        }
 
         if (!data.version || !data.expenses) {
           throw new Error("Invalid backup file format");
@@ -167,6 +175,10 @@ export function ExportImport() {
           localStorage.setItem("gft_purchased_themes", JSON.stringify(data.purchasedThemes));
         }
 
+        if (data.purchasedCards) {
+          localStorage.setItem("gft_purchased_card_themes", JSON.stringify(data.purchasedCards));
+        }
+
         toast.success("Data imported successfully! Refreshing...");
         setTimeout(() => window.location.reload(), 1500);
       } catch (error) {
@@ -192,7 +204,7 @@ export function ExportImport() {
           <div className="flex gap-2">
             <Button onClick={exportJSON} className="flex-1">
               <FileJson className="w-4 h-4 mr-2" />
-              Export JSON
+              Export Backup
             </Button>
             <Button onClick={exportCSV} variant="outline" className="flex-1">
               <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -206,7 +218,7 @@ export function ExportImport() {
           <div className="relative">
             <input
               type="file"
-              accept=".json"
+              accept=".enc"
               onChange={handleImport}
               className="hidden"
               id="import-file"
@@ -216,7 +228,7 @@ export function ExportImport() {
               <Button asChild variant="outline" className="w-full cursor-pointer">
                 <span>
                   <Upload className="w-4 h-4 mr-2" />
-                  {importing ? "Importing..." : "Import from JSON"}
+                  {importing ? "Importing..." : "Import from Backup"}
                 </span>
               </Button>
             </label>

@@ -24,6 +24,7 @@ import { Sparkles, Target, Upload, Coins } from "lucide-react";
 import { CURRENCIES } from "@/constants/currencies";
 
 import { useTutorial } from "@/contexts/TutorialContext";
+import { decryptData } from "@/utils/security";
 
 export function OnboardingDialog() {
     const { settings, updateSettings } = useSettings();
@@ -93,13 +94,23 @@ export function OnboardingDialog() {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const data = JSON.parse(e.target?.result as string);
+                const fileContent = e.target?.result as string;
+                let data;
+
+                try {
+                    data = decryptData(fileContent);
+                } catch (error) {
+                    throw new Error("Invalid encrypted file or wrong key");
+                }
+
                 if (!data.version || !data.expenses) throw new Error("Invalid file");
 
                 localStorage.setItem("gft_expenses_v1", JSON.stringify({ items: data.expenses }));
                 localStorage.setItem("gft_budgets_v1", JSON.stringify({ budgets: data.budgets || [] }));
                 localStorage.setItem("gft_subscriptions_v1", JSON.stringify({ subscriptions: data.subscriptions || [] }));
                 if (data.gamification) localStorage.setItem("gft_gamify_v1", JSON.stringify(data.gamification));
+                if (data.purchasedThemes) localStorage.setItem("gft_purchased_themes", JSON.stringify(data.purchasedThemes));
+                if (data.purchasedCards) localStorage.setItem("gft_purchased_card_themes", JSON.stringify(data.purchasedCards));
 
                 const importedSettings = data.settings || {};
                 const newSettings = {
@@ -113,7 +124,7 @@ export function OnboardingDialog() {
                 toast.success("Data restored! Reloading...");
                 setTimeout(() => window.location.reload(), 1500);
             } catch (err) {
-                toast.error("Import failed");
+                toast.error("Import failed: Invalid encrypted file");
             }
         };
         reader.readAsText(file);
@@ -203,7 +214,7 @@ export function OnboardingDialog() {
                             <div className="relative">
                                 <input
                                     type="file"
-                                    accept=".json"
+                                    accept=".enc"
                                     onChange={handleImport}
                                     className="hidden"
                                     id="onboarding-import"
@@ -212,7 +223,7 @@ export function OnboardingDialog() {
                                     <Button asChild variant="outline" className="w-full cursor-pointer h-24 flex flex-col gap-2 border-dashed">
                                         <span>
                                             <Upload className="w-8 h-8 text-muted-foreground" />
-                                            <span className="text-sm font-medium">Click to Upload Backup JSON</span>
+                                            <span className="text-sm font-medium">Click to Upload Backup (.enc)</span>
                                         </span>
                                     </Button>
                                 </label>

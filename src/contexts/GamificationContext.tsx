@@ -17,6 +17,7 @@ interface GamificationContextType {
   spendCoins: (amount: number) => boolean;
   claimTaskReward: (taskId: string, reward: number) => void;
   checkBadges: (transactions: any[], budgetState: any) => void;
+  addRedemptionLog: (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => void;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -32,6 +33,7 @@ const initialState: GamificationState = {
   badges: [],
   claimedTasks: [],
   history: [],
+  redemptionHistory: [],
   createdAt: new Date().toISOString(),
 };
 
@@ -311,6 +313,20 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  const addRedemptionLog = (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => {
+    setStoredState(prev => ({
+      ...prev,
+      redemptionHistory: [
+        {
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          ...log
+        },
+        ...(prev.redemptionHistory || [])
+      ]
+    }));
+  };
+
   return (
     <GamificationContext.Provider
       value={{
@@ -323,6 +339,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         spendCoins,
         claimTaskReward,
         checkBadges,
+        addRedemptionLog,
       }}
     >
       {children}

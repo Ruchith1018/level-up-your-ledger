@@ -5,6 +5,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import { encryptData } from "@/utils/security";
 
 export function useExportData() {
     const { state: expenseState } = useExpenses();
@@ -29,19 +30,21 @@ export function useExportData() {
                 hasSeenIntro: settings.hasSeenIntro || false,
             },
             purchasedThemes: JSON.parse(localStorage.getItem("gft_purchased_themes") || "[]"),
+            purchasedCards: JSON.parse(localStorage.getItem("gft_purchased_card_themes") || "[]"),
         };
 
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const encryptedData = encryptData(data);
+        const blob = new Blob([encryptedData], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `financequest-backup-${dayjs().format("YYYY-MM-DD")}.json`;
+        a.download = `financequest-backup-${dayjs().format("YYYY-MM-DD")}.enc`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        toast.success("Data exported successfully!");
+        toast.success("Data exported successfully (Encrypted)!");
     };
 
     const exportCSV = () => {

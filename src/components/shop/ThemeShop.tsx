@@ -6,51 +6,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { Coins, Check } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-
-const THEMES = [
-  {
-    id: "default",
-    name: "Default Theme",
-    description: "The original look and feel",
-    price: 0,
-    colors: { primary: "hsl(221 83% 53%)", secondary: "hsl(142 76% 36%)", accent: "hsl(262 83% 58%)" },
-  },
-  {
-    id: "ocean",
-    name: "Ocean Breeze",
-    description: "Calm blue tones inspired by the sea",
-    price: 500,
-    colors: { primary: "hsl(199 89% 48%)", secondary: "hsl(180 74% 47%)", accent: "hsl(173 80% 40%)" },
-  },
-  {
-    id: "sunset",
-    name: "Sunset Glow",
-    description: "Warm oranges and purples",
-    price: 500,
-    colors: { primary: "hsl(24 88% 58%)", secondary: "hsl(330 81% 60%)", accent: "hsl(280 81% 66%)" },
-  },
-  {
-    id: "forest",
-    name: "Forest Green",
-    description: "Natural earthy tones",
-    price: 500,
-    colors: { primary: "hsl(142 51% 45%)", secondary: "hsl(88 50% 53%)", accent: "hsl(54 89% 56%)" },
-  },
-  {
-    id: "royal",
-    name: "Royal Purple",
-    description: "Luxurious purple and gold",
-    price: 1000,
-    colors: { primary: "hsl(271 81% 56%)", secondary: "hsl(280 87% 65%)", accent: "hsl(45 93% 47%)" },
-  },
-  {
-    id: "cyber",
-    name: "Cyberpunk",
-    description: "Neon pink and cyan",
-    price: 1000,
-    colors: { primary: "hsl(330 81% 60%)", secondary: "hsl(180 100% 50%)", accent: "hsl(280 100% 70%)" },
-  },
-];
+import { THEMES } from "@/constants/themes";
 
 export function ThemeShop() {
   const { state: gamifyState, spendCoins } = useGamification();
@@ -78,22 +34,11 @@ export function ThemeShop() {
   const applyTheme = (theme: typeof THEMES[0]) => {
     if (theme.id === "default") {
       updateSettings({ premiumTheme: undefined });
-      const root = document.documentElement;
-      root.style.removeProperty("--primary");
-      root.style.removeProperty("--secondary");
-      root.style.removeProperty("--accent");
       toast.success("Default theme applied!");
       return;
     }
 
     updateSettings({ premiumTheme: theme.id });
-
-    // Apply theme colors to CSS variables
-    const root = document.documentElement;
-    root.style.setProperty("--primary", theme.colors.primary);
-    root.style.setProperty("--secondary", theme.colors.secondary);
-    root.style.setProperty("--accent", theme.colors.accent);
-
     toast.success(`${theme.name} theme applied!`);
   };
 
@@ -125,7 +70,7 @@ export function ThemeShop() {
                   <div
                     className="h-24 relative"
                     style={{
-                      background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary}, ${theme.colors.accent})`,
+                      background: `linear-gradient(135deg, hsl(${theme.colors.primary}), hsl(${theme.colors.secondary}), hsl(${theme.colors.accent}))`,
                     }}
                   >
                     {isActive && (
