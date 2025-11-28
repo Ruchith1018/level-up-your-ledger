@@ -64,7 +64,7 @@ export function CategoryPieChart() {
             <div className={`${getFontSizeClass(totalExpense)} font-bold transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(0)}</div>
             <div className="text-xs text-muted-foreground">Total</div>
           </div>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <PieChart>
               <Pie
                 data={data}
