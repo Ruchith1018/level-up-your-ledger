@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { useSettings } from "@/contexts/SettingsContext";
 import { toast } from "sonner";
 import { useState } from "react";
+import { GamificationStats } from "@/components/gamification/GamificationStats";
 
 import {
   AlertDialog,
@@ -162,13 +163,21 @@ export default function Settings() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <ExportImport />
+          <GamificationStats />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
+        >
+          <ExportImport />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
         >
           <Card className="border-destructive/50">
             <CardHeader>

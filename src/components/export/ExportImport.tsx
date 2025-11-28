@@ -128,6 +128,7 @@ export function ExportImport() {
             xp: 0,
             totalXP: 0,
             coins: 0,
+            totalCoins: 0,
             streak: 0,
             lastCheckIn: new Date().toISOString(),
             badges: [],

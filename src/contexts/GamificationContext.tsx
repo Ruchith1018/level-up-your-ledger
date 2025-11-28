@@ -26,6 +26,7 @@ const initialState: GamificationState = {
   xp: 0,
   totalXP: 0,
   coins: 0,
+  totalCoins: 0,
   streak: 0,
   lastCheckIn: new Date().toISOString(),
   badges: [],
@@ -41,7 +42,12 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   );
 
   // Ensure state has all required fields (migration for older data)
-  const state = { ...initialState, ...storedState };
+  const state = {
+    ...initialState,
+    ...storedState,
+    // Migration: if totalCoins is undefined, set it to current coins (best effort)
+    totalCoins: storedState.totalCoins ?? storedState.coins ?? 0
+  };
 
   // Level Up Listener
   const prevLevelRef = useRef(state.level);
@@ -87,6 +93,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     setStoredState(prev => ({
       ...prev,
       coins: prev.coins + amount,
+      totalCoins: (prev.totalCoins || 0) + amount,
     }));
     toast.success(`+${amount} Coin${amount !== 1 ? 's' : ''}`, {
       className: "text-yellow-500 border-yellow-500",
@@ -288,6 +295,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         ...prev,
         claimedTasks: [...currentClaimedTasks, taskId],
         coins: (prev.coins || 0) + coinReward,
+        totalCoins: (prev.totalCoins || 0) + coinReward,
       };
       newState = addXP(newState, reward, "Task Completed");
       return newState;

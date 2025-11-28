@@ -29,7 +29,9 @@ export function addXP(
   while (updatedUser.xp >= xpThreshold(updatedUser.level)) {
     updatedUser.xp -= xpThreshold(updatedUser.level);
     updatedUser.level += 1;
-    updatedUser.coins += Math.floor(updatedUser.level * 10);
+    const coinReward = Math.floor(updatedUser.level * 10);
+    updatedUser.coins += coinReward;
+    updatedUser.totalCoins = (updatedUser.totalCoins || 0) + coinReward;
   }
 
   return updatedUser;
@@ -190,7 +192,162 @@ export function checkNoSpendWeek(transactions: any[], endDate: Date): boolean {
 
 export function getBadgeProgress(badgeId: string, transactions: any[], claimedTasks?: string[], currentStreak: number = 0, budgetState?: any): { current: number; target: number; unit: string } {
   switch (badgeId) {
-    // ... (existing cases)
+    // Transaction Count Badges
+    case BADGES.FIRST_STEPS.id:
+      return { current: Math.min(transactions.length, 1), target: 1, unit: 'transaction' };
+    case BADGES.LOG_10.id:
+      return { current: Math.min(transactions.length, 10), target: 10, unit: 'transactions' };
+    case BADGES.LOG_50.id:
+      return { current: Math.min(transactions.length, 50), target: 50, unit: 'transactions' };
+    case BADGES.TRACKER_ELITE.id:
+      return { current: Math.min(transactions.length, 100), target: 100, unit: 'transactions' };
+    case BADGES.LOG_500.id:
+      return { current: Math.min(transactions.length, 500), target: 500, unit: 'transactions' };
+    case BADGES.FINANCE_GURU.id:
+      return { current: Math.min(transactions.length, 1000), target: 1000, unit: 'transactions' };
+
+    // Income Badges
+    case BADGES.INCOME_LOGGER.id: {
+      const incomeCount = transactions.filter((t: any) => t.type === 'income').length;
+      return { current: Math.min(incomeCount, 10), target: 10, unit: 'income transactions' };
+    }
+    case BADGES.INCOME_STREAMER.id: {
+      const sources = new Set(transactions.filter((t: any) => t.type === 'income').map((t: any) => t.category)).size;
+      return { current: Math.min(sources, 3), target: 3, unit: 'income sources' };
+    }
+    case BADGES.SALARY_MASTER.id: {
+      const hasSalary = transactions.some((t: any) => t.type === 'income' && t.category.toLowerCase().includes('salary'));
+      return { current: hasSalary ? 1 : 0, target: 1, unit: 'goal' };
+    }
+    case BADGES.SIDE_HUSTLER.id: {
+      const hasFreelance = transactions.some((t: any) => t.type === 'income' && (t.category.toLowerCase().includes('freelance') || t.category.toLowerCase().includes('side')));
+      return { current: hasFreelance ? 1 : 0, target: 1, unit: 'goal' };
+    }
+
+    // Savings & Net Worth Badges
+    case BADGES.SAVER_PRO.id: {
+      const totalIncome = transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const totalExpenses = transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+      return { current: Math.min(Math.max(savingsRate, 0), 20), target: 20, unit: '% savings' };
+    }
+    case BADGES.POSITIVE_NET_WORTH.id: {
+      const totalIncome = transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const totalExpenses = transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const isPositive = totalIncome > totalExpenses;
+      return { current: isPositive ? 1 : 0, target: 1, unit: 'goal' };
+    }
+    case BADGES.UPWARD_GROWTH.id: {
+      // Track 3 consecutive months of net worth growth - requires historical tracking
+      // For now, show as achievable goal
+      const totalIncome = transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const totalExpenses = transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const hasPositiveGrowth = totalIncome > totalExpenses;
+      return { current: hasPositiveGrowth ? 1 : 0, target: 3, unit: 'months growth' };
+    }
+
+    // Streak Badges (login streak, not task streak)
+    case BADGES.WEEK_WARRIOR.id:
+      return { current: Math.min(currentStreak || 0, 7), target: 7, unit: 'days logged in' };
+    case BADGES.MONTH_MASTER.id:
+      return { current: Math.min(currentStreak || 0, 30), target: 30, unit: 'days logged in' };
+
+    // No Spend Badges
+    case BADGES.NO_SPEND_DAY.id: {
+      // Check if there are any expenses today
+      const today = new Date().toISOString().split('T')[0];
+      const todayExpenses = transactions.filter((t: any) =>
+        t.type === 'expense' && t.date && t.date.startsWith(today)
+      );
+      const noSpendToday = todayExpenses.length === 0;
+      return { current: noSpendToday ? 1 : 0, target: 1, unit: 'no-spend day' };
+    }
+    case BADGES.NO_SPEND_WEEK.id: {
+      // Check for 7 consecutive days without expenses
+      const today = new Date();
+      let consecutiveDays = 0;
+
+      for (let i = 0; i < 14; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        const hasExpenses = transactions.some((t: any) =>
+          t.type === 'expense' && t.date && t.date.startsWith(dateStr)
+        );
+
+        if (!hasExpenses) {
+          consecutiveDays++;
+        } else if (consecutiveDays < 7) {
+          consecutiveDays = 0;
+        }
+
+        if (consecutiveDays >= 7) break;
+      }
+
+      return { current: Math.min(consecutiveDays, 7), target: 7, unit: 'consecutive no-spend days' };
+    }
+
+    // Budget Badges (requires budget state)
+    case BADGES.BUDGET_NINJA.id:
+    case BADGES.BUDGET_BEGINNER.id: {
+      // Check current month budget status
+      if (!budgetState || !budgetState.budgets || budgetState.budgets.length === 0) {
+        return { current: 0, target: 1, unit: 'month under budget' };
+      }
+
+      const currentMonth = new Date().toISOString().substring(0, 7);
+      const currentBudget = budgetState.budgets.find((b: any) => b.month === currentMonth);
+
+      if (!currentBudget) {
+        return { current: 0, target: 1, unit: 'month under budget' };
+      }
+
+      const monthExpenses = transactions
+        .filter((t: any) => t.type === 'expense' && t.date && t.date.startsWith(currentMonth))
+        .reduce((sum: number, t: any) => sum + t.amount, 0);
+
+      const underBudget = monthExpenses <= currentBudget.total;
+      return { current: underBudget ? 1 : 0, target: 1, unit: 'month under budget' };
+    }
+    case BADGES.BUDGET_PRO.id: {
+      // Track months under budget - simplified to show target
+      return { current: 0, target: 3, unit: 'months under budget' };
+    }
+    case BADGES.BUDGET_CHAMPION.id: {
+      return { current: 0, target: 6, unit: 'months under budget' };
+    }
+    case BADGES.YEAR_OF_DISCIPLINE.id: {
+      return { current: 0, target: 12, unit: 'months under budget' };
+    }
+
+    // Income Growth Badge
+    case BADGES.LEVEL_UP_EARNER.id: {
+      // Check if income is increasing - simplified version
+      const totalIncome = transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0);
+      const hasIncome = totalIncome > 0;
+      return { current: hasIncome ? 1 : 0, target: 3, unit: 'months income growth' };
+    }
+    // Daily Task Streak Badges
+    case BADGES.DAILY_STARTER.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 1) : 0, target: 1, unit: 'day streak' };
+    case BADGES.DAILY_DUO.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 2) : 0, target: 2, unit: 'days streak' };
+    case BADGES.DAILY_STREAK_3.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 3) : 0, target: 3, unit: 'days streak' };
+    case BADGES.DAILY_STREAK_7.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 7) : 0, target: 7, unit: 'days streak' };
+    case BADGES.DAILY_STREAK_14.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 14) : 0, target: 14, unit: 'days streak' };
+    case BADGES.DAILY_STREAK_30.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 30) : 0, target: 30, unit: 'days streak' };
+    case BADGES.DAILY_STREAK_50.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 50) : 0, target: 50, unit: 'days streak' };
+    case BADGES.DAILY_STREAK_100.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 100) : 0, target: 100, unit: 'days streak' };
+    case BADGES.DAILY_MACHINE.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 150) : 0, target: 150, unit: 'days streak' };
+    case BADGES.DAILY_LEGEND.id:
+      return { current: claimedTasks ? Math.min(calculateDailyTaskStreak(claimedTasks), 365) : 0, target: 365, unit: 'days streak' };
 
     // Weekly Task Streak Badges
     case BADGES.WEEKLY_STARTER.id:

@@ -31,6 +31,7 @@ export interface GamificationState {
   xp: number;
   totalXP: number;
   coins: number;
+  totalCoins: number;
   streak: number;
   lastCheckIn: string;
   badges: string[];
