@@ -26,7 +26,7 @@ export function BottomNav() {
             id: "nav-home-mobile"
         },
         {
-            label: "Shop",
+            label: "Redeem",
             icon: Palette,
             path: "/shop",
             id: "nav-shop-mobile"
