@@ -21,43 +21,50 @@ import NotFound from "./pages/NotFound";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
+import { AuthProvider } from "@/contexts/AuthContext";
+import AuthPage from "./pages/AuthPage";
+import ReferralsPage from "./pages/ReferralsPage";
 
 const queryClient = new QueryClient();
 
 const App = () => (
     <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-            <SettingsProvider>
-                <ExpenseProvider>
-                    <BudgetProvider>
-                        <SubscriptionProvider>
-                            <GamificationProvider>
-                                <Toaster />
-                                <Sonner position="top-center" />
-                                <BrowserRouter>
-                                    <TutorialProvider>
-                                        <Routes>
-                                            <Route path="/intro" element={<IntroPage />} />
-                                            <Route path="/" element={<Index />} />
-                                            <Route path="/dashboard" element={<Dashboard />} />
-                                            <Route path="/analytics" element={<Analytics />} />
-                                            <Route path="/subscriptions" element={<Subscriptions />} />
-                                            <Route path="/settings" element={<Settings />} />
-                                            <Route path="/shop" element={<ThemeShopPage />} />
-                                            <Route path="/gamification" element={<Gamification />} />
-                                            <Route path="/gamification/badges" element={<BadgesPage />} />
-                                            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                                            <Route path="*" element={<NotFound />} />
-                                        </Routes>
-                                        <BottomNav />
-                                        <TutorialOverlay />
-                                    </TutorialProvider>
-                                </BrowserRouter>
-                            </GamificationProvider>
-                        </SubscriptionProvider>
-                    </BudgetProvider>
-                </ExpenseProvider>
-            </SettingsProvider>
+            <AuthProvider>
+                <SettingsProvider>
+                    <ExpenseProvider>
+                        <BudgetProvider>
+                            <SubscriptionProvider>
+                                <GamificationProvider>
+                                    <Toaster />
+                                    <Sonner position="top-center" />
+                                    <BrowserRouter>
+                                        <TutorialProvider>
+                                            <Routes>
+                                                <Route path="/intro" element={<IntroPage />} />
+                                                <Route path="/auth" element={<AuthPage />} />
+                                                <Route path="/" element={<Index />} />
+                                                <Route path="/dashboard" element={<Dashboard />} />
+                                                <Route path="/analytics" element={<Analytics />} />
+                                                <Route path="/subscriptions" element={<Subscriptions />} />
+                                                <Route path="/settings" element={<Settings />} />
+                                                <Route path="/referrals" element={<ReferralsPage />} />
+                                                <Route path="/shop" element={<ThemeShopPage />} />
+                                                <Route path="/gamification" element={<Gamification />} />
+                                                <Route path="/gamification/badges" element={<BadgesPage />} />
+                                                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                                                <Route path="*" element={<NotFound />} />
+                                            </Routes>
+                                            <BottomNav />
+                                            <TutorialOverlay />
+                                        </TutorialProvider>
+                                    </BrowserRouter>
+                                </GamificationProvider>
+                            </SubscriptionProvider>
+                        </BudgetProvider>
+                    </ExpenseProvider>
+                </SettingsProvider>
+            </AuthProvider>
         </TooltipProvider>
     </QueryClientProvider>
 );

@@ -51,7 +51,7 @@ export default function IntroPage() {
 
     const handleGetStarted = () => {
         updateSettings({ hasSeenIntro: true });
-        navigate("/");
+        navigate("/auth");
     };
 
     const isLastSlide = currentSlide === slides.length - 1;

@@ -6,6 +6,8 @@ import { BudgetOverview } from "@/components/budget/BudgetOverview";
 import { CategoryBudgets } from "@/components/budget/CategoryBudgets";
 import { AddExpenseModal } from "@/components/transactions/AddExpenseModal";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
+import { SurplusDialog } from "@/components/budget/SurplusDialog";
+import { SavingsCard } from "@/components/savings/SavingsCard";
 import { motion } from "framer-motion";
 import { Wallet, BarChart3, Calendar, Settings, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,7 +70,10 @@ export default function Dashboard() {
         <XPBar />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BudgetOverview />
+          <div className="space-y-6">
+            <BudgetOverview />
+            <SavingsCard />
+          </div>
           <CategoryBudgets />
         </div>
 
@@ -82,6 +87,7 @@ export default function Dashboard() {
 
       <AddExpenseModal />
       <OnboardingDialog />
+      <SurplusDialog />
     </div>
   );
 }

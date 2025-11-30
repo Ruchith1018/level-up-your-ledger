@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle, Trash2, AlertCircle, Pencil } from "lucide-react";
 import dayjs from "dayjs";
 
-import { Checkbox } from "@/components/ui/checkbox";
+
 
 interface CategoryLimit {
     category: string;
@@ -38,7 +38,6 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
     const [categoryLimits, setCategoryLimits] = useState<CategoryLimit[]>([
         { category: "", limit: 0 },
     ]);
-    const [rollover, setRollover] = useState(true);
     const [errors, setErrors] = useState<string[]>([]);
 
     const currentMonth = dayjs().format("YYYY-MM");
@@ -54,12 +53,10 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                 })
             );
             setCategoryLimits(limits.length > 0 ? limits : [{ category: "", limit: 0 }]);
-            setRollover(initialData.rollover ?? true);
         } else if (open && !initialData) {
             // Reset form when opening in create mode
             setTotalBudget("");
             setCategoryLimits([{ category: "", limit: 0 }]);
-            setRollover(true);
             setErrors([]);
         }
     }, [open, initialData]);
@@ -151,7 +148,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                 ...initialData,
                 total,
                 categoryLimits: limits,
-                rollover,
+                rollover: false, // Default to false as it is deprecated
             });
         } else {
             addBudget({
@@ -159,7 +156,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                 month: currentMonth,
                 total,
                 categoryLimits: limits,
-                rollover,
+                rollover: false, // Default to false as it is deprecated
             });
         }
 
@@ -365,25 +362,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
                         </div>
                     )}
 
-                    {/* Rollover Checkbox */}
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="rollover"
-                            checked={rollover}
-                            onCheckedChange={(checked) => setRollover(checked as boolean)}
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                            <Label
-                                htmlFor="rollover"
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                                Rollover unused budget
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                                Add remaining budget from this month to the next month
-                            </p>
-                        </div>
-                    </div>
+
 
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-4 border-t">

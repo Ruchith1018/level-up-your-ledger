@@ -29,7 +29,7 @@ export function BudgetOverview() {
   const previousBudget = getBudgetByMonth(previousMonth);
   let rolloverAmount = 0;
 
-  if (previousBudget && previousBudget.rollover) {
+  if (previousBudget && previousBudget.surplusAction === 'rollover') {
     const previousExpenses = getTotalByType("expense", previousMonth);
     rolloverAmount = Math.max(0, previousBudget.total - previousExpenses);
   }

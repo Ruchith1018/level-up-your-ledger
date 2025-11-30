@@ -22,7 +22,8 @@ export interface Budget {
   month: string;
   total: number;
   categoryLimits: Record<string, number>;
-  rollover: boolean;
+  rollover: boolean; // Deprecated in favor of surplusAction, kept for backward compatibility
+  surplusAction?: 'rollover' | 'saved' | 'ignored';
   createdAt: string;
 }
 

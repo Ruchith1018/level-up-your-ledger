@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Moon, Sun, Laptop, User } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Laptop, User, LogOut, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useState } from "react";
 import { GamificationStats } from "@/components/gamification/GamificationStats";
@@ -31,7 +33,26 @@ export default function Settings() {
   const [name, setName] = useState(settings.userName || "");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showLogoutExportDialog, setShowLogoutExportDialog] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { exportJSON } = useExportData();
+  const { user, signOut } = useAuth();
+
+  const handleLogoutClick = () => {
+    setShowLogoutExportDialog(true);
+  };
+
+  const handleLogoutExportAndProceed = () => {
+    exportJSON();
+    setShowLogoutExportDialog(false);
+    setTimeout(() => setShowLogoutConfirm(true), 1000);
+  };
+
+  const performLogout = async () => {
+    await signOut();
+    localStorage.clear();
+    window.location.href = "/intro";
+  };
 
   const handleNameUpdate = () => {
     if (name.trim()) {
@@ -46,10 +67,25 @@ export default function Settings() {
     setTimeout(() => setShowConfirmDelete(true), 1000); // Small delay for UX
   };
 
-  const handleDeleteAccount = () => {
-    localStorage.clear();
-    toast.success("Account deleted. Resetting app...");
-    setTimeout(() => (window.location.href = "/"), 1500);
+  const handleDeleteAccount = async () => {
+    try {
+      // Attempt to delete from Supabase
+      const { error } = await supabase.rpc('delete_user');
+
+      if (error) {
+        console.error("Error deleting account:", error);
+        toast.error("Failed to delete server account. Please run the SQL setup.");
+        return;
+      }
+
+      // If successful, clear local data
+      localStorage.clear();
+      toast.success("Account deleted. Resetting app...");
+      setTimeout(() => (window.location.href = "/"), 1500);
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred.");
+    }
   };
 
   return (
@@ -96,10 +132,80 @@ export default function Settings() {
                     <Button onClick={handleNameUpdate}>Save</Button>
                   </div>
                 </div>
+
+                {user && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 border">
+                        <span className="text-sm text-muted-foreground">{user.email}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={handleLogoutClick}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log Out
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
         </motion.div>
+
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Referral Program</CardTitle>
+                <CardDescription>Share and earn rewards</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Your Referral ID</Label>
+                    <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 border justify-between">
+                      <span className="text-sm font-mono">{user.user_metadata?.referral_id || "N/A"}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(user.user_metadata?.referral_id || "");
+                          toast.success("Referral ID copied!");
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Share this code with friends to earn rewards!
+                    </p>
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => navigate("/referrals")}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    View Referred Users
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -233,6 +339,48 @@ export default function Settings() {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete Forever
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showLogoutExportDialog} onOpenChange={setShowLogoutExportDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Export Required</AlertDialogTitle>
+              <AlertDialogDescription>
+                Before logging out, you must export your data to ensure you have a backup.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogoutExportAndProceed}>
+                Export Data
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ready to Log Out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your data has been exported. Are you sure you want to log out?
+                <br /><br />
+                <span className="font-semibold text-destructive">
+                  Warning: Logging out will delete all local data from this device.
+                </span>
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  Your account will NOT be deleted from the server.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={performLogout}>
+                Log Out
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

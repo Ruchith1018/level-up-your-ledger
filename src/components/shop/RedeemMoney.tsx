@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useGamification } from "@/contexts/GamificationContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Wallet, Loader2, History } from "lucide-react";
 import { toast } from "sonner";
 import emailjs from "@emailjs/browser";
@@ -24,6 +25,7 @@ const AMOUNTS = [
 ];
 
 export function RedeemMoney() {
+    const { user } = useAuth();
     const { state: gamifyState, spendCoins, addRedemptionLog } = useGamification();
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
     const [selectedAmount, setSelectedAmount] = useState<typeof AMOUNTS[0] | null>(null);
@@ -41,6 +43,7 @@ export function RedeemMoney() {
             return;
         }
         setSelectedAmount(amount);
+        setFormData(prev => ({ ...prev, email: user?.email || "" }));
         setIsDialogOpen(true);
     };
 
@@ -220,6 +223,7 @@ export function RedeemMoney() {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     required
+                                    disabled
                                 />
                             </div>
                             <DialogFooter className="gap-2 sm:gap-0">
