@@ -3,6 +3,7 @@ import { useBudget } from "@/contexts/BudgetContext";
 import { useGamification } from "@/contexts/GamificationContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
+import { useSavings } from "@/contexts/SavingsContext";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { encryptData } from "@/utils/security";
@@ -12,6 +13,7 @@ export function useExportData() {
     const { state: budgetState } = useBudget();
     const { state: gamifyState } = useGamification();
     const { state: subscriptionState } = useSubscriptions();
+    const { state: savingsState } = useSavings();
     const { settings } = useSettings();
 
     const exportJSON = () => {
@@ -21,6 +23,7 @@ export function useExportData() {
             expenses: expenseState.items,
             budgets: budgetState.budgets,
             subscriptions: subscriptionState.subscriptions,
+            savings: savingsState.goals,
             gamification: {
                 level: gamifyState.level,
                 xp: gamifyState.xp,

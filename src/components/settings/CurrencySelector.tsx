@@ -3,6 +3,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useExpenses } from "@/contexts/ExpenseContext";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
+import { useSavings } from "@/contexts/SavingsContext";
 import {
     Dialog,
     DialogContent,
@@ -28,6 +29,7 @@ export function CurrencySelector() {
     const { convertExpenses } = useExpenses();
     const { convertBudgets } = useBudget();
     const { convertSubscriptions } = useSubscriptions();
+    const { convertGoals } = useSavings();
 
     const [isOpen, setIsOpen] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState(settings.currency);
@@ -64,6 +66,7 @@ export function CurrencySelector() {
             convertExpenses(rate);
             convertBudgets(rate);
             convertSubscriptions(rate);
+            convertGoals(rate);
 
             // Update settings
             updateSettings({ ...settings, currency: selectedCurrency });

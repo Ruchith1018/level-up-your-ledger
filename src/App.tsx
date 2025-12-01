@@ -8,6 +8,7 @@ import { BudgetProvider } from "@/contexts/BudgetContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+import { SavingsProvider } from "@/contexts/SavingsContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
@@ -41,41 +42,43 @@ const App = () => (
                     <ExpenseProvider>
                         <BudgetProvider>
                             <SubscriptionProvider>
-                                <GamificationProvider>
-                                    <Toaster />
-                                    <Sonner position="top-center" />
-                                    <BrowserRouter>
-                                        <TutorialProvider>
-                                            <Routes>
-                                                {/* Public Routes */}
-                                                <Route path="/intro" element={<IntroPage />} />
-                                                <Route path="/auth" element={<AuthPage />} />
+                                <SavingsProvider>
+                                    <GamificationProvider>
+                                        <Toaster />
+                                        <Sonner position="top-center" />
+                                        <BrowserRouter>
+                                            <TutorialProvider>
+                                                <Routes>
+                                                    {/* Public Routes */}
+                                                    <Route path="/intro" element={<IntroPage />} />
+                                                    <Route path="/auth" element={<AuthPage />} />
 
-                                                {/* Protected Routes */}
-                                                <Route element={<ProtectedRoute />}>
-                                                    <Route path="/" element={<Index />} />
-                                                    <Route path="/dashboard" element={<Dashboard />} />
-                                                    <Route path="/analytics" element={<Analytics />} />
-                                                    <Route path="/subscriptions" element={<Subscriptions />} />
-                                                    <Route path="/settings" element={<Settings />} />
-                                                    <Route path="/referrals" element={<ReferralsPage />} />
-                                                    <Route path="/income" element={<IncomePage />} />
-                                                    <Route path="/expenses" element={<ExpensesPage />} />
-                                                    <Route path="/savings" element={<SavingsPage />} />
-                                                    <Route path="/shop" element={<ThemeShopPage />} />
-                                                    <Route path="/gamification" element={<Gamification />} />
-                                                    <Route path="/gamification/badges" element={<BadgesPage />} />
-                                                </Route>
+                                                    {/* Protected Routes */}
+                                                    <Route element={<ProtectedRoute />}>
+                                                        <Route path="/" element={<Index />} />
+                                                        <Route path="/dashboard" element={<Dashboard />} />
+                                                        <Route path="/analytics" element={<Analytics />} />
+                                                        <Route path="/subscriptions" element={<Subscriptions />} />
+                                                        <Route path="/settings" element={<Settings />} />
+                                                        <Route path="/referrals" element={<ReferralsPage />} />
+                                                        <Route path="/income" element={<IncomePage />} />
+                                                        <Route path="/expenses" element={<ExpensesPage />} />
+                                                        <Route path="/savings" element={<SavingsPage />} />
+                                                        <Route path="/shop" element={<ThemeShopPage />} />
+                                                        <Route path="/gamification" element={<Gamification />} />
+                                                        <Route path="/gamification/badges" element={<BadgesPage />} />
+                                                    </Route>
 
-                                                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                                                <Route path="*" element={<NotFound />} />
-                                            </Routes>
-                                            <Footer />
-                                            <BottomNav />
-                                            <TutorialOverlay />
-                                        </TutorialProvider>
-                                    </BrowserRouter>
-                                </GamificationProvider>
+                                                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                                                    <Route path="*" element={<NotFound />} />
+                                                </Routes>
+                                                <Footer />
+                                                <BottomNav />
+                                                <TutorialOverlay />
+                                            </TutorialProvider>
+                                        </BrowserRouter>
+                                    </GamificationProvider>
+                                </SavingsProvider>
                             </SubscriptionProvider>
                         </BudgetProvider>
                     </ExpenseProvider>

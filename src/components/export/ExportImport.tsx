@@ -86,6 +86,15 @@ export function ExportImport() {
                   }));
                 }
 
+                // Convert Savings Goals
+                if (data.savings) {
+                  data.savings = data.savings.map((goal: any) => ({
+                    ...goal,
+                    targetAmount: Number((goal.targetAmount * rate).toFixed(2)),
+                    currentAmount: Number((goal.currentAmount * rate).toFixed(2))
+                  }));
+                }
+
                 // Update imported settings to match current currency
                 if (data.settings) {
                   data.settings.currency = currentCurrency;
@@ -129,6 +138,14 @@ export function ExportImport() {
         localStorage.setItem("gft_budgets_v1", JSON.stringify({ budgets: migratedBudgets }));
 
         localStorage.setItem("gft_subscriptions_v1", JSON.stringify({ subscriptions: data.subscriptions || [] }));
+
+        if (data.savings) {
+          console.log("Found savings in backup:", data.savings);
+          localStorage.setItem("gft_savings_goals_v1", JSON.stringify({ goals: data.savings }));
+          // toast.info(`Restored ${data.savings.length} savings goals`);
+        } else {
+          console.log("No savings found in backup data");
+        }
 
         if (data.gamification) {
           const defaultGamificationState = {
