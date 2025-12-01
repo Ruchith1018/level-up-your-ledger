@@ -72,15 +72,15 @@ export function BudgetOverview() {
   const getFontSizeClass = (amount: number, type: 'main' | 'sub') => {
     const length = amount.toFixed(2).length;
     if (type === 'main') {
-      if (length > 13) return "text-xl sm:text-4xl";
-      if (length > 10) return "text-2xl sm:text-5xl";
-      return "text-3xl sm:text-5xl";
+      if (length > 13) return "text-lg sm:text-4xl";
+      if (length > 10) return "text-xl sm:text-5xl";
+      return "text-2xl sm:text-5xl";
     }
     // sub cards - more aggressive scaling for 2-column grid
-    if (length > 11) return "text-sm";
-    if (length > 8) return "text-base sm:text-lg";
-    if (length > 6) return "text-lg sm:text-xl";
-    return "text-xl sm:text-2xl";
+    if (length > 11) return "text-xs";
+    if (length > 8) return "text-sm sm:text-lg";
+    if (length > 6) return "text-base sm:text-xl";
+    return "text-lg sm:text-2xl";
   };
 
   return (
@@ -92,7 +92,7 @@ export function BudgetOverview() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="relative w-full aspect-[1.586/1] rounded-xl overflow-hidden shadow-xl card-shine"
+          className="relative w-full aspect-[1.586/1] rounded-xl overflow-hidden shadow-xl card-shine min-w-[280px]"
         >
           {/* Card Background */}
           <div
@@ -108,15 +108,15 @@ export function BudgetOverview() {
           </div>
 
           {/* Card Content */}
-          <div className={`relative h-full p-4 sm:p-6 flex flex-col justify-between ${activeTheme.textColor}`}>
+          <div className={`relative h-full p-3 sm:p-6 flex flex-col justify-between ${activeTheme.textColor}`}>
             <div className="flex justify-between items-start">
               <div>
-                <h3 className={`font-medium text-xs sm:text-sm tracking-wider opacity-80`}>BudGlio Card</h3>
+                <h3 className={`font-medium text-[10px] sm:text-sm tracking-wider opacity-80`}>BudGlio Card</h3>
                 {/* Chip */}
-                <div className={`mt-2 sm:mt-4 w-10 h-7 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
+                <div className={`mt-2 sm:mt-4 w-8 h-6 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
                   <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/20" />
                   <div className="absolute top-0 left-1/2 h-full w-[1px] bg-black/20" />
-                  <div className="absolute top-1/2 left-1/2 w-3 h-3 sm:w-4 sm:h-4 border border-black/20 rounded-sm transform -translate-x-1/2 -translate-y-1/2" />
+                  <div className="absolute top-1/2 left-1/2 w-2 h-2 sm:w-4 sm:h-4 border border-black/20 rounded-sm transform -translate-x-1/2 -translate-y-1/2" />
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1 sm:gap-2">
@@ -130,7 +130,7 @@ export function BudgetOverview() {
                   }
                 />
                 {/* Contactless Icon */}
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`w-6 h-6 sm:w-8 sm:h-8 opacity-80 ${activeTheme.textColor}`} strokeWidth={2}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`w-5 h-5 sm:w-8 sm:h-8 opacity-80 ${activeTheme.textColor}`} strokeWidth={2}>
                   <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z" stroke="none" />
                   <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1.5-3.5" />
                   <path d="M15.5 14.5A2.5 2.5 0 0 1 13 12c0-1.38.5-2 1.5-3.5" />
@@ -141,29 +141,29 @@ export function BudgetOverview() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2 sm:space-y-4">
               <div className="space-y-0.5 sm:space-y-1">
-                <div className="text-[10px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
-                <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md`}>
+                <div className="text-[8px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
+                <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md truncate`}>
                   {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
                 </div>
               </div>
-              <div className="font-mono text-sm sm:text-xl tracking-[0.2em] drop-shadow-md opacity-80">
+              <div className="font-mono text-xs sm:text-xl tracking-[0.15em] sm:tracking-[0.2em] drop-shadow-md opacity-80 truncate">
                 {formattedReferralId}
               </div>
             </div>
 
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-1.5 sm:space-y-3">
               <div className="flex justify-between items-end">
-                <div>
-                  <div className="text-[8px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Card Holder</div>
-                  <div className="font-medium tracking-wider uppercase truncate max-w-[120px] sm:max-w-[200px] text-xs sm:text-base">
+                <div className="max-w-[60%]">
+                  <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Card Holder</div>
+                  <div className="font-medium tracking-wider uppercase truncate text-[10px] sm:text-base">
                     {settings.userName || "User"}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[8px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Expires</div>
-                  <div className="font-medium tracking-wider text-xs sm:text-base">{dayjs().endOf('month').format('MM/YY')}</div>
+                  <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Expires</div>
+                  <div className="font-medium tracking-wider text-[10px] sm:text-base">{dayjs().endOf('month').format('MM/YY')}</div>
                 </div>
               </div>
 
