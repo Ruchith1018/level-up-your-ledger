@@ -29,6 +29,8 @@ import ExpensesPage from "./pages/ExpensesPage";
 import ReferralsPage from "./pages/ReferralsPage";
 import SavingsPage from "./pages/SavingsPage";
 
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -45,20 +47,26 @@ const App = () => (
                                     <BrowserRouter>
                                         <TutorialProvider>
                                             <Routes>
+                                                {/* Public Routes */}
                                                 <Route path="/intro" element={<IntroPage />} />
                                                 <Route path="/auth" element={<AuthPage />} />
-                                                <Route path="/" element={<Index />} />
-                                                <Route path="/dashboard" element={<Dashboard />} />
-                                                <Route path="/analytics" element={<Analytics />} />
-                                                <Route path="/subscriptions" element={<Subscriptions />} />
-                                                <Route path="/settings" element={<Settings />} />
-                                                <Route path="/referrals" element={<ReferralsPage />} />
-                                                <Route path="/income" element={<IncomePage />} />
-                                                <Route path="/expenses" element={<ExpensesPage />} />
-                                                <Route path="/savings" element={<SavingsPage />} />
-                                                <Route path="/shop" element={<ThemeShopPage />} />
-                                                <Route path="/gamification" element={<Gamification />} />
-                                                <Route path="/gamification/badges" element={<BadgesPage />} />
+
+                                                {/* Protected Routes */}
+                                                <Route element={<ProtectedRoute />}>
+                                                    <Route path="/" element={<Index />} />
+                                                    <Route path="/dashboard" element={<Dashboard />} />
+                                                    <Route path="/analytics" element={<Analytics />} />
+                                                    <Route path="/subscriptions" element={<Subscriptions />} />
+                                                    <Route path="/settings" element={<Settings />} />
+                                                    <Route path="/referrals" element={<ReferralsPage />} />
+                                                    <Route path="/income" element={<IncomePage />} />
+                                                    <Route path="/expenses" element={<ExpensesPage />} />
+                                                    <Route path="/savings" element={<SavingsPage />} />
+                                                    <Route path="/shop" element={<ThemeShopPage />} />
+                                                    <Route path="/gamification" element={<Gamification />} />
+                                                    <Route path="/gamification/badges" element={<BadgesPage />} />
+                                                </Route>
+
                                                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                                                 <Route path="*" element={<NotFound />} />
                                             </Routes>

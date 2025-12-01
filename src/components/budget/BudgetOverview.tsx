@@ -1,4 +1,5 @@
 import { useExpenses } from "@/contexts/ExpenseContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { getCurrencySymbol } from "@/constants/currencies";
@@ -13,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 export function BudgetOverview() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { getTotalByType } = useExpenses();
   const { getCurrentBudget, getBudgetByMonth, state: budgetState } = useBudget();
   const { settings } = useSettings();
@@ -20,6 +22,9 @@ export function BudgetOverview() {
   const currentMonth = dayjs().format("YYYY-MM");
 
   const activeTheme = CARD_THEMES.find(t => t.id === settings.cardTheme) || CARD_THEMES[0];
+
+  const referralId = user?.user_metadata?.referral_id || "0000000000000000";
+  const formattedReferralId = referralId.replace(/(.{4})/g, '$1 ').trim();
 
   const currentBudget = getCurrentBudget();
   const totalExpense = getTotalByType("expense", currentMonth);
@@ -106,7 +111,7 @@ export function BudgetOverview() {
           <div className={`relative h-full p-4 sm:p-6 flex flex-col justify-between ${activeTheme.textColor}`}>
             <div className="flex justify-between items-start">
               <div>
-                <h3 className={`font-medium text-xs sm:text-sm tracking-wider opacity-80`}>Budget Card</h3>
+                <h3 className={`font-medium text-xs sm:text-sm tracking-wider opacity-80`}>BudGlio Card</h3>
                 {/* Chip */}
                 <div className={`mt-2 sm:mt-4 w-10 h-7 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
                   <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/20" />
@@ -136,10 +141,15 @@ export function BudgetOverview() {
               </div>
             </div>
 
-            <div className="space-y-0.5 sm:space-y-1">
-              <div className="text-[10px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
-              <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md`}>
-                {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
+            <div className="space-y-4">
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="text-[10px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
+                <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md`}>
+                  {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
+                </div>
+              </div>
+              <div className="font-mono text-sm sm:text-xl tracking-[0.2em] drop-shadow-md opacity-80">
+                {formattedReferralId}
               </div>
             </div>
 
