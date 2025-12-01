@@ -41,7 +41,7 @@ export default function IncomePage() {
     const totalIncome = incomeTransactions.reduce((sum, item) => sum + item.amount, 0);
 
     return (
-        <div className="min-h-screen bg-background p-4 sm:p-6 pb-24">
+        <div className="bg-background p-4 sm:p-6 pb-24">
             <div className="max-w-2xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

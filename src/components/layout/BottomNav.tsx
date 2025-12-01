@@ -126,6 +126,7 @@ function BottomNavContent() {
                         return (
                             <div key={item.path} className="flex justify-center">
                                 <motion.button
+                                    id={item.id}
                                     onClick={() => navigate(item.path)}
                                     className={cn(
                                         "relative flex items-center justify-center rounded-full transition-colors",

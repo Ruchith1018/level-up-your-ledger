@@ -132,3 +132,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ---
 
 Built with ❤️ by Ruchith
+
+© 2025 BudGlio. All rights reserved.

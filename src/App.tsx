@@ -19,6 +19,7 @@ import BadgesPage from "./pages/BadgesPage";
 import IntroPage from "./pages/IntroPage";
 import NotFound from "./pages/NotFound";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { Footer } from "@/components/layout/Footer";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -61,6 +62,7 @@ const App = () => (
                                                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                                                 <Route path="*" element={<NotFound />} />
                                             </Routes>
+                                            <Footer />
                                             <BottomNav />
                                             <TutorialOverlay />
                                         </TutorialProvider>
