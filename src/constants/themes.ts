@@ -4,7 +4,7 @@ export const THEMES = [
         name: "Default Theme",
         description: "The original look and feel",
         price: 0,
-        colors: { primary: "221 83% 53%", secondary: "142 76% 36%", accent: "262 83% 58%" },
+        colors: { primary: "142 76% 36%", secondary: "225 83% 53%", accent: "262 83% 58%" },
     },
     {
         id: "ocean",

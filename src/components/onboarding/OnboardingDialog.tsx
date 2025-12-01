@@ -83,7 +83,7 @@ export function OnboardingDialog() {
             currency: currency, // Ensure currency is saved
             hasCompletedOnboarding: true,
         });
-        toast.success(`Welcome to FinanceQuest, ${userName}! 🎉`);
+        toast.success(`Welcome to BudGlio, ${userName}! 🎉`);
         startTutorial();
     };
 
@@ -141,7 +141,7 @@ export function OnboardingDialog() {
                                     <Sparkles className="w-8 h-8 text-primary-foreground" />
                                 </div>
                             </div>
-                            <DialogTitle className="text-center text-2xl">Welcome to FinanceQuest!</DialogTitle>
+                            <DialogTitle className="text-center text-2xl">Welcome to BudGlio!</DialogTitle>
                             <DialogDescription className="text-center">
                                 Let's get started on your financial journey. First, what should we call you?
                             </DialogDescription>

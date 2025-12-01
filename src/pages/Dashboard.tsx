@@ -8,7 +8,7 @@ import { AddExpenseModal } from "@/components/transactions/AddExpenseModal";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 import { SurplusDialog } from "@/components/budget/SurplusDialog";
 import { motion } from "framer-motion";
-import { Wallet, BarChart3, Calendar, Settings, Palette } from "lucide-react";
+import { BarChart3, Calendar, Settings, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -27,12 +27,10 @@ export default function Dashboard() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img src="/logo.jpg" alt="BudGlio Logo" className="w-10 h-10 rounded-xl shadow-lg" />
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  FinanceQuest
+                <h1 className="text-2xl font-bold text-primary">
+                  BudGlio
                 </h1>
                 <p className="text-sm text-muted-foreground">Gamified Finance Tracker</p>
               </div>

@@ -75,8 +75,9 @@ export default function AuthPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
             <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold">Welcome to FinanceQuest</CardTitle>
+                <CardHeader className="text-center flex flex-col items-center">
+                    <img src="/logo.jpg" alt="BudGlio Logo" className="w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover" />
+                    <CardTitle className="text-2xl font-bold">Welcome to BudGlio</CardTitle>
                     <CardDescription>
                         Your journey to financial freedom starts here
                     </CardDescription>

@@ -332,7 +332,7 @@ export default function Subscriptions() {
         id="add-subscription-btn-mobile"
         onClick={() => setOpen(true)}
         size="lg"
-        className="md:hidden fixed bottom-20 right-6 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40 p-0"
+        className="md:hidden fixed bottom-28 right-6 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40 p-0"
       >
         <Plus className="h-6 w-6" />
       </Button>

@@ -7,10 +7,9 @@ import { useSettings } from "@/contexts/SettingsContext";
 
 const slides = [
     {
-        title: "Welcome to FinanceQuest",
+        title: "Welcome to BudGlio",
         description: "Your gamified finance tracker that makes managing money fun and rewarding!",
-        icon: Sparkles,
-        gradient: "from-blue-500 to-purple-600",
+        image: "/logo.jpg",
     },
     {
         title: "Track Every Expense",
@@ -82,25 +81,36 @@ export default function IntroPage() {
                             }}
                             className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 cursor-grab active:cursor-grabbing"
                         >
-                            {/* Icon */}
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                                className={`mb-8 p-8 rounded-full bg-gradient-to-br ${slides[currentSlide].gradient} shadow-2xl`}
-                            >
-                                {(() => {
-                                    const Icon = slides[currentSlide].icon;
-                                    return <Icon className="w-20 h-20 text-white" />;
-                                })()}
-                            </motion.div>
+                            {/* Icon or Image */}
+                            {slides[currentSlide].image ? (
+                                <motion.img
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                    src={slides[currentSlide].image}
+                                    alt={slides[currentSlide].title}
+                                    className="mb-8 w-40 h-40 rounded-3xl shadow-2xl object-cover"
+                                />
+                            ) : (
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                    className={`mb-8 p-8 rounded-3xl bg-gradient-to-br ${slides[currentSlide].gradient} shadow-2xl`}
+                                >
+                                    {(() => {
+                                        const Icon = slides[currentSlide].icon;
+                                        return <Icon className="w-20 h-20 text-white" />;
+                                    })()}
+                                </motion.div>
+                            )}
 
                             {/* Title */}
                             <motion.h1
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
+                                className="text-4xl md:text-5xl font-bold mb-4 text-primary"
                             >
                                 {slides[currentSlide].title}
                             </motion.h1>
@@ -181,15 +191,6 @@ export default function IntroPage() {
                                 />
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {/* Skip Button */}
-                {!isLastSlide && (
-                    <div className="text-center mt-6">
-                        <Button variant="ghost" onClick={handleGetStarted} className="text-muted-foreground">
-                            Skip
-                        </Button>
                     </div>
                 )}
             </div>
