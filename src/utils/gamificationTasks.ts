@@ -71,7 +71,11 @@ const DAILY_POOL: Task[] = [
         description: "Log a Food or Dining expense",
         reward: 10,
         total: 1,
-        checkProgress: (txs) => txs.filter(t => t.type === "expense" && (t.category.toLowerCase().includes("food") || t.category.toLowerCase().includes("dining") || t.category.toLowerCase().includes("groceries"))).length,
+        checkProgress: (txs) => txs.filter(t => {
+            if (t.type !== "expense" || !t.category) return false;
+            const cat = t.category.toLowerCase();
+            return cat.includes("food") || cat.includes("dining") || cat.includes("groceries");
+        }).length,
     },
     {
         id: "daily_no_spend_morning",

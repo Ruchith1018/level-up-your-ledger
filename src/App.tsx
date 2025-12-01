@@ -24,6 +24,7 @@ import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import ReferralsPage from "./pages/ReferralsPage";
+import SavingsPage from "./pages/SavingsPage";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
                                                 <Route path="/subscriptions" element={<Subscriptions />} />
                                                 <Route path="/settings" element={<Settings />} />
                                                 <Route path="/referrals" element={<ReferralsPage />} />
+                                                <Route path="/savings" element={<SavingsPage />} />
                                                 <Route path="/shop" element={<ThemeShopPage />} />
                                                 <Route path="/gamification" element={<Gamification />} />
                                                 <Route path="/gamification/badges" element={<BadgesPage />} />

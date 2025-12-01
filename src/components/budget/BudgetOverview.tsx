@@ -11,9 +11,12 @@ import { motion } from "framer-motion";
 import { BudgetForm } from "./BudgetForm";
 import { CARD_THEMES } from "@/constants/cardThemes";
 
+import { useNavigate } from "react-router-dom";
+
 export function BudgetOverview() {
+  const navigate = useNavigate();
   const { getTotalByType } = useExpenses();
-  const { getCurrentBudget, getBudgetByMonth } = useBudget();
+  const { getCurrentBudget, getBudgetByMonth, state: budgetState } = useBudget();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
@@ -33,6 +36,15 @@ export function BudgetOverview() {
     const previousExpenses = getTotalByType("expense", previousMonth);
     rolloverAmount = Math.max(0, previousBudget.total - previousExpenses);
   }
+
+  // Calculate Total Savings
+  const totalSavings = budgetState.budgets
+    .filter(b => b.surplusAction === 'saved')
+    .reduce((sum, b) => {
+      const expenses = getTotalByType("expense", b.month);
+      const savedAmount = Math.max(0, b.total - expenses);
+      return sum + savedAmount;
+    }, 0);
 
   if (!currentBudget) {
     return (
@@ -168,20 +180,30 @@ export function BudgetOverview() {
           )}
         </motion.div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-secondary/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[120px]">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-secondary mb-2">
-              <TrendingUp className="w-4 h-4 shrink-0" />
-              <span className="text-xs sm:text-sm font-medium leading-tight">Income in this month</span>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-secondary/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-secondary mb-1">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-medium leading-tight">Income</span>
             </div>
             <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
           </div>
-          <div className="rounded-lg p-4 bg-destructive/10 flex flex-col items-center justify-center text-center min-h-[120px]">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-destructive mb-2">
-              <TrendingDown className="w-4 h-4 shrink-0" />
-              <span className="text-xs sm:text-sm font-medium leading-tight">Expenses in this month</span>
+          <div className="rounded-lg p-4 bg-destructive/10 flex flex-col items-center justify-center text-center min-h-[100px]">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-destructive mb-1">
+              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-medium leading-tight">Expenses</span>
             </div>
             <div className={`${getFontSizeClass(totalExpense, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(2)}</div>
+          </div>
+          <div
+            onClick={() => navigate('/savings')}
+            className="rounded-lg p-4 bg-emerald-500/10 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-emerald-500/20 transition-colors"
+          >
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
+              <PiggyBank className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-medium leading-tight">Savings</span>
+            </div>
+            <div className={`${getFontSizeClass(totalSavings, 'sub')} font-bold break-words transition-all duration-200 text-emerald-700 dark:text-emerald-300`}>{currencySymbol}{totalSavings.toFixed(2)}</div>
           </div>
         </div>
       </CardContent>
