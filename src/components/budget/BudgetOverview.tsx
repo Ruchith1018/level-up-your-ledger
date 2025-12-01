@@ -3,14 +3,12 @@ import { useBudget } from "@/contexts/BudgetContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { getCurrencySymbol } from "@/constants/currencies";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { PiggyBank, TrendingUp, TrendingDown, Pencil, AlertTriangle } from "lucide-react";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import { BudgetForm } from "./BudgetForm";
 import { CARD_THEMES } from "@/constants/cardThemes";
-
 import { useNavigate } from "react-router-dom";
 
 export function BudgetOverview() {
@@ -182,19 +180,25 @@ export function BudgetOverview() {
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-secondary/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-secondary mb-1">
+            <div
+              onClick={() => navigate('/income')}
+              className="bg-blue-500/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-blue-500/20 transition-colors"
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span className="text-[10px] sm:text-xs font-medium leading-tight">Income</span>
               </div>
-              <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
+              <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200 text-blue-700 dark:text-blue-300`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
             </div>
-            <div className="rounded-lg p-4 bg-destructive/10 flex flex-col items-center justify-center text-center min-h-[100px]">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-destructive mb-1">
+            <div
+              onClick={() => navigate('/expenses')}
+              className="rounded-lg p-4 bg-red-500/10 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-red-500/20 transition-colors"
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-red-600 dark:text-red-400 mb-1">
                 <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span className="text-[10px] sm:text-xs font-medium leading-tight">Expenses</span>
               </div>
-              <div className={`${getFontSizeClass(totalExpense, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(2)}</div>
+              <div className={`${getFontSizeClass(totalExpense, 'sub')} font-bold break-words transition-all duration-200 text-red-700 dark:text-red-300`}>{currencySymbol}{totalExpense.toFixed(2)}</div>
             </div>
           </div>
           <div
