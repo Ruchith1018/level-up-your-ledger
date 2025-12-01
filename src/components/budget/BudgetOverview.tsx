@@ -180,28 +180,30 @@ export function BudgetOverview() {
           )}
         </motion.div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-secondary/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-secondary mb-1">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-medium leading-tight">Income</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-secondary/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-secondary mb-1">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                <span className="text-[10px] sm:text-xs font-medium leading-tight">Income</span>
+              </div>
+              <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
             </div>
-            <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
-          </div>
-          <div className="rounded-lg p-4 bg-destructive/10 flex flex-col items-center justify-center text-center min-h-[100px]">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-destructive mb-1">
-              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-medium leading-tight">Expenses</span>
+            <div className="rounded-lg p-4 bg-destructive/10 flex flex-col items-center justify-center text-center min-h-[100px]">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-destructive mb-1">
+                <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                <span className="text-[10px] sm:text-xs font-medium leading-tight">Expenses</span>
+              </div>
+              <div className={`${getFontSizeClass(totalExpense, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(2)}</div>
             </div>
-            <div className={`${getFontSizeClass(totalExpense, 'sub')} font-bold break-words transition-all duration-200`}>{currencySymbol}{totalExpense.toFixed(2)}</div>
           </div>
           <div
             onClick={() => navigate('/savings')}
-            className="rounded-lg p-4 bg-emerald-500/10 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-emerald-500/20 transition-colors"
+            className="rounded-lg p-4 bg-emerald-500/10 flex flex-col items-center justify-center text-center min-h-[80px] cursor-pointer hover:bg-emerald-500/20 transition-colors w-full"
           >
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
               <PiggyBank className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-medium leading-tight">Savings</span>
+              <span className="text-[10px] sm:text-xs font-medium leading-tight">Total Savings</span>
             </div>
             <div className={`${getFontSizeClass(totalSavings, 'sub')} font-bold break-words transition-all duration-200 text-emerald-700 dark:text-emerald-300`}>{currencySymbol}{totalSavings.toFixed(2)}</div>
           </div>
