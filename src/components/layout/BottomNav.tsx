@@ -88,7 +88,7 @@ function BottomNavContent() {
                 <div className="absolute inset-0 drop-shadow-xl pointer-events-none rounded-[2rem] overflow-hidden">
                     {/* Glass Body */}
                     <motion.div
-                        className="absolute inset-0 bg-white/90 backdrop-blur-[50px]"
+                        className="absolute inset-0 bg-white/90 dark:bg-card/90 backdrop-blur-[50px]"
                         style={{
                             clipPath: `path("${path || "M0,0 L0,0 L0,64 L0,64 Z"}")`
                         }}
@@ -110,7 +110,7 @@ function BottomNavContent() {
                         <motion.path
                             d={path || "M0,0 L0,0 L0,64 L0,64 Z"}
                             fill="none"
-                            stroke="rgba(0, 0, 0, 0.24)"
+                            className="stroke-primary/40"
                             strokeWidth="1"
                             initial={{ d: path || "M0,0 L0,0 L0,64 L0,64 Z" }}
                             animate={{ d: path || "M0,0 L0,0 L0,64 L0,64 Z" }}
