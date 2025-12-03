@@ -5,7 +5,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { getCurrencySymbol } from "@/constants/currencies";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PiggyBank, TrendingUp, TrendingDown, Pencil, AlertTriangle } from "lucide-react";
+import { PiggyBank, TrendingUp, TrendingDown, Pencil, AlertTriangle, ChevronRight } from "lucide-react";
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import { BudgetForm } from "./BudgetForm";
@@ -192,8 +192,10 @@ export function BudgetOverview() {
           <div className="grid grid-cols-2 gap-4">
             <div
               onClick={() => navigate('/income')}
-              className="bg-blue-500/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-blue-500/20 transition-colors"
+              className="bg-blue-500/10 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-blue-500/20 transition-colors relative"
+
             >
+              <ChevronRight className="absolute top-2 right-2 w-4 h-4 text-blue-500 animate-pulse" />
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span className="text-[10px] sm:text-xs font-medium leading-tight">Income</span>
@@ -202,8 +204,10 @@ export function BudgetOverview() {
             </div>
             <div
               onClick={() => navigate('/expenses')}
-              className="rounded-lg p-4 bg-red-500/10 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-red-500/20 transition-colors"
+              className="rounded-lg p-4 bg-red-500/10 flex flex-col items-center justify-center text-center min-h-[100px] cursor-pointer hover:bg-red-500/20 transition-colors relative"
+
             >
+              <ChevronRight className="absolute top-2 right-2 w-4 h-4 text-red-500 animate-pulse" />
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-red-600 dark:text-red-400 mb-1">
                 <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span className="text-[10px] sm:text-xs font-medium leading-tight">Expenses</span>
@@ -213,8 +217,9 @@ export function BudgetOverview() {
           </div>
           <div
             onClick={() => navigate('/savings')}
-            className="rounded-lg p-4 bg-emerald-500/10 flex flex-col items-center justify-center text-center min-h-[80px] cursor-pointer hover:bg-emerald-500/20 transition-colors w-full"
+            className="rounded-lg p-4 bg-emerald-500/10 flex flex-col items-center justify-center text-center min-h-[80px] cursor-pointer hover:bg-emerald-500/20 transition-colors w-full relative"
           >
+            <ChevronRight className="absolute top-2 right-2 w-4 h-4 text-emerald-500 animate-pulse" />
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
               <PiggyBank className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
               <span className="text-[10px] sm:text-xs font-medium leading-tight">Total Savings</span>

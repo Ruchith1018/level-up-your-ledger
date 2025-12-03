@@ -77,6 +77,10 @@ function reducer(state: SubscriptionState, action: SubscriptionAction): Subscrip
       return {
         subscriptions: state.subscriptions.map((s) => {
           if (s.id === action.payload.id) {
+            // Prevent undoing if there's no payment to revert
+            if (!s.lastPaymentTransactionId) {
+              return s;
+            }
             const prevDate = dayjs(s.billingDate)
               .subtract(1, s.interval === "monthly" ? "month" : "year")
               .format("YYYY-MM-DD");

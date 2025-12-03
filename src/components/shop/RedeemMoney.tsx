@@ -11,10 +11,10 @@ import { toast } from "sonner";
 import emailjs from "@emailjs/browser";
 
 const PAYMENT_METHODS = [
-    { id: "phonepe", name: "PhonePe", image: "/assets/payment/phonepe.png", color: "" },
-    { id: "gpay", name: "Google Pay", image: "/assets/payment/gpay.png", color: "" },
-    { id: "paytm", name: "Paytm", image: "/assets/payment/paytm.png", color: "" },
-    { id: "upi", name: "UPI ID", image: "/assets/payment/upi.png", color: "" },
+    { id: "google_play", name: "Google Play Gift Card", image: "/assets/payment/google_play.png", color: "" },
+    { id: "amazon", name: "Amazon Gift Card", image: "/assets/payment/amazon.png", color: "" },
+    { id: "flipkart", name: "Flipkart Gift Card", image: "/assets/payment/flipkart.png?v=3", color: "" },
+    { id: "paytm", name: "Paytm Gift Voucher", image: "/assets/payment/paytm_voucher.png", color: "" },
 ];
 
 const AMOUNTS = [
@@ -137,16 +137,16 @@ export function RedeemMoney() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Wallet className="w-5 h-5 text-green-500" />
-                        Redeem to Money
+                        Redeem Gift Cards
                     </CardTitle>
                     <CardDescription>
-                        Convert your hard-earned coins into real cash. Rate: 100 Coins = ₹1
+                        Convert your Earned coins into gift cards. Rate: 100 Coins = ₹1
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {/* Payment Methods */}
                     <div className="space-y-3">
-                        <h3 className="text-sm font-medium text-muted-foreground">Select Payment Method</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">Select Gift card Type</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {PAYMENT_METHODS.map((method) => (
                                 <Button
@@ -155,11 +155,11 @@ export function RedeemMoney() {
                                     className={`h-24 flex flex-col gap-2 ${selectedMethod === method.id ? "" : "hover:border-primary/50"}`}
                                     onClick={() => setSelectedMethod(method.id)}
                                 >
-                                    <div className="w-12 h-12 relative flex items-center justify-center">
+                                    <div className="w-12 h-12 relative flex items-center justify-center rounded-lg overflow-hidden">
                                         <img
                                             src={method.image}
                                             alt={method.name}
-                                            className="w-full h-full object-contain"
+                                            className="w-full h-full object-cover"
                                         />
                                     </div>
                                     <span className="text-xs">{method.name}</span>
@@ -193,6 +193,10 @@ export function RedeemMoney() {
                             ))}
                         </div>
                     </div>
+
+                    <p className="text-xs text-center text-muted-foreground pt-4 border-t">
+                        <i><b>Disclaimer:</b> Gift cards and vouchers are digital rewards provided by us, not cash withdrawals. Rewards may take up to 7 days and are subject to availability.</i>
+                    </p>
                 </CardContent>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -205,10 +209,10 @@ export function RedeemMoney() {
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="upiId">UPI ID</Label>
+                                <Label htmlFor="upiId">Phone Number</Label>
                                 <Input
                                     id="upiId"
-                                    placeholder="username@upi"
+                                    placeholder="Enter your phone number"
                                     value={formData.upiId}
                                     onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
                                     required

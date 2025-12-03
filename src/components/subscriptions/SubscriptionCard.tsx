@@ -51,8 +51,6 @@ export function SubscriptionCard({ subscription, onToggle, onDelete, onEdit }: S
   const handleUndo = () => {
     if (subscription.lastPaymentTransactionId) {
       deleteTransaction(subscription.lastPaymentTransactionId);
-      revertPayment(subscription.id);
-      toast.success("Payment reverted");
     }
   };
 

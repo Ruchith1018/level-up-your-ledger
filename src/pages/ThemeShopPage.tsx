@@ -20,7 +20,7 @@ export default function ThemeShopPage() {
                         </Button>
                         <div>
                             <h1 className="text-2xl font-bold">Shop & Redeem</h1>
-                            <p className="text-sm text-muted-foreground">Spend your hard-earned coins</p>
+                            <p className="text-sm text-muted-foreground">Spend your Earned coins</p>
                         </div>
                     </div>
                 </div>
@@ -34,13 +34,13 @@ export default function ThemeShopPage() {
                     <Tabs defaultValue="redeem" className="space-y-6">
                         <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="redeem">
-                                Money
+                                Gift Cards
                             </TabsTrigger>
                             <TabsTrigger value="cards">
-                                Cards
+                                BudGlio Cards
                             </TabsTrigger>
                             <TabsTrigger value="themes">
-                                Themes
+                                BudGlio Themes
                             </TabsTrigger>
                         </TabsList>
 
