@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart3, Calendar, Home, Palette, Settings } from "lucide-react";
+import { BarChart3, Calendar, Home, ShoppingBag, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -31,7 +31,7 @@ function BottomNavContent() {
         },
         {
             label: "Redeem",
-            icon: Palette,
+            icon: ShoppingBag,
             path: "/shop",
             id: "nav-shop-mobile"
         },
