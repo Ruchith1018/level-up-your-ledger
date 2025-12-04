@@ -7,6 +7,9 @@ import { useSavings } from "@/contexts/SavingsContext";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { encryptData } from "@/utils/security";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
 export function useExportData() {
     const { state: expenseState } = useExpenses();
@@ -16,7 +19,7 @@ export function useExportData() {
     const { state: savingsState } = useSavings();
     const { settings } = useSettings();
 
-    const exportJSON = () => {
+    const exportJSON = async () => {
         const data = {
             version: "1.0",
             exportedAt: new Date().toISOString(),
@@ -56,20 +59,62 @@ export function useExportData() {
         };
 
         const encryptedData = encryptData(data);
-        const blob = new Blob([encryptedData], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `financequest-backup-${dayjs().format("YYYY-MM-DD")}.enc`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const fileName = `financequest-backup-${dayjs().format("YYYY-MM-DD")}.enc`;
 
-        toast.success("Data exported successfully (Encrypted)!");
+        if (Capacitor.isNativePlatform()) {
+            try {
+                await Filesystem.writeFile({
+                    path: fileName,
+                    data: encryptedData,
+                    directory: Directory.Documents,
+                    encoding: Encoding.UTF8,
+                });
+
+                const fileResult = await Filesystem.getUri({
+                    directory: Directory.Documents,
+                    path: fileName,
+                });
+
+                // Attempt to save to Downloads folder as well for easier access
+                try {
+                    await Filesystem.writeFile({
+                        path: `Download/${fileName}`,
+                        data: encryptedData,
+                        directory: Directory.ExternalStorage,
+                        encoding: Encoding.UTF8,
+                        recursive: true
+                    });
+                    toast.success("Saved to Downloads folder");
+                } catch (e) {
+                    console.log("Could not save directly to Downloads (scoped storage restrictions)", e);
+                }
+
+                await Share.share({
+                    files: [fileResult.uri],
+                    dialogTitle: 'Save or Share Backup',
+                });
+
+                toast.success("Data exported successfully!");
+            } catch (error) {
+                console.error("Export failed:", error);
+                toast.error("Failed to export data natively.");
+            }
+        } else {
+            const blob = new Blob([encryptedData], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            toast.success("Data exported successfully (Encrypted)!");
+        }
     };
 
-    const exportCSV = () => {
+    const exportCSV = async () => {
         const headers = ["Date", "Type", "Category", "Merchant", "Amount", "Payment Method", "Notes"];
         const rows = expenseState.items.map((e) => [
             dayjs(e.date).format("YYYY-MM-DD"),
@@ -82,17 +127,59 @@ export function useExportData() {
         ]);
 
         const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `financequest-transactions-${dayjs().format("YYYY-MM-DD")}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const fileName = `financequest-transactions-${dayjs().format("YYYY-MM-DD")}.csv`;
 
-        toast.success("Transactions exported to CSV!");
+        if (Capacitor.isNativePlatform()) {
+            try {
+                await Filesystem.writeFile({
+                    path: fileName,
+                    data: csv,
+                    directory: Directory.Documents,
+                    encoding: Encoding.UTF8,
+                });
+
+                const fileResult = await Filesystem.getUri({
+                    directory: Directory.Documents,
+                    path: fileName,
+                });
+
+                // Attempt to save to Downloads folder as well
+                try {
+                    await Filesystem.writeFile({
+                        path: `Download/${fileName}`,
+                        data: csv,
+                        directory: Directory.ExternalStorage,
+                        encoding: Encoding.UTF8,
+                        recursive: true
+                    });
+                    toast.success("Saved to Downloads folder");
+                } catch (e) {
+                    console.log("Could not save directly to Downloads", e);
+                }
+
+                await Share.share({
+                    files: [fileResult.uri],
+                    dialogTitle: 'Save or Share CSV',
+                });
+
+                toast.success("Transactions exported to CSV!");
+            } catch (error) {
+                console.error("Export failed:", error);
+                toast.error("Failed to export CSV natively.");
+            }
+        } else {
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            toast.success("Transactions exported to CSV!");
+        }
     };
 
     return { exportJSON, exportCSV };
