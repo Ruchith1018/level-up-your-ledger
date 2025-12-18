@@ -1,15 +1,18 @@
-import React, { createContext, useContext } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { AppSettings } from "@/types";
 import { THEMES } from "@/constants/themes";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "./AuthContext";
+import { toast } from "sonner";
 
 interface SettingsContextType {
   settings: AppSettings;
-  updateSettings: (settings: Partial<AppSettings>) => void;
-  addCategory: (category: string) => void;
-  removeCategory: (category: string) => void;
-  addPaymentMethod: (method: string) => void;
-  removePaymentMethod: (method: string) => void;
+  updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
+  addCategory: (category: string) => Promise<void>;
+  removeCategory: (category: string) => Promise<void>;
+  addPaymentMethod: (method: string) => Promise<void>;
+  removePaymentMethod: (method: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -32,15 +35,102 @@ const defaultSettings: AppSettings = {
     "Other",
   ],
   paymentMethods: ["Cash", "Credit Card", "Debit Card", "UPI", "Wallet", "Bank Transfer"],
+  hasSeenIntro: false,
+  purchasedThemes: [],
+  purchasedCardThemes: [],
 };
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useLocalStorage<AppSettings>(
-    "gft_settings_v1",
-    defaultSettings
-  );
+  const { user } = useAuth();
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  // Fetch or Create Settings
+  useEffect(() => {
+    if (!user) {
+      setSettings(defaultSettings);
+      return;
+    }
+
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      console.log("Fetched Settings:", data, error);
+
+      if (error && error.code === 'PGRST116') {
+        // Not found, insert defaults
+        // ... (rest of logic)
+        const newSettings = {
+          user_id: user.id,
+          currency: defaultSettings.currency,
+          locale: defaultSettings.locale,
+          theme: defaultSettings.theme,
+          card_theme: defaultSettings.cardTheme,
+          categories: defaultSettings.categories,
+          payment_methods: defaultSettings.paymentMethods,
+          premium_theme: defaultSettings.premiumTheme,
+          user_name: defaultSettings.userName,
+          hasCompletedOnboarding: defaultSettings.hasCompletedOnboarding,
+          hasCompletedTutorial: defaultSettings.hasCompletedTutorial,
+          has_seen_intro: true,
+          purchased_themes: [],
+          purchased_card_themes: []
+        };
+
+        const { data: createdData } = await supabase
+          .from("user_settings")
+          .insert(newSettings)
+          .select()
+          .single();
+
+        if (createdData) {
+          setSettings({
+            currency: createdData.currency,
+            locale: createdData.locale,
+            theme: createdData.theme,
+            cardTheme: createdData.card_theme,
+            categories: createdData.categories,
+            paymentMethods: createdData.payment_methods,
+            premiumTheme: createdData.premium_theme,
+            userName: createdData.user_name,
+            hasCompletedOnboarding: createdData.has_completed_onboarding,
+            hasCompletedTutorial: createdData.has_completed_tutorial,
+            hasSeenIntro: createdData.has_seen_intro,
+            purchasedThemes: createdData.purchased_themes || [],
+            purchasedCardThemes: createdData.purchased_card_themes || []
+          });
+        }
+      } else if (data) {
+        setSettings({
+          currency: data.currency,
+          locale: data.locale,
+          theme: data.theme,
+          cardTheme: data.card_theme,
+          categories: data.categories,
+          paymentMethods: data.payment_methods,
+          premiumTheme: data.premium_theme,
+          userName: data.user_name,
+          hasCompletedOnboarding: data.has_completed_onboarding,
+          hasCompletedTutorial: data.has_completed_tutorial,
+          hasSeenIntro: data.has_seen_intro,
+          purchasedThemes: data.purchased_themes || [],
+          purchasedCardThemes: data.purchased_card_themes || []
+        });
+      }
+      setIsLoading(false);
+    };
+
+    fetchSettings();
+    fetchSettings();
+  }, [user?.id]);
+
+  // Apply Theme
+  useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
 
@@ -70,40 +160,61 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   }, [settings.theme, settings.premiumTheme]);
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    setSettings({ ...settings, ...newSettings });
+  const updateSettings = async (newSettings: Partial<AppSettings>) => {
+    if (!user) return;
+
+    // Optimistic update
+    setSettings((prev) => ({ ...prev, ...newSettings }));
+
+    // Map to DB fields
+    const payload: any = {};
+    if (newSettings.currency !== undefined) payload.currency = newSettings.currency;
+    if (newSettings.locale !== undefined) payload.locale = newSettings.locale;
+    if (newSettings.theme !== undefined) payload.theme = newSettings.theme;
+    if (newSettings.cardTheme !== undefined) payload.card_theme = newSettings.cardTheme;
+    if (newSettings.categories !== undefined) payload.categories = newSettings.categories;
+    if (newSettings.paymentMethods !== undefined) payload.payment_methods = newSettings.paymentMethods;
+    if (newSettings.premiumTheme !== undefined) payload.premium_theme = newSettings.premiumTheme;
+    if (newSettings.userName !== undefined) payload.user_name = newSettings.userName;
+    if (newSettings.hasCompletedOnboarding !== undefined) payload.has_completed_onboarding = newSettings.hasCompletedOnboarding;
+    if (newSettings.hasCompletedTutorial !== undefined) payload.has_completed_tutorial = newSettings.hasCompletedTutorial;
+    if (newSettings.hasSeenIntro !== undefined) payload.has_seen_intro = newSettings.hasSeenIntro;
+    if (newSettings.purchasedThemes !== undefined) payload.purchased_themes = newSettings.purchasedThemes;
+    if (newSettings.purchasedCardThemes !== undefined) payload.purchased_card_themes = newSettings.purchasedCardThemes;
+
+    const { error } = await supabase
+      .from("user_settings")
+      .update(payload)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error updating settings:", error);
+      toast.error(`Fail: ${error.message} - ${error.details || ''}`);
+    }
   };
 
-  const addCategory = (category: string) => {
+  const addCategory = async (category: string) => {
     if (!settings.categories.includes(category)) {
-      setSettings({
-        ...settings,
-        categories: [...settings.categories, category],
-      });
+      const newCategories = [...settings.categories, category];
+      await updateSettings({ categories: newCategories });
     }
   };
 
-  const removeCategory = (category: string) => {
-    setSettings({
-      ...settings,
-      categories: settings.categories.filter((c) => c !== category),
-    });
+  const removeCategory = async (category: string) => {
+    const newCategories = settings.categories.filter((c) => c !== category);
+    await updateSettings({ categories: newCategories });
   };
 
-  const addPaymentMethod = (method: string) => {
+  const addPaymentMethod = async (method: string) => {
     if (!settings.paymentMethods.includes(method)) {
-      setSettings({
-        ...settings,
-        paymentMethods: [...settings.paymentMethods, method],
-      });
+      const newMethods = [...settings.paymentMethods, method];
+      await updateSettings({ paymentMethods: newMethods });
     }
   };
 
-  const removePaymentMethod = (method: string) => {
-    setSettings({
-      ...settings,
-      paymentMethods: settings.paymentMethods.filter((m) => m !== method),
-    });
+  const removePaymentMethod = async (method: string) => {
+    const newMethods = settings.paymentMethods.filter((m) => m !== method);
+    await updateSettings({ paymentMethods: newMethods });
   };
 
   return (
@@ -115,6 +226,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         removeCategory,
         addPaymentMethod,
         removePaymentMethod,
+        isLoading
       }}
     >
       {children}

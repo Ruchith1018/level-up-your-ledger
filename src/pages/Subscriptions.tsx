@@ -28,12 +28,15 @@ import { motion } from "framer-motion";
 
 import dayjs from "dayjs";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function Subscriptions() {
   const navigate = useNavigate();
   const { state, addSubscription, updateSubscription, deleteSubscription, toggleActive, getUpcomingSubscriptions } =
     useSubscriptions();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
+  const isLoading = state.isLoading;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -278,53 +281,69 @@ export default function Subscriptions() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6 pb-24">
-        {upcomingSubs.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-warning/10 border border-warning/20 rounded-lg p-4"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-5 h-5 text-warning" />
-              <h2 className="font-semibold text-warning">Upcoming Payments</h2>
-            </div>
-            <div className="space-y-2">
-              {upcomingSubs.map((sub) => (
-                <div key={sub.id} className="text-sm">
-                  <span className="font-medium">{sub.title}</span> - {currencySymbol}{sub.amount.toFixed(2)}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {isLoading ? (
+          <div className="space-y-6">
+            {/* Upcoming Skeleton */}
+            <Skeleton className="w-full h-24 rounded-lg" />
 
-        {state.subscriptions.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">No subscriptions yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Start tracking your recurring payments
-            </p>
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Subscription
-            </Button>
+            {/* Grid Skeleton */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Skeleton className="h-[200px] rounded-xl" />
+              <Skeleton className="h-[200px] rounded-xl" />
+              <Skeleton className="h-[200px] rounded-xl" />
+            </div>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {state.subscriptions.map((subscription) => (
-              <SubscriptionCard
-                key={subscription.id}
-                subscription={subscription}
-                onToggle={() => toggleActive(subscription.id)}
-                onDelete={() => {
-                  deleteSubscription(subscription.id);
-                  toast.success("Subscription deleted");
-                }}
-                onEdit={() => handleEdit(subscription)}
-              />
-            ))}
-          </div>
+          <>
+            {upcomingSubs.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-warning/10 border border-warning/20 rounded-lg p-4"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5 text-warning" />
+                  <h2 className="font-semibold text-warning">Upcoming Payments</h2>
+                </div>
+                <div className="space-y-2">
+                  {upcomingSubs.map((sub) => (
+                    <div key={sub.id} className="text-sm">
+                      <span className="font-medium">{sub.title}</span> - {currencySymbol}{sub.amount.toFixed(2)}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {state.subscriptions.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mb-2">No subscriptions yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start tracking your recurring payments
+                </p>
+                <Button onClick={() => setOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Subscription
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {state.subscriptions.map((subscription) => (
+                  <SubscriptionCard
+                    key={subscription.id}
+                    subscription={subscription}
+                    onToggle={() => toggleActive(subscription.id)}
+                    onDelete={() => {
+                      deleteSubscription(subscription.id);
+                      toast.success("Subscription deleted");
+                    }}
+                    onEdit={() => handleEdit(subscription)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 

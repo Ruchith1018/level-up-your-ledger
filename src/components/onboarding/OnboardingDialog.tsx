@@ -27,13 +27,15 @@ import { useTutorial } from "@/contexts/TutorialContext";
 import { decryptData } from "@/utils/security";
 
 export function OnboardingDialog() {
-    const { settings, updateSettings } = useSettings();
+    const { settings, updateSettings, isLoading } = useSettings();
     const { addBudget } = useBudget();
     const { startTutorial } = useTutorial();
     const [step, setStep] = useState(1);
     const [userName, setUserName] = useState("");
     const [currency, setCurrency] = useState("USD");
     const [budgetAmount, setBudgetAmount] = useState("");
+
+    if (isLoading) return null;
 
     const isOpen = !settings.hasCompletedOnboarding;
 

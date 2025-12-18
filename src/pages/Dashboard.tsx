@@ -12,10 +12,19 @@ import { BarChart3, Calendar, Settings, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useExpenses } from "@/contexts/ExpenseContext";
+import { useBudget } from "@/contexts/BudgetContext";
+import { useGamification } from "@/contexts/GamificationContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { settings } = useSettings();
+  const { state: expenseState } = useExpenses();
+  const { state: budgetState } = useBudget();
+  const { isLoading: isGamificationLoading } = useGamification();
+
+  const isLoading = expenseState.isLoading || budgetState.isLoading || isGamificationLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,19 +73,66 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">Let's track your finances today</p>
           </motion.div>
         )}
-        <XPBar />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BudgetOverview />
-          <CategoryBudgets />
-        </div>
+        {isLoading ? (
+          <div className="space-y-6">
+            {/* XP Bar Skeleton */}
+            <Skeleton className="w-full h-20 rounded-xl" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CategoryPieChart />
-          <MonthlyTrendChart />
-        </div>
+            {/* Budget Cards Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Skeleton className="w-full h-[280px] rounded-xl" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-[120px] rounded-lg" />
+                <Skeleton className="h-[120px] rounded-lg" />
+                <Skeleton className="col-span-2 h-[120px] rounded-lg" />
+              </div>
+            </div>
 
-        <TransactionList />
+            {/* Charts Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="p-4 border rounded-xl space-y-4">
+                <div className="flex justify-between">
+                  <Skeleton className="h-6 w-1/3" />
+                </div>
+                <Skeleton className="h-[300px] w-full rounded-full" />
+              </div>
+              <div className="p-4 border rounded-xl space-y-4">
+                <div className="flex justify-between">
+                  <Skeleton className="h-6 w-1/3" />
+                  <Skeleton className="h-8 w-[100px]" />
+                </div>
+                <Skeleton className="h-[300px] w-full" />
+              </div>
+            </div>
+
+            {/* Transactions Skeleton */}
+            <div>
+              <Skeleton className="h-8 w-40 mb-4" />
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <XPBar />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BudgetOverview />
+              <CategoryBudgets />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CategoryPieChart />
+              <MonthlyTrendChart />
+            </div>
+
+            <TransactionList />
+          </>
+        )}
       </main>
 
       <AddExpenseModal />

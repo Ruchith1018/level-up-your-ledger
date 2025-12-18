@@ -16,12 +16,15 @@ import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function IncomePage() {
     const navigate = useNavigate();
     const { state: expenseState } = useExpenses();
     const { settings } = useSettings();
     const currencySymbol = getCurrencySymbol(settings.currency);
     const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+    const isLoading = expenseState.isLoading;
 
     const availableMonths = useMemo(() => {
         const months = new Set<string>();
@@ -65,75 +68,93 @@ export default function IncomePage() {
                     </Select>
                 </div>
 
-                {/* Total Income Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20 overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <TrendingUp className="w-32 h-32 text-blue-500" />
-                        </div>
-                        <CardHeader className="pb-2 relative z-10">
-                            <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                <TrendingUp className="w-5 h-5" />
-                                Total Income ({dayjs(selectedMonth).format("MMMM")})
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="relative z-10">
-                            <div className="text-4xl sm:text-5xl font-bold text-blue-700 dark:text-blue-300 mb-2">
-                                {currencySymbol}{totalIncome.toFixed(2)}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                Total earnings for {dayjs(selectedMonth).format("MMMM YYYY")}
-                            </p>
-                        </CardContent>
-                    </Card>
-                </motion.div>
+                {isLoading ? (
+                    <div className="space-y-6">
+                        {/* Total Income Skeleton */}
+                        <Skeleton className="w-full h-[200px] rounded-xl" />
 
-                {/* History List */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-muted-foreground" />
-                        Income History
-                    </h2>
-
-                    {incomeTransactions.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8 text-center text-muted-foreground">
-                                No income recorded for {dayjs(selectedMonth).format("MMMM")} yet.
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-3">
-                            {incomeTransactions.map((item, index) => (
-                                <motion.div
-                                    key={item.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                >
-                                    <Card>
-                                        <CardContent className="flex justify-between items-center p-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">{item.category}</p>
-                                                    <p className="text-xs text-muted-foreground">{dayjs(item.date).format("MMM D, YYYY")}</p>
-                                                </div>
-                                            </div>
-                                            <span className="font-bold text-blue-600 dark:text-blue-400">
-                                                +{currencySymbol}{item.amount.toFixed(2)}
-                                            </span>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            ))}
+                        {/* List Skeleton */}
+                        <div className="space-y-3">
+                            <Skeleton className="h-6 w-40" />
+                            <Skeleton className="w-full h-20 rounded-xl" />
+                            <Skeleton className="w-full h-20 rounded-xl" />
+                            <Skeleton className="w-full h-20 rounded-xl" />
+                            <Skeleton className="w-full h-20 rounded-xl" />
                         </div>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Total Income Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20 overflow-hidden relative">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <TrendingUp className="w-32 h-32 text-blue-500" />
+                                </div>
+                                <CardHeader className="pb-2 relative z-10">
+                                    <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                                        <TrendingUp className="w-5 h-5" />
+                                        Total Income ({dayjs(selectedMonth).format("MMMM")})
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="relative z-10">
+                                    <div className="text-4xl sm:text-5xl font-bold text-blue-700 dark:text-blue-300 mb-2">
+                                        {currencySymbol}{totalIncome.toFixed(2)}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Total earnings for {dayjs(selectedMonth).format("MMMM YYYY")}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+
+                        {/* History List */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-muted-foreground" />
+                                Income History
+                            </h2>
+
+                            {incomeTransactions.length === 0 ? (
+                                <Card>
+                                    <CardContent className="py-8 text-center text-muted-foreground">
+                                        No income recorded for {dayjs(selectedMonth).format("MMMM")} yet.
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="grid gap-3">
+                                    {incomeTransactions.map((item, index) => (
+                                        <motion.div
+                                            key={item.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                        >
+                                            <Card>
+                                                <CardContent className="flex justify-between items-center p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                                            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">{item.category}</p>
+                                                            <p className="text-xs text-muted-foreground">{dayjs(item.date).format("MMM D, YYYY")}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="font-bold text-blue-600 dark:text-blue-400">
+                                                        +{currencySymbol}{item.amount.toFixed(2)}
+                                                    </span>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

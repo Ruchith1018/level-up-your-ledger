@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useExpenses } from "@/contexts/ExpenseContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Analytics() {
   const navigate = useNavigate();
+  const { state } = useExpenses();
+  const isLoading = state.isLoading;
 
   return (
     <div className="bg-background">
@@ -27,37 +31,55 @@ export default function Analytics() {
       </header>
 
       <main id="analytics-content" className="container mx-auto px-4 py-6 space-y-6 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <DailySpendingTrend />
-        </motion.div>
+        {isLoading ? (
+          <div className="space-y-6">
+            {/* Daily Trend Skeleton */}
+            <Skeleton className="w-full h-[300px] rounded-xl" />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <SpendingHeatmap />
-        </motion.div>
+            {/* Heatmap Skeleton */}
+            <Skeleton className="w-full h-[200px] rounded-xl" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <CategoryPieChart />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <MonthlyTrendChart />
-          </motion.div>
-        </div>
+            {/* Charts Grid Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Skeleton className="w-full h-[350px] rounded-xl" />
+              <Skeleton className="w-full h-[350px] rounded-xl" />
+            </div>
+          </div>
+        ) : (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <DailySpendingTrend />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <SpendingHeatmap />
+            </motion.div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <CategoryPieChart />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <MonthlyTrendChart />
+              </motion.div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

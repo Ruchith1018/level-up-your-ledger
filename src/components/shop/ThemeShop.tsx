@@ -8,32 +8,37 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { THEMES } from "@/constants/themes";
 
-export function ThemeShop() {
-  const { state: gamifyState, spendCoins } = useGamification();
-  const { settings, updateSettings } = useSettings();
-  const [purchasedThemes, setPurchasedThemes] = useState<string[]>(() => {
-    const stored = localStorage.getItem("gft_purchased_themes");
-    return stored ? JSON.parse(stored) : [];
-  });
+import { Skeleton } from "@/components/ui/skeleton";
 
-  const purchaseTheme = (theme: typeof THEMES[0]) => {
+export function ThemeShop() {
+  const { state: gamifyState, spendCoins, isLoading: isGamificationLoading } = useGamification();
+  const { settings, updateSettings, isLoading: isSettingsLoading } = useSettings();
+
+  const isLoading = isGamificationLoading || isSettingsLoading;
+
+  // Use settings directly
+  const purchasedThemes = settings.purchasedThemes || [];
+
+  const purchaseTheme = async (theme: typeof THEMES[0]) => {
     if (theme.id === "default" || purchasedThemes.includes(theme.id)) {
       applyTheme(theme);
       return;
     }
 
-    if (spendCoins(theme.price)) {
+    if (await spendCoins(theme.price)) {
       const updated = [...purchasedThemes, theme.id];
-      setPurchasedThemes(updated);
-      localStorage.setItem("gft_purchased_themes", JSON.stringify(updated));
-      applyTheme(theme);
+      // Apply and save purchase in one go
+      await updateSettings({
+        purchasedThemes: updated,
+        premiumTheme: theme.id
+      });
       toast.success(`${theme.name} theme purchased and applied!`);
     }
   };
 
   const applyTheme = (theme: typeof THEMES[0]) => {
     if (theme.id === "default") {
-      updateSettings({ premiumTheme: undefined });
+      updateSettings({ premiumTheme: null });
       toast.success("Default theme applied!");
       return;
     }
@@ -54,56 +59,64 @@ export function ThemeShop() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {THEMES.map((theme, index) => {
-            const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
-            const isActive = (theme.id === "default" && !settings.premiumTheme) || settings.premiumTheme === theme.id;
+        {isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-48 rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {THEMES.map((theme, index) => {
+              const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
+              const isActive = (theme.id === "default" && !settings.premiumTheme) || settings.premiumTheme === theme.id;
 
-            return (
-              <motion.div
-                key={theme.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="overflow-hidden">
-                  <div
-                    className="h-24 relative"
-                    style={{
-                      background: `linear-gradient(135deg, hsl(${theme.colors.primary}), hsl(${theme.colors.secondary}), hsl(${theme.colors.accent}))`,
-                    }}
-                  >
-                    {isActive && (
-                      <div className="absolute top-2 right-2 bg-card text-foreground px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-                        <Check className="w-3 h-3" />
-                        Active
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-1">{theme.name}</h3>
-                    <p className="text-xs text-muted-foreground mb-3">{theme.description}</p>
-                    <Button
-                      onClick={() => purchaseTheme(theme)}
-                      disabled={!isPurchased && gamifyState.coins < theme.price}
-                      className="w-full"
-                      variant={isPurchased ? "outline" : "default"}
+              return (
+                <motion.div
+                  key={theme.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card className="overflow-hidden">
+                    <div
+                      className="h-24 relative"
+                      style={{
+                        background: `linear-gradient(135deg, hsl(${theme.colors.primary}), hsl(${theme.colors.secondary}), hsl(${theme.colors.accent}))`,
+                      }}
                     >
-                      {isPurchased ? (
-                        isActive ? "Applied" : "Apply"
-                      ) : (
-                        <>
-                          <Coins className="w-4 h-4 mr-2" />
-                          {theme.price} coins
-                        </>
+                      {isActive && (
+                        <div className="absolute top-2 right-2 bg-card text-foreground px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          Active
+                        </div>
                       )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold mb-1">{theme.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-3">{theme.description}</p>
+                      <Button
+                        onClick={() => purchaseTheme(theme)}
+                        disabled={!isPurchased && gamifyState.coins < theme.price}
+                        className="w-full"
+                        variant={isPurchased ? "outline" : "default"}
+                      >
+                        {isPurchased ? (
+                          isActive ? "Applied" : "Apply"
+                        ) : (
+                          <>
+                            <Coins className="w-4 h-4 mr-2" />
+                            {theme.price} coins
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

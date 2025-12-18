@@ -81,12 +81,14 @@ export interface AppSettings {
   currency: string;
   locale: string;
   theme: string;
-  cardTheme: string;
   categories: string[];
   paymentMethods: string[];
-  premiumTheme?: string;
+  cardTheme?: string | null;
+  premiumTheme?: string | null;
   userName?: string;
   hasCompletedOnboarding?: boolean;
   hasCompletedTutorial?: boolean;
   hasSeenIntro?: boolean;
+  purchasedThemes?: string[];
+  purchasedCardThemes?: string[];
 }

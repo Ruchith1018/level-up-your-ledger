@@ -25,13 +25,17 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function SavingsPage() {
     const navigate = useNavigate();
     const { state: budgetState } = useBudget();
-    const { getTotalByType } = useExpenses();
+    const { getTotalByType, state: expenseState } = useExpenses();
     const { settings } = useSettings();
     const { state: savingsState, deleteGoal } = useSavings();
     const currencySymbol = getCurrencySymbol(settings.currency);
+
+    const isLoading = budgetState.isLoading || expenseState.isLoading || savingsState.isLoading;
 
     const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
@@ -97,153 +101,186 @@ export default function SavingsPage() {
                     <h1 className="text-2xl font-bold">My Savings</h1>
                 </div>
 
-                {/* Savings Overview Cards */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20 overflow-hidden relative h-full">
-                            <div className="absolute top-0 right-0 p-8 opacity-10">
-                                <PiggyBank className="w-32 h-32 text-emerald-500" />
-                            </div>
-                            <CardHeader className="pb-2 relative z-10">
-                                <CardTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-                                    <PiggyBank className="w-4 h-4" />
-                                    Total Accumulated
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="relative z-10">
-                                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-                                    {currencySymbol}{totalAccumulatedSavings.toFixed(2)}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                {isLoading ? (
+                    <div className="space-y-8">
+                        {/* Overview Cards Skeleton */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Skeleton className="w-full h-32 rounded-xl" />
+                            <Skeleton className="w-full h-32 rounded-xl" />
+                        </div>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                    >
-                        <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20 overflow-hidden relative h-full">
-                            <div className="absolute top-0 right-0 p-8 opacity-10">
-                                <Target className="w-32 h-32 text-blue-500" />
+                        {/* Goals Grid Skeleton */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <Skeleton className="h-6 w-32" />
+                                <Skeleton className="h-9 w-24" />
                             </div>
-                            <CardHeader className="pb-2 relative z-10">
-                                <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
-                                    <Target className="w-4 h-4" />
-                                    Available to Allocate
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="relative z-10">
-                                <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                                    {currencySymbol}{availableSavings.toFixed(2)}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Skeleton className="w-full h-64 rounded-xl" />
+                                <Skeleton className="w-full h-64 rounded-xl" />
+                            </div>
+                        </div>
 
-                {/* Savings Goals Section */}
-                <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                            <Target className="w-5 h-5 text-muted-foreground" />
-                            Savings Goals
-                        </h2>
-                        <Button size="sm" onClick={() => setIsAddGoalOpen(true)} className="gap-2">
-                            <Plus className="w-4 h-4" />
-                            New Goal
-                        </Button>
+                        {/* History Skeleton */}
+                        <div className="space-y-4">
+                            <Skeleton className="h-6 w-40" />
+                            <div className="space-y-3">
+                                <Skeleton className="w-full h-20 rounded-xl" />
+                                <Skeleton className="w-full h-20 rounded-xl" />
+                            </div>
+                        </div>
                     </div>
-
-                    {/* Tabs */}
-                    <div className="flex p-1 bg-muted/50 rounded-lg w-full sm:w-fit">
-                        {(['all', 'pending', 'completed'] as const).map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all capitalize ${activeTab === tab
-                                    ? 'bg-background shadow-sm text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                ) : (
+                    <>
+                        {/* Savings Overview Cards */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
                             >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
+                                <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20 overflow-hidden relative h-full">
+                                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                                        <PiggyBank className="w-32 h-32 text-emerald-500" />
+                                    </div>
+                                    <CardHeader className="pb-2 relative z-10">
+                                        <CardTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+                                            <PiggyBank className="w-4 h-4" />
+                                            Total Accumulated
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="relative z-10">
+                                        <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
+                                            {currencySymbol}{totalAccumulatedSavings.toFixed(2)}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <AnimatePresence mode="popLayout">
-                            {filteredGoals.map((goal) => (
-                                <SavingsGoalCard
-                                    key={goal.id}
-                                    goal={goal}
-                                    onEdit={handleEditGoal}
-                                    onAllocate={handleAllocate}
-                                    onDelete={handleDeleteClick}
-                                />
-                            ))}
-                        </AnimatePresence>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                            >
+                                <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20 overflow-hidden relative h-full">
+                                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                                        <Target className="w-32 h-32 text-blue-500" />
+                                    </div>
+                                    <CardHeader className="pb-2 relative z-10">
+                                        <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
+                                            <Target className="w-4 h-4" />
+                                            Available to Allocate
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="relative z-10">
+                                        <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                                            {currencySymbol}{availableSavings.toFixed(2)}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </div>
 
-                        {filteredGoals.length === 0 && (
-                            <div className="col-span-full text-center py-12 border-2 border-dashed rounded-xl text-muted-foreground">
-                                <Target className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                <p>No {activeTab === 'all' ? '' : activeTab} savings goals found</p>
-                                {activeTab !== 'completed' && (
-                                    <Button variant="link" onClick={() => setIsAddGoalOpen(true)}>
-                                        Create a new goal
-                                    </Button>
+                        {/* Savings Goals Section */}
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <h2 className="text-lg font-semibold flex items-center gap-2">
+                                    <Target className="w-5 h-5 text-muted-foreground" />
+                                    Savings Goals
+                                </h2>
+                                <Button size="sm" onClick={() => setIsAddGoalOpen(true)} className="gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    New Goal
+                                </Button>
+                            </div>
+
+                            {/* Tabs */}
+                            <div className="flex p-1 bg-muted/50 rounded-lg w-full sm:w-fit">
+                                {(['all', 'pending', 'completed'] as const).map((tab) => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md transition-all capitalize ${activeTab === tab
+                                            ? 'bg-background shadow-sm text-foreground'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                    >
+                                        {tab}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <AnimatePresence mode="popLayout">
+                                    {filteredGoals.map((goal) => (
+                                        <SavingsGoalCard
+                                            key={goal.id}
+                                            goal={goal}
+                                            onEdit={handleEditGoal}
+                                            onAllocate={handleAllocate}
+                                            onDelete={handleDeleteClick}
+                                        />
+                                    ))}
+                                </AnimatePresence>
+
+                                {filteredGoals.length === 0 && (
+                                    <div className="col-span-full text-center py-12 border-2 border-dashed rounded-xl text-muted-foreground">
+                                        <Target className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                        <p>No {activeTab === 'all' ? '' : activeTab} savings goals found</p>
+                                        {activeTab !== 'completed' && (
+                                            <Button variant="link" onClick={() => setIsAddGoalOpen(true)}>
+                                                Create a new goal
+                                            </Button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* History List */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-muted-foreground" />
-                        Savings History
-                    </h2>
-
-                    {savingsHistory.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8 text-center text-muted-foreground">
-                                No savings history yet. Keep under budget to start saving!
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-3">
-                            {savingsHistory.map((item, index) => (
-                                <motion.div
-                                    key={item.month}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                >
-                                    <Card>
-                                        <CardContent className="flex justify-between items-center p-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                                    <PiggyBank className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">{dayjs(item.month).format("MMMM YYYY")}</p>
-                                                    <p className="text-xs text-muted-foreground">Monthly Surplus</p>
-                                                </div>
-                                            </div>
-                                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                                +{currencySymbol}{item.amount.toFixed(2)}
-                                            </span>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            ))}
                         </div>
-                    )}
-                </div>
+
+                        {/* History List */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-muted-foreground" />
+                                Savings History
+                            </h2>
+
+                            {savingsHistory.length === 0 ? (
+                                <Card>
+                                    <CardContent className="py-8 text-center text-muted-foreground">
+                                        No savings history yet. Keep under budget to start saving!
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="grid gap-3">
+                                    {savingsHistory.map((item, index) => (
+                                        <motion.div
+                                            key={item.month}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                        >
+                                            <Card>
+                                                <CardContent className="flex justify-between items-center p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                                            <PiggyBank className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">{dayjs(item.month).format("MMMM YYYY")}</p>
+                                                            <p className="text-xs text-muted-foreground">Monthly Surplus</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                        +{currencySymbol}{item.amount.toFixed(2)}
+                                                    </span>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
 
             <AddGoalModal
