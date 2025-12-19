@@ -30,7 +30,7 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { settings, updateSettings, isLoading } = useSettings();
+  const { settings, updateSettings, isLoading, resetTheme } = useSettings();
   const [name, setName] = useState(settings.userName || "");
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
@@ -50,6 +50,7 @@ export default function Settings() {
   };
 
   const performLogout = async () => {
+    resetTheme();
     await signOut();
     localStorage.clear();
     window.location.href = "/auth";
@@ -84,6 +85,7 @@ export default function Settings() {
         throw new Error("Failed to delete user account. Check if delete_user function exists.");
       }
 
+      resetTheme(); // Reset theme before logout
       await signOut();
       localStorage.clear();
       toast.dismiss();

@@ -12,6 +12,7 @@ interface SettingsContextType {
   removeCategory: (category: string) => Promise<void>;
   addPaymentMethod: (method: string) => Promise<void>;
   removePaymentMethod: (method: string) => Promise<void>;
+  resetTheme: () => void;
   isLoading: boolean;
 }
 
@@ -226,6 +227,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         removeCategory,
         addPaymentMethod,
         removePaymentMethod,
+        resetTheme: () => {
+          const root = window.document.documentElement;
+          root.classList.remove("light", "dark");
+          root.style.removeProperty("--primary");
+          root.style.removeProperty("--secondary");
+          root.style.removeProperty("--accent");
+          setSettings(defaultSettings);
+        },
         isLoading
       }}
     >

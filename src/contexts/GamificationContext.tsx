@@ -17,7 +17,7 @@ interface GamificationContextType {
   spendCoins: (amount: number) => Promise<boolean>;
   claimTaskReward: (taskId: string, reward: number) => Promise<void>;
   checkBadges: (transactions: any[], budgetState: any) => void;
-  checkBadges: (transactions: any[], budgetState: any) => void;
+
   addRedemptionLog: (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => Promise<void>;
   isLoading: boolean;
 }
