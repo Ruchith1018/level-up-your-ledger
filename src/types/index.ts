@@ -91,4 +91,5 @@ export interface AppSettings {
   hasSeenIntro?: boolean;
   purchasedThemes?: string[];
   purchasedCardThemes?: string[];
+  hasAcceptedTerms?: boolean;
 }

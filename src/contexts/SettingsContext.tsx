@@ -39,6 +39,7 @@ const defaultSettings: AppSettings = {
   hasSeenIntro: false,
   purchasedThemes: [],
   purchasedCardThemes: [],
+  hasAcceptedTerms: false,
 };
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -102,6 +103,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             hasCompletedOnboarding: createdData.has_completed_onboarding,
             hasCompletedTutorial: createdData.has_completed_tutorial,
             hasSeenIntro: createdData.has_seen_intro,
+            hasAcceptedTerms: createdData.has_accepted_terms,
             purchasedThemes: createdData.purchased_themes || [],
             purchasedCardThemes: createdData.purchased_card_themes || []
           });
@@ -119,6 +121,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           hasCompletedOnboarding: data.has_completed_onboarding,
           hasCompletedTutorial: data.has_completed_tutorial,
           hasSeenIntro: data.has_seen_intro,
+          hasAcceptedTerms: data.has_accepted_terms,
           purchasedThemes: data.purchased_themes || [],
           purchasedCardThemes: data.purchased_card_themes || []
         });
@@ -127,7 +130,52 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchSettings();
-    fetchSettings();
+    // fetchSettings(); // Removed duplicate call
+  }, [user?.id]);
+
+  // Realtime Updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Realtime settings update:', payload);
+          const newData = payload.new;
+          if (newData) {
+            setSettings((prev) => ({
+              ...prev,
+              currency: newData.currency,
+              locale: newData.locale,
+              theme: newData.theme,
+              cardTheme: newData.card_theme,
+              categories: newData.categories,
+              paymentMethods: newData.payment_methods,
+              premiumTheme: newData.premium_theme,
+              userName: newData.user_name,
+              hasCompletedOnboarding: newData.has_completed_onboarding,
+              hasCompletedTutorial: newData.has_completed_tutorial,
+              hasSeenIntro: newData.has_seen_intro,
+              hasAcceptedTerms: newData.has_accepted_terms,
+              purchasedThemes: newData.purchased_themes || [],
+              purchasedCardThemes: newData.purchased_card_themes || []
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user?.id]);
 
   // Apply Theme
@@ -180,6 +228,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (newSettings.hasCompletedOnboarding !== undefined) payload.has_completed_onboarding = newSettings.hasCompletedOnboarding;
     if (newSettings.hasCompletedTutorial !== undefined) payload.has_completed_tutorial = newSettings.hasCompletedTutorial;
     if (newSettings.hasSeenIntro !== undefined) payload.has_seen_intro = newSettings.hasSeenIntro;
+    if (newSettings.hasAcceptedTerms !== undefined) payload.has_accepted_terms = newSettings.hasAcceptedTerms;
     if (newSettings.purchasedThemes !== undefined) payload.purchased_themes = newSettings.purchasedThemes;
     if (newSettings.purchasedCardThemes !== undefined) payload.purchased_card_themes = newSettings.purchasedCardThemes;
 

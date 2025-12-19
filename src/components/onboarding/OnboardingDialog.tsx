@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useBudget } from "@/contexts/BudgetContext";
 import {
@@ -30,14 +30,31 @@ export function OnboardingDialog() {
     const { settings, updateSettings, isLoading } = useSettings();
     const { addBudget } = useBudget();
     const { startTutorial } = useTutorial();
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(settings.hasAcceptedTerms ? 1 : 0); // Start at step 0 for Terms, or 1 if already accepted
     const [userName, setUserName] = useState("");
     const [currency, setCurrency] = useState("USD");
     const [budgetAmount, setBudgetAmount] = useState("");
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+    useEffect(() => {
+        if (settings.hasAcceptedTerms && step === 0) {
+            setStep(1);
+        }
+    }, [settings.hasAcceptedTerms, step]);
 
     if (isLoading) return null;
 
-    const isOpen = !settings.hasCompletedOnboarding;
+    // Open if onboarding is incomplete OR terms are not accepted
+    const isOpen = !settings.hasCompletedOnboarding || !settings.hasAcceptedTerms;
+
+    const handleTermsAccept = () => {
+        if (!acceptedTerms) {
+            toast.error("Please accept the terms and conditions");
+            return;
+        }
+        updateSettings({ ...settings, hasAcceptedTerms: true }); // Persist acceptance
+        setStep(1);
+    };
 
     const handleNameSubmit = () => {
         if (!userName.trim()) {
@@ -192,7 +209,47 @@ export function OnboardingDialog() {
     return (
         <Dialog open={isOpen} onOpenChange={() => { }}>
             <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-xl" hideCloseButton>
-                {step === 1 ? (
+                {step === 0 ? (
+                    <>
+                        <DialogHeader>
+                            <div className="flex items-center justify-center mb-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                                    <Sparkles className="w-8 h-8 text-white" />
+                                </div>
+                            </div>
+                            <DialogTitle className="text-center text-2xl">Terms of Service</DialogTitle>
+                            <DialogDescription className="text-center">
+                                Please review and accept our terms to continue.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-6 py-4">
+                            <div className="text-sm text-muted-foreground text-center">
+                                By continuing, you acknowledge that you have read and agree to our{" "}
+                                <a href="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                                    Terms and Conditions
+                                </a>
+                                .
+                            </div>
+
+                            <div className="flex items-center space-x-2 justify-center p-4 bg-secondary/20 rounded-lg">
+                                <input
+                                    type="checkbox"
+                                    id="terms"
+                                    className="w-5 h-5 rounded border-input text-primary focus:ring-primary"
+                                    checked={acceptedTerms}
+                                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                />
+                                <Label htmlFor="terms" className="cursor-pointer">
+                                    I accept the Terms and Conditions
+                                </Label>
+                            </div>
+
+                            <Button onClick={handleTermsAccept} className="w-full" disabled={!acceptedTerms}>
+                                Continue
+                            </Button>
+                        </div>
+                    </>
+                ) : step === 1 ? (
                     <>
                         <DialogHeader>
                             <div className="flex items-center justify-center mb-4">

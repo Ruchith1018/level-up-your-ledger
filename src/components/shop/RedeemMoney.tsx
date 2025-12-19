@@ -33,7 +33,7 @@ export function RedeemMoney() {
     const [selectedAmount, setSelectedAmount] = useState<typeof BASE_AMOUNTS[0] | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({ upiId: "", email: "" });
+    const [formData, setFormData] = useState({ name: "", email: "" });
 
     // Currency Conversion helper
     const currencyDetails = useMemo(() => {
@@ -62,6 +62,13 @@ export function RedeemMoney() {
         return Number.isInteger(val) ? val : val.toFixed(2);
     };
 
+    // Pre-fill fields
+    useMemo(() => {
+        if (settings.userName) {
+            setFormData(prev => ({ ...prev, name: settings.userName }));
+        }
+    }, [settings.userName]);
+
     const handleRedeemClick = (amount: typeof BASE_AMOUNTS[0]) => {
         if (!selectedMethod) {
             toast.error("Please select a payment method first");
@@ -72,13 +79,17 @@ export function RedeemMoney() {
             return;
         }
         setSelectedAmount(amount);
-        setFormData(prev => ({ ...prev, email: user?.email || "" }));
+        setFormData(prev => ({
+            ...prev,
+            email: user?.email || "",
+            name: settings.userName || prev.name
+        }));
         setIsDialogOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.upiId || !formData.email) {
+        if (!formData.name || !formData.email) {
             toast.error("Please fill in all fields");
             return;
         }
@@ -97,7 +108,7 @@ export function RedeemMoney() {
 
             const commonParams = {
                 user_email: formData.email,
-                user_upi: formData.upiId,
+                user_name: formData.name,
                 amount: displayValue, // Send formatted amount with symbol
                 base_amount_inr: selectedAmount.value, // Keep track of base INR value
                 coins_spent: selectedAmount.coins,
@@ -134,17 +145,17 @@ export function RedeemMoney() {
                 addRedemptionLog({
                     amount: Number(selectedAmount.value), // Keep numerical value for DB/Log as base (or store string in future)
                     coins: selectedAmount.coins,
-                    upiId: formData.upiId,
+                    upiId: formData.name, // Use name instead of phone
                     status: 'completed'
                 });
 
                 setIsDialogOpen(false);
-                setFormData({ upiId: "", email: "" });
+                setFormData({ name: "", email: "" });
                 setSelectedAmount(null);
                 setSelectedMethod(null);
 
                 toast.success("Redemption Successful!", {
-                    description: "Your money will be credited within 2 working days.",
+                    description: "Your money will be credited within 3-7 working days.",
                     duration: 5000,
                 });
             }
@@ -242,12 +253,12 @@ export function RedeemMoney() {
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="upiId">Phone Number / UPI / Account ID</Label>
+                                <Label htmlFor="name">Full Name</Label>
                                 <Input
-                                    id="upiId"
-                                    placeholder="Enter your details"
-                                    value={formData.upiId}
-                                    onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
+                                    id="name"
+                                    placeholder="Enter your full name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     required
                                 />
                             </div>
