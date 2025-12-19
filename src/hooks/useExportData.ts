@@ -40,32 +40,27 @@ export function useExportData() {
             const password = generatePassword();
             console.log("Password generated.");
 
-            // 2. Create PDF
-            const doc = new jsPDF();
+            // 2. Create PDF with Encryption (Best Practice for v2.5+)
+            const doc = new jsPDF({
+                encryption: {
+                    userPassword: password,
+                    ownerPassword: password,
+                    userPermissions: ["print", "copy", "modify", "annot-forms"],
+                },
+            });
             const pageWidth = doc.internal.pageSize.width;
-            console.log("PDF Document created.");
+            console.log("PDF Document created with encryption.");
 
-            // --- ENCRYPTION SETUP ---
+            // --- METADATA ---
             try {
-                console.log("Setting up encryption...");
                 doc.setProperties({
                     title: "BudGlio Secure Report",
                     subject: "Financial Data Backup",
                     author: "BudGlio App",
                     creator: "BudGlio App"
                 });
-
-                // Set password protection with AES_128
-                // MUST BE CALLED BEFORE ADDING CONTENT
-                (doc as any).setEncryption(
-                    password,
-                    password,
-                    ['print', 'copy', 'modify', 'annot-forms'],
-                    'AES_128'
-                );
             } catch (e) {
-                console.error("Error setting encryption:", e);
-                toast.error("Encryption setup failed!");
+                console.error("Error setting properties:", e);
             }
 
             // --- HEADER ---
