@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useGamification } from "@/contexts/GamificationContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/contexts/SettingsContext"; // Import useSettings
 import { Wallet, Loader2, History } from "lucide-react";
 import { toast } from "sonner";
 import emailjs from "@emailjs/browser";
@@ -17,7 +18,7 @@ const PAYMENT_METHODS = [
     { id: "paytm", name: "Paytm Gift Voucher", image: "/assets/payment/paytm_voucher.png", color: "" },
 ];
 
-const AMOUNTS = [
+const BASE_AMOUNTS = [
     { value: 100, coins: 10000 },
     { value: 250, coins: 25000 },
     { value: 500, coins: 50000 },
@@ -27,19 +28,47 @@ const AMOUNTS = [
 export function RedeemMoney() {
     const { user } = useAuth();
     const { state: gamifyState, spendCoins, addRedemptionLog } = useGamification();
+    const { settings } = useSettings(); // Use settings
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-    const [selectedAmount, setSelectedAmount] = useState<typeof AMOUNTS[0] | null>(null);
+    const [selectedAmount, setSelectedAmount] = useState<typeof BASE_AMOUNTS[0] | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({ upiId: "", email: "" });
 
-    const handleRedeemClick = (amount: typeof AMOUNTS[0]) => {
+    // Currency Conversion helper
+    const currencyDetails = useMemo(() => {
+        const curr = settings.currency || "USD";
+        // Check if currency is a symbol ($) or Code (USD)
+        const isUSD = curr === "USD" || curr === "$";
+        const isEUR = curr === "EUR" || curr === "€";
+        const isGBP = curr === "GBP" || curr === "£";
+        const isINR = curr === "INR" || curr === "₹";
+
+        let rate = 1;
+        let symbol = "₹";
+
+        if (isUSD) { rate = 0.012; symbol = "$"; }
+        else if (isEUR) { rate = 0.011; symbol = "€"; }
+        else if (isGBP) { rate = 0.0095; symbol = "£"; }
+        else { rate = 1; symbol = "₹"; }
+
+        return { rate, symbol };
+
+    }, [settings.currency]);
+
+    const getDisplayAmount = (baseValue: number) => {
+        const val = baseValue * currencyDetails.rate;
+        // Format nicely
+        return Number.isInteger(val) ? val : val.toFixed(2);
+    };
+
+    const handleRedeemClick = (amount: typeof BASE_AMOUNTS[0]) => {
         if (!selectedMethod) {
             toast.error("Please select a payment method first");
             return;
         }
         if (gamifyState.coins < amount.coins) {
-            toast.error(`You need ${amount.coins} coins to redeem ₹${amount.value}`);
+            toast.error(`You need ${amount.coins} coins to redeem ${currencyDetails.symbol}${getDisplayAmount(amount.value)}`);
             return;
         }
         setSelectedAmount(amount);
@@ -64,12 +93,16 @@ export function RedeemMoney() {
             const templateId = "template_7vaejkk";
             const publicKey = "6xRFoK6T6ftdk5xca";
 
+            const displayValue = `${currencyDetails.symbol}${getDisplayAmount(selectedAmount.value)}`;
+
             const commonParams = {
                 user_email: formData.email,
                 user_upi: formData.upiId,
-                amount: selectedAmount.value,
+                amount: displayValue, // Send formatted amount with symbol
+                base_amount_inr: selectedAmount.value, // Keep track of base INR value
                 coins_spent: selectedAmount.coins,
                 payment_method: PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name,
+                currency: settings.currency, // Send currency info
                 date: new Date().toLocaleString(),
             };
 
@@ -99,7 +132,7 @@ export function RedeemMoney() {
 
             if (spendCoins(selectedAmount.coins)) {
                 addRedemptionLog({
-                    amount: selectedAmount.value,
+                    amount: Number(selectedAmount.value), // Keep numerical value for DB/Log as base (or store string in future)
                     coins: selectedAmount.coins,
                     upiId: formData.upiId,
                     status: 'completed'
@@ -140,7 +173,7 @@ export function RedeemMoney() {
                         Redeem Gift Cards
                     </CardTitle>
                     <CardDescription>
-                        Convert your Earned coins into gift cards. Rate: 100 Coins = ₹1
+                        Convert your Earned coins into gift cards. Rate: 100 Coins = {currencyDetails.symbol}{getDisplayAmount(1)}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -172,7 +205,7 @@ export function RedeemMoney() {
                     <div className="space-y-3">
                         <h3 className="text-sm font-medium text-muted-foreground">Select Amount</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {AMOUNTS.map((amount) => (
+                            {BASE_AMOUNTS.map((amount) => (
                                 <Button
                                     key={amount.value}
                                     variant="outline"
@@ -180,7 +213,7 @@ export function RedeemMoney() {
                                     onClick={() => handleRedeemClick(amount)}
                                     disabled={!selectedMethod}
                                 >
-                                    <span className="text-2xl font-bold">₹{amount.value}</span>
+                                    <span className="text-2xl font-bold">{currencyDetails.symbol}{getDisplayAmount(amount.value)}</span>
                                     <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
                                         {amount.coins.toLocaleString()} Coins
                                     </span>
@@ -204,15 +237,15 @@ export function RedeemMoney() {
                         <DialogHeader>
                             <DialogTitle>Complete Redemption</DialogTitle>
                             <DialogDescription>
-                                Redeeming ₹{selectedAmount?.value} for {selectedAmount?.coins.toLocaleString()} coins via {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name}
+                                Redeeming {currencyDetails.symbol}{getDisplayAmount(selectedAmount?.value || 0)} for {selectedAmount?.coins.toLocaleString()} coins via {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name}
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="upiId">Phone Number</Label>
+                                <Label htmlFor="upiId">Phone Number / UPI / Account ID</Label>
                                 <Input
                                     id="upiId"
-                                    placeholder="Enter your phone number"
+                                    placeholder="Enter your details"
                                     value={formData.upiId}
                                     onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
                                     required
@@ -265,6 +298,7 @@ export function RedeemMoney() {
                                 <div key={log.id} className="flex items-center justify-between p-3 border rounded-lg bg-card/50">
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
+                                            {/* Note: History logs allow historical currency or current? Simple is assuming base INR for history or just checking if we logged formatted string. We logged amount number. So it displays in base units or we assume INR */}
                                             <span className="font-bold">₹{log.amount}</span>
                                             <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 capitalize">
                                                 {log.status}
