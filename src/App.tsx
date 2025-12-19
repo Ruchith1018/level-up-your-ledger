@@ -29,7 +29,6 @@ import IncomePage from "./pages/IncomePage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ReferralsPage from "./pages/ReferralsPage";
 import SavingsPage from "./pages/SavingsPage";
-import TermsPage from "./pages/TermsPage";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
@@ -71,7 +70,6 @@ const App = () => (
                                                         <Route path="/shop" element={<ThemeShopPage />} />
                                                         <Route path="/gamification" element={<Gamification />} />
                                                         <Route path="/gamification/badges" element={<BadgesPage />} />
-                                                        <Route path="/terms" element={<TermsPage />} />
                                                     </Route>
 
                                                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
