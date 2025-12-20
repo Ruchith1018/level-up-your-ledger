@@ -4,6 +4,14 @@ import { getCurrencySymbol } from "@/constants/currencies";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import dayjs from "dayjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const COLORS = [
   "#3b82f6", // Blue (Bills & Utilities)
@@ -20,8 +28,17 @@ export function CategoryPieChart() {
   const { getExpensesByCategory } = useExpenses();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
-  const currentMonth = dayjs().format("YYYY-MM");
-  const categoryData = getExpensesByCategory(currentMonth);
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
+
+  const last6Months = Array.from({ length: 6 }, (_, i) => {
+    const d = dayjs().subtract(i, "month");
+    return {
+      value: d.format("YYYY-MM"),
+      label: d.format("MMMM YYYY"),
+    };
+  });
+
+  const categoryData = getExpensesByCategory(selectedMonth);
 
   const data = Object.entries(categoryData).map(([name, value]) => ({
     name,
@@ -33,8 +50,20 @@ export function CategoryPieChart() {
   if (data.length === 0) {
     return (
       <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Spending by Category</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-base font-medium">Spending by Category</CardTitle>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[140px] h-8 text-xs">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent>
+              {last6Months.map((month) => (
+                <SelectItem key={month.value} value={month.value} className="text-xs">
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -55,8 +84,20 @@ export function CategoryPieChart() {
 
   return (
     <Card className="col-span-1">
-      <CardHeader>
-        <CardTitle>Spending by Category</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base font-medium">Spending by Category</CardTitle>
+        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue placeholder="Select month" />
+          </SelectTrigger>
+          <SelectContent>
+            {last6Months.map((month) => (
+              <SelectItem key={month.value} value={month.value} className="text-xs">
+                {month.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] relative">

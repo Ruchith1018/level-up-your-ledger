@@ -2,6 +2,7 @@ import { DailySpendingTrend } from "@/components/charts/DailySpendingTrend";
 import { SpendingHeatmap } from "@/components/charts/SpendingHeatmap";
 import { EarningHeatmap } from "@/components/charts/EarningHeatmap";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
+import { EarningPieChart } from "@/components/charts/EarningPieChart";
 import { MonthlyTrendChart } from "@/components/charts/MonthlyTrendChart";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -45,6 +46,7 @@ export default function Analytics() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Skeleton className="w-full h-[350px] rounded-xl" />
               <Skeleton className="w-full h-[350px] rounded-xl" />
+              <Skeleton className="w-full h-[350px] rounded-xl" />
             </div>
           </div>
         ) : (
@@ -53,7 +55,7 @@ export default function Analytics() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <DailySpendingTrend />
+              <MonthlyTrendChart />
             </motion.div>
 
             <motion.div
@@ -61,28 +63,40 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="space-y-6">
-                <SpendingHeatmap />
-                <EarningHeatmap />
-              </div>
+              <DailySpendingTrend />
             </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <CategoryPieChart />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <MonthlyTrendChart />
-              </motion.div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Spending Column */}
+                <motion.div
+                  className="space-y-6"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h2 className="text-xl font-semibold">Spendings</h2>
+                  <SpendingHeatmap />
+                  <CategoryPieChart />
+                </motion.div>
+
+                {/* Earning Column */}
+                <motion.div
+                  className="space-y-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h2 className="text-xl font-semibold">Earnings</h2>
+                  <EarningHeatmap />
+                  <EarningPieChart />
+                </motion.div>
+              </div>
+            </motion.div>
           </>
         )}
       </main>
