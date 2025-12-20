@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Moon, Sun, Laptop, User, LogOut, Users, Pencil, Camera, Loader2, UploadCloud } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Laptop, User, LogOut, Users, Pencil, Camera, Loader2, UploadCloud, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
@@ -37,61 +37,41 @@ export default function Settings() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Sync local name state with settings when they load
+  // Dialog State
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(settings.profileImage || "");
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+
+  // Sync local name state with settings when they load or dialog opens
   useEffect(() => {
-    if (settings.userName) {
-      setName(settings.userName);
+    if (isEditProfileOpen) {
+      setName(settings.userName || "");
+      setPreviewImage(settings.profileImage || "");
+      setFileToUpload(null);
     }
-  }, [settings.userName]);
+  }, [settings.userName, settings.profileImage, isEditProfileOpen]);
+
+  // Clean up object URLs to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewImage && previewImage.startsWith('blob:')) {
+        URL.revokeObjectURL(previewImage);
+      }
+    };
+  }, [previewImage]);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const { user, signOut } = useAuth();
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
 
-    try {
-      setIsUploading(true);
-
-      // Delete old avatar if it exists and is hosted on Supabase
-      if (settings.profileImage && settings.profileImage.includes('avatars')) {
-        try {
-          const oldPath = settings.profileImage.split('/').pop();
-          if (oldPath) {
-            await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
-          }
-        } catch (err) {
-          console.error("Error deleting old avatar:", err);
-          // Continue with upload even if delete fails
-        }
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      // Optimistic update of the settings so the UI reflects the new image immediately
-      await updateSettings({ ...settings, profileImage: publicUrl });
-      toast.success("Avatar uploaded successfully!");
-    } catch (error: any) {
-      console.error('Error uploading avatar:', error);
-      toast.error(`Error uploading avatar: ${error.message}`);
-    } finally {
-      setIsUploading(false);
-    }
+    // Create a preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewImage(objectUrl);
+    setFileToUpload(file);
   };
 
   const handleLogoutClick = () => {
@@ -105,10 +85,73 @@ export default function Settings() {
     window.location.href = "/auth";
   };
 
-  const handleNameUpdate = () => {
-    if (name.trim()) {
-      updateSettings({ ...settings, userName: name.trim() });
-      toast.success("Profile name updated successfully!");
+  const handleRemoveAvatar = () => {
+    setPreviewImage("");
+    setFileToUpload(null);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!user) return;
+    setIsUploading(true);
+
+    try {
+      let finalProfileImage = settings.profileImage;
+
+      // 1. Handle File Upload if there is a new file
+      if (fileToUpload) {
+        // First delete old avatar if it exists in storage
+        if (settings.profileImage && settings.profileImage.includes('avatars')) {
+          try {
+            const oldPath = settings.profileImage.split('/').pop();
+            if (oldPath) {
+              await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
+            }
+          } catch (e) { console.error("Error cleaning up old avatar:", e); }
+        }
+
+        const fileExt = fileToUpload.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, fileToUpload);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+        finalProfileImage = publicUrl;
+      }
+      // 2. Handle Removal (no new file, but preview is empty)
+      else if (previewImage === "" && settings.profileImage) {
+        if (settings.profileImage.includes('avatars')) {
+          try {
+            const oldPath = settings.profileImage.split('/').pop();
+            if (oldPath) {
+              await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
+            }
+          } catch (e) { console.error("Error removing avatar:", e); }
+        }
+        finalProfileImage = "";
+      }
+
+      // 3. Update User Settings
+      await updateSettings({
+        ...settings,
+        userName: name.trim(),
+        profileImage: finalProfileImage
+      });
+
+      toast.success("Profile updated successfully!");
+      setIsEditProfileOpen(false);
+
+    } catch (error: any) {
+      console.error("Error saving profile:", error);
+      toast.error(`Error updating profile: ${error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -116,6 +159,21 @@ export default function Settings() {
     if (!user) return;
     try {
       toast.loading("Deleting data...");
+
+      // Delete avatar from storage if it exists
+      if (settings.profileImage && settings.profileImage.includes('avatars')) {
+        try {
+          const oldPath = settings.profileImage.split('/').pop();
+          if (oldPath) {
+            const { error: storageError } = await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
+            if (storageError) {
+              console.error("Error deleting avatar from storage:", storageError);
+            }
+          }
+        } catch (err) {
+          console.error("Error attempting to delete avatar:", err);
+        }
+      }
 
       // Delete data from all tables
       const tables = ['expenses', 'budgets', 'savings_goals', 'subscriptions', 'gamification_profiles', 'user_settings'];
@@ -194,8 +252,8 @@ export default function Settings() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-semibold">{name || "User"}</h2>
-                      <Dialog>
+                      <h2 className="text-xl font-semibold">{settings.userName || "User"}</h2>
+                      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                             <Pencil className="h-4 w-4" />
@@ -214,7 +272,7 @@ export default function Settings() {
                               <div className="flex justify-center">
                                 <div className="relative group cursor-pointer w-32 h-32 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors">
                                   <Avatar className="w-full h-full">
-                                    <AvatarImage src={settings.profileImage} alt={name} className="object-cover" />
+                                    <AvatarImage src={previewImage} alt={name} className="object-cover" />
                                     <AvatarFallback className="text-4xl bg-muted">
                                       {name ? name.substring(0, 2).toUpperCase() : <User className="h-12 w-12 text-muted-foreground" />}
                                     </AvatarFallback>
@@ -242,6 +300,20 @@ export default function Settings() {
                                   />
                                 </div>
                               </div>
+                              {previewImage && (
+                                <div className="flex justify-center">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 text-xs"
+                                    onClick={handleRemoveAvatar}
+                                    disabled={isUploading}
+                                  >
+                                    <Trash2 className="w-3 h-3 mr-1.5" />
+                                    Remove Photo
+                                  </Button>
+                                </div>
+                              )}
                             </div>
 
                             <div className="space-y-2">
@@ -256,13 +328,19 @@ export default function Settings() {
                           </div>
                           <DialogFooter className="gap-2 sm:gap-0">
                             <DialogClose asChild>
-                              <Button variant="secondary">Cancel</Button>
+                              <Button variant="secondary" disabled={isUploading}>Cancel</Button>
                             </DialogClose>
-                            <DialogClose asChild>
-                              <Button onClick={() => {
-                                handleNameUpdate();
-                              }}>Save Changes</Button>
-                            </DialogClose>
+
+                            <Button onClick={handleSaveChanges} disabled={isUploading}>
+                              {isUploading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                "Save Changes"
+                              )}
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>

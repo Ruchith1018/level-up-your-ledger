@@ -20,23 +20,35 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import { Sparkles, Target, Upload, Coins } from "lucide-react";
+import { Sparkles, Target, Coins, Plus, X } from "lucide-react";
 import { CURRENCIES } from "@/constants/currencies";
+import { DEFAULT_CATEGORIES } from "@/constants/categories";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useTutorial } from "@/contexts/TutorialContext";
 import { decryptData } from "@/utils/security";
 import { supabase } from "@/lib/supabase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Camera, User } from "lucide-react";
 
 export function OnboardingDialog() {
     const { settings, updateSettings, isLoading } = useSettings();
     const { addBudget } = useBudget();
     const { startTutorial } = useTutorial();
+    const { user } = useAuth();
     const [step, setStep] = useState(settings.hasAcceptedTerms ? 1 : 0); // Start at step 0 for Terms, or 1 if already accepted
     const [userName, setUserName] = useState("");
     const [currency, setCurrency] = useState("USD");
     const [budgetAmount, setBudgetAmount] = useState("");
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [termsUrl, setTermsUrl] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Category State
+    const [categories, setCategories] = useState<{ name: string, limit: number }[]>([]);
+    const [categorySelect, setCategorySelect] = useState("");
+    const [customCategory, setCustomCategory] = useState("");
+    const [newLimit, setNewLimit] = useState("");
 
     useEffect(() => {
         if (settings.hasAcceptedTerms && step === 0) {
@@ -84,6 +96,40 @@ export function OnboardingDialog() {
     // Open if onboarding is incomplete OR terms are not accepted
     const isOpen = !settings.hasCompletedOnboarding || !settings.hasAcceptedTerms;
 
+    const handleAddCategory = () => {
+        const name = categorySelect === "custom" ? customCategory : categorySelect;
+
+        if (!name?.trim()) {
+            toast.error("Please select or enter a category name");
+            return;
+        }
+
+        const limit = parseFloat(newLimit);
+        const totalBudget = parseFloat(budgetAmount);
+
+        if (!limit || limit <= 0) {
+            toast.error("Please enter a valid limit amount");
+            return;
+        }
+
+        const currentAllocated = categories.reduce((sum, cat) => sum + cat.limit, 0);
+        if (currentAllocated + limit > totalBudget) {
+            toast.warning(`Total exceeds monthly budget. Remaining: ${totalBudget - currentAllocated}`);
+            return;
+        }
+
+        setCategories([...categories, { name: name.trim(), limit }]);
+        setCategorySelect("");
+        setCustomCategory("");
+        setNewLimit("");
+    };
+
+    const handleRemoveCategory = (index: number) => {
+        const newCats = [...categories];
+        newCats.splice(index, 1);
+        setCategories(newCats);
+    };
+
     const handleTermsAccept = () => {
         if (!acceptedTerms) {
             toast.error("Please accept the terms and conditions");
@@ -98,7 +144,49 @@ export function OnboardingDialog() {
             toast.error("Please enter your name");
             return;
         }
+        // Update name immediately so it shows in the next step
+        updateSettings({ ...settings, userName: userName.trim() });
         setStep(2);
+    };
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !user) return;
+
+        try {
+            setIsUploading(true);
+
+            // Delete old avatar if exists
+            if (settings.profileImage && settings.profileImage.includes('avatars')) {
+                try {
+                    const oldPath = settings.profileImage.split('/').pop();
+                    if (oldPath) {
+                        await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
+                    }
+                } catch (e) { console.error(e); }
+            }
+
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(fileName);
+
+            await updateSettings({ ...settings, profileImage: publicUrl });
+            toast.success("Avatar uploaded!");
+            // Optional: Auto-advance or let them click continue
+        } catch (error: any) {
+            toast.error(`Error uploading avatar: ${error.message}`);
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleCurrencySubmit = () => {
@@ -107,7 +195,7 @@ export function OnboardingDialog() {
             return;
         }
         updateSettings({ ...settings, currency });
-        setStep(3);
+        setStep(4);
     };
 
     const handleCreateBudget = () => {
@@ -117,11 +205,21 @@ export function OnboardingDialog() {
             return;
         }
 
+        if (categories.length === 0) {
+            toast.error("Please add at least one category to your budget plan");
+            return;
+        }
+
+        const categoryLimits: Record<string, number> = {};
+        categories.forEach(cat => {
+            categoryLimits[cat.name] = cat.limit;
+        });
+
         addBudget({
             period: "monthly",
             month: dayjs().format("YYYY-MM"),
             total: amount,
-            categoryLimits: {},
+            categoryLimits: categoryLimits,
             rollover: false,
         });
 
@@ -141,106 +239,6 @@ export function OnboardingDialog() {
         });
         toast.success(`Welcome to BudGlio, ${userName}! 🎉`);
         startTutorial();
-    };
-
-    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const fileContent = e.target?.result as string;
-                let data;
-
-                try {
-                    data = decryptData(fileContent);
-                } catch (error) {
-                    throw new Error("Invalid encrypted file or wrong key");
-                }
-
-                if (!data.version || !data.expenses) throw new Error("Invalid file");
-
-                // Store data
-                localStorage.setItem("gft_expenses_v1", JSON.stringify({ items: data.expenses }));
-
-                // Migrate and store budgets
-                const migratedBudgets = (data.budgets || []).map((b: any) => {
-                    const newBudget = { ...b };
-
-                    // Migrate totalBudget -> total
-                    if (newBudget.totalBudget !== undefined && newBudget.total === undefined) {
-                        newBudget.total = newBudget.totalBudget;
-                        delete newBudget.totalBudget;
-                    }
-
-                    // Migrate categoryLimits array -> Record
-                    if (Array.isArray(newBudget.categoryLimits)) {
-                        const limitsRecord: Record<string, number> = {};
-                        newBudget.categoryLimits.forEach((item: any) => {
-                            if (item.category && item.limit !== undefined) {
-                                limitsRecord[item.category] = item.limit;
-                            }
-                        });
-                        newBudget.categoryLimits = limitsRecord;
-                    }
-
-                    return newBudget;
-                });
-                localStorage.setItem("gft_budgets_v1", JSON.stringify({ budgets: migratedBudgets }));
-
-                localStorage.setItem("gft_subscriptions_v1", JSON.stringify({ subscriptions: data.subscriptions || [] }));
-
-                if (data.savings) {
-                    localStorage.setItem("gft_savings_goals_v1", JSON.stringify({ goals: data.savings }));
-                }
-
-                if (data.gamification) {
-                    const defaultGamificationState = {
-                        level: 1,
-                        xp: 0,
-                        totalXP: 0,
-                        coins: 0,
-                        totalCoins: 0,
-                        streak: 0,
-                        lastCheckIn: new Date().toISOString(),
-                        badges: [],
-                        claimedTasks: [],
-                        history: [],
-                        createdAt: new Date().toISOString(),
-                    };
-
-                    const migratedGamification = {
-                        ...defaultGamificationState,
-                        ...data.gamification,
-                        // Ensure arrays are actually arrays
-                        badges: Array.isArray(data.gamification.badges) ? data.gamification.badges : [],
-                        claimedTasks: Array.isArray(data.gamification.claimedTasks) ? data.gamification.claimedTasks : [],
-                        history: Array.isArray(data.gamification.history) ? data.gamification.history : [],
-                    };
-
-                    localStorage.setItem("gft_gamify_v1", JSON.stringify(migratedGamification));
-                }
-
-                if (data.purchasedThemes) localStorage.setItem("gft_purchased_themes", JSON.stringify(data.purchasedThemes));
-                if (data.purchasedCards) localStorage.setItem("gft_purchased_card_themes", JSON.stringify(data.purchasedCards));
-
-                const importedSettings = data.settings || {};
-                const newSettings = {
-                    ...settings,
-                    ...importedSettings,
-                    userName: importedSettings.userName || userName,
-                    hasCompletedOnboarding: true
-                };
-                localStorage.setItem("gft_settings_v1", JSON.stringify(newSettings));
-
-                toast.success("Data restored! Reloading...");
-                setTimeout(() => window.location.reload(), 1500);
-            } catch (err) {
-                toast.error("Import failed: Invalid encrypted file");
-            }
-        };
-        reader.readAsText(file);
     };
 
     return (
@@ -299,9 +297,7 @@ export function OnboardingDialog() {
                     <>
                         <DialogHeader>
                             <div className="flex items-center justify-center mb-4">
-                                <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                                    <Sparkles className="w-8 h-8 text-primary-foreground" />
-                                </div>
+                                <img src="/logo.jpg" alt="BudGlio Logo" className="w-16 h-16 rounded-2xl shadow-lg object-cover" />
                             </div>
                             <DialogTitle className="text-center text-2xl">Welcome to BudGlio!</DialogTitle>
                             <DialogDescription className="text-center">
@@ -326,6 +322,62 @@ export function OnboardingDialog() {
                         </div>
                     </>
                 ) : step === 2 ? (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle className="text-center text-2xl">Profile Picture</DialogTitle>
+                            <DialogDescription className="text-center">
+                                Add a face to the name! You can skip this if you'd like.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-6 py-4">
+                            <div className="flex justify-center">
+                                <div className="relative group cursor-pointer w-32 h-32 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors">
+                                    <Avatar className="w-full h-full">
+                                        <AvatarImage src={settings.profileImage} alt={userName} className="object-cover" />
+                                        <AvatarFallback className="text-4xl bg-muted">
+                                            {userName ? userName.substring(0, 2).toUpperCase() : <User className="h-12 w-12 text-muted-foreground" />}
+                                        </AvatarFallback>
+                                    </Avatar>
+
+                                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {isUploading ? (
+                                            <Loader2 className="h-8 w-8 animate-spin mb-1" />
+                                        ) : (
+                                            <Camera className="h-8 w-8 mb-1" />
+                                        )}
+                                        <span className="text-xs font-medium text-center px-2">
+                                            {isUploading ? "Uploading..." : "Click to upload"}
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="file"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        accept="image/*"
+                                        onChange={handleFileUpload}
+                                        disabled={isUploading}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Button onClick={() => setStep(3)} className="w-full" disabled={isUploading}>
+                                    {settings.profileImage ? "Continue" : "Skip for Now"}
+                                </Button>
+                                {settings.profileImage && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setStep(3)}
+                                        className="w-full"
+                                        disabled={isUploading}
+                                    >
+                                        Skip
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                ) : step === 3 ? (
                     <>
                         <DialogHeader>
                             <div className="flex items-center justify-center mb-4">
@@ -359,42 +411,6 @@ export function OnboardingDialog() {
                             </Button>
                         </div>
                     </>
-                ) : step === 3 ? (
-                    <>
-                        <DialogHeader>
-                            <div className="flex items-center justify-center mb-4">
-                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-white" />
-                                </div>
-                            </div>
-                            <DialogTitle className="text-center text-2xl">Restore Data?</DialogTitle>
-                            <DialogDescription className="text-center">
-                                Do you have a backup file from a previous session? You can restore it now.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="relative">
-                                <input
-                                    type="file"
-                                    accept=".enc"
-                                    onChange={handleImport}
-                                    className="hidden"
-                                    id="onboarding-import"
-                                />
-                                <label htmlFor="onboarding-import">
-                                    <Button asChild variant="outline" className="w-full cursor-pointer h-24 flex flex-col gap-2 border-dashed">
-                                        <span>
-                                            <Upload className="w-8 h-8 text-muted-foreground" />
-                                            <span className="text-sm font-medium">Click to Upload Backup (.enc)</span>
-                                        </span>
-                                    </Button>
-                                </label>
-                            </div>
-                            <Button onClick={() => setStep(4)} className="w-full" variant="ghost">
-                                No, Start Fresh
-                            </Button>
-                        </div>
-                    </>
                 ) : (
                     <>
                         <DialogHeader>
@@ -405,27 +421,97 @@ export function OnboardingDialog() {
                             </div>
                             <DialogTitle className="text-center text-2xl">Set Your First Budget</DialogTitle>
                             <DialogDescription className="text-center">
-                                How much do you want to budget for this month? (You can always change this later)
+                                Allocate your monthly budget to different categories.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="budget">Monthly Budget ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</Label>
+                                <Label htmlFor="budget">Total Monthly Budget ({CURRENCIES.find(c => c.code === currency)?.symbol || currency})</Label>
                                 <Input
                                     id="budget"
                                     type="number"
                                     placeholder="e.g., 2000"
                                     value={budgetAmount}
                                     onChange={(e) => setBudgetAmount(e.target.value)}
-                                    onKeyPress={(e) => e.key === "Enter" && handleCreateBudget()}
-                                    autoFocus
                                 />
                             </div>
-                            <div className="flex gap-2">
+
+                            <div className="space-y-2 pt-2 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <Label>Add Categories</Label>
+                                    <span className={((categories.reduce((sum, c) => sum + c.limit, 0) + (parseFloat(newLimit) || 0)) > parseFloat(budgetAmount)) ? "text-destructive" : "text-muted-foreground"}>
+                                        Remaining: {CURRENCIES.find(c => c.code === currency)?.symbol}
+                                        {Math.max(0, parseFloat(budgetAmount || "0") - categories.reduce((sum, c) => sum + c.limit, 0)).toFixed(2)}
+                                    </span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="flex-[2]">
+                                        <Select
+                                            value={categorySelect}
+                                            onValueChange={(val) => setCategorySelect(val)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Category" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {DEFAULT_CATEGORIES.map((cat) => (
+                                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                ))}
+                                                <SelectItem value="custom">Custom...</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {categorySelect === "custom" && (
+                                            <Input
+                                                placeholder="Custom Name"
+                                                className="mt-2"
+                                                value={customCategory}
+                                                onChange={(e) => setCustomCategory(e.target.value)}
+                                                autoFocus
+                                            />
+                                        )}
+                                    </div>
+                                    <Input
+                                        type="number"
+                                        placeholder="Limit"
+                                        value={newLimit}
+                                        onChange={(e) => setNewLimit(e.target.value)}
+                                        className="flex-1"
+                                        onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+                                    />
+                                    <Button onClick={handleAddCategory} size="icon" variant="secondary">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {categories.length > 0 && (
+                                <div className="max-h-32 overflow-y-auto space-y-2 pr-1">
+                                    {categories.map((cat, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 bg-secondary/30 rounded-md text-sm">
+                                            <span>{cat.name}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-muted-foreground">
+                                                    {CURRENCIES.find(c => c.code === currency)?.symbol}{cat.limit}
+                                                </span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                                                    onClick={() => handleRemoveCategory(idx)}
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="flex gap-2 mt-4">
                                 <Button onClick={handleSkipBudget} variant="outline" className="flex-1">
                                     Skip for Now
                                 </Button>
-                                <Button onClick={handleCreateBudget} className="flex-1" disabled={!budgetAmount}>
+                                <Button onClick={handleCreateBudget} className="flex-1" disabled={!budgetAmount || categories.length === 0}>
                                     Create Budget
                                 </Button>
                             </div>
