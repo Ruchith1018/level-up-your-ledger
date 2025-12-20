@@ -4,39 +4,39 @@
 
 ![BudGlio Banner](/public/logo.jpg)
 
-## ✨ Key Features
+##  Key Features
 
-### 🎮 Gamification System
+###  Gamification System
 Turn financial discipline into a game!
 - **XP & Leveling**: Earn Experience Points (XP) for every transaction you log and every budget goal you meet. Level up to unlock new features and themes.
 - **Badges & Achievements**: Unlock unique badges like "Savings Star", "Streak Master", and "Budget Boss" by hitting milestones.
 - **Streaks**: Maintain daily logging streaks to earn bonus XP and coins.
 
-### 💰 Financial Management
+###  Financial Management
 Comprehensive tools to track every penny.
 - **Income & Expense Tracking**: Easily log income sources and daily expenses with intuitive forms.
 - **Smart Budgeting**: Set monthly budgets for specific categories (Food, Transport, etc.) and get visual alerts when you're nearing your limit.
 - **Savings Goals**: Create savings pots for your dreams (e.g., "New Laptop", "Vacation") and track your progress.
 
-### 📅 Subscription Manager
+###  Subscription Manager
 Never miss a payment again.
 - **Recurring Payments**: Track all your subscriptions (Netflix, Spotify, Gym) in one place.
 - **Billing Reminders**: Get notified before a payment is due.
 - **Cost Analysis**: See exactly how much your subscriptions are costing you monthly and yearly.
 
-### 🏆 Rewards & Shop
+###  Rewards & Shop
 Spend your virtual earnings on real value.
 - **Coin System**: Earn virtual coins for consistent tracking and good financial habits.
 - **Theme Shop**: Use your coins to buy premium themes like *Cyberpunk*, *Ocean Breeze*, *Sunset Glow*, and more.
 - **Redeem for Cash**: (Feature in progress) Redeem your hard-earned coins for real money via UPI or Bank Transfer.
 
-### 📊 Analytics & Insights
+###  Analytics & Insights
 Visualize your financial health.
 - **Interactive Charts**: View monthly spending trends and income vs. expense comparisons.
 - **Category Breakdown**: See exactly where your money goes with detailed pie charts.
 - **Monthly Reports**: Get a summary of your financial performance at the end of each month.
 
-### 🎨 Modern UI/UX
+###  Modern UI/UX
 A beautiful experience on any device.
 - **Responsive Design**: Fully optimized for Mobile, Tablet, and Desktop.
 - **PWA Support**: Install BudGlio as a native app on your phone.
@@ -45,7 +45,7 @@ A beautiful experience on any device.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 This project is built with a modern, robust technology stack:
 
@@ -62,7 +62,7 @@ This project is built with a modern, robust technology stack:
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 Follow these steps to set up the project locally.
 
@@ -98,7 +98,7 @@ Follow these steps to set up the project locally.
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 src/
@@ -119,7 +119,7 @@ src/
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -131,6 +131,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-Built with ❤️ by Ruchith
+Built with  by Ruchith
 
 © 2025 BudGlio. All rights reserved.
