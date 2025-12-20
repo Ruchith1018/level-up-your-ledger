@@ -18,7 +18,7 @@ export function GamificationTutorialOverlay({ isActive, onComplete }: Gamificati
         { id: 'gami-level-card', message: "Track your overall progress here. Earn XP to level up!" },
         { id: 'gami-xp-card', message: "See your lifetime XP earnings here." },
         { id: 'gami-streak-card', message: "Keep your streak alive by checking in daily!" },
-        { id: 'gami-coins-card', message: "Earn coins by completing tasks and use them in the shop." },
+        { id: 'gami-coins-card', message: "Earn tokens by completing tasks and use them in the shop." },
         { id: 'gami-tasks-section', message: "Complete daily, weekly, and monthly tasks to earn rewards." },
         { id: 'gami-badges-section', message: "Unlock badges by achieving milestones." }
     ];

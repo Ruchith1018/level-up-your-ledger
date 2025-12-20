@@ -2,7 +2,7 @@ import { useGamification } from "@/contexts/GamificationContext";
 import { useExpenses } from "@/contexts/ExpenseContext";
 import { BADGES, xpThreshold } from "@/utils/gamify";
 import { motion } from "framer-motion";
-import { Trophy, Coins, Flame, Calendar, History, ShoppingBag, ArrowLeft, CheckCircle2, Circle, ChevronRight } from "lucide-react";
+import { Trophy, Calendar, History, ShoppingBag, ArrowLeft, CheckCircle2, Circle, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -151,7 +151,7 @@ export default function Gamification() {
                             <CardContent className="p-4 flex flex-col justify-center gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-xp/20 rounded-full text-xp-foreground">
-                                        <Trophy className="w-5 h-5" />
+                                        <img src="/assets/level.png" alt="Level" className="w-5 h-5 object-contain" />
                                     </div>
                                     <p className="text-sm text-muted-foreground font-medium">Level</p>
                                 </div>
@@ -170,9 +170,9 @@ export default function Gamification() {
                             <CardContent className="p-4 flex flex-col justify-center gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-gold/20 rounded-full text-gold">
-                                        <Coins className="w-5 h-5" />
+                                        <img src="/assets/token.png" alt="Token" className="w-5 h-5 object-contain" />
                                     </div>
-                                    <p className="text-sm text-muted-foreground font-medium">Coins</p>
+                                    <p className="text-sm text-muted-foreground font-medium">Tokens</p>
                                 </div>
                                 <h3 className="text-2xl font-bold">{state.coins}</h3>
                             </CardContent>
@@ -189,7 +189,7 @@ export default function Gamification() {
                             <CardContent className="p-4 flex flex-col justify-center gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-blue-500/20 rounded-full text-blue-500">
-                                        <History className="w-5 h-5" />
+                                        <img src="/assets/xp.png" alt="XP" className="w-5 h-5 object-contain" />
                                     </div>
                                     <p className="text-sm text-muted-foreground font-medium">Total XP</p>
                                 </div>
@@ -208,7 +208,7 @@ export default function Gamification() {
                             <CardContent className="p-4 flex flex-col justify-center gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-destructive/20 rounded-full text-destructive">
-                                        <Flame className="w-5 h-5" />
+                                        <img src="/assets/streak.png" alt="Streak" className="w-5 h-5 object-contain" />
                                     </div>
                                     <p className="text-sm text-muted-foreground font-medium">Streak</p>
                                 </div>
@@ -302,7 +302,7 @@ export default function Gamification() {
                 >
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Trophy className="w-5 h-5 text-yellow-500" />
+                            <img src="/assets/badge.png" alt="Badge" className="w-5 h-5 object-contain" />
                             Badges
                         </h2>
                         <Button variant="ghost" size="sm" onClick={() => navigate('/gamification/badges')}>

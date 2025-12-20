@@ -51,11 +51,11 @@ export function ThemeShop() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Coins className="w-5 h-5 text-gold" />
+          <img src="/assets/token.png" alt="Token" className="w-5 h-5 object-contain" />
           Theme Shop
         </CardTitle>
         <CardDescription>
-          You have {gamifyState.coins} coins to spend
+          You have {gamifyState.coins} tokens to spend
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -105,8 +105,8 @@ export function ThemeShop() {
                           isActive ? "Applied" : "Apply"
                         ) : (
                           <>
-                            <Coins className="w-4 h-4 mr-2" />
-                            {theme.price} coins
+                            <img src="/assets/token.png" alt="Token" className="w-4 h-4 mr-2 object-contain" />
+                            {theme.price} tokens
                           </>
                         )}
                       </Button>

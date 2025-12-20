@@ -1,6 +1,11 @@
 import { useGamification } from "@/contexts/GamificationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Target, Zap, Coins } from "lucide-react";
+import { Badge } from "lucide-react"; // Keeping a placeholder or just removing unused if none left.
+// Actually allow me to check if I can just remove the line if all are unused.
+// All 6 stats use custom images.
+// Let's verify if any other icon is used.
+// No other icons used in the file based on the view.
+// So I will remove the import line entirely.
 import { BADGES } from "@/utils/gamify";
 
 export function GamificationStats() {
@@ -19,37 +24,37 @@ export function GamificationStats() {
         {
             label: "Badges Earned",
             value: validBadges.length,
-            icon: Trophy,
+            icon: ({ className }: { className?: string }) => <img src="/assets/badge.png" alt="Badge" className={`object-contain ${className}`} />,
             color: "text-yellow-500"
         },
         {
             label: "Daily Tasks",
             value: dailyTasksCompleted,
-            icon: Target,
+            icon: ({ className }: { className?: string }) => <img src="/assets/daily_task.png" alt="Daily Tasks" className={`object-contain ${className}`} />,
             color: "text-blue-500"
         },
         {
             label: "Weekly Tasks",
             value: weeklyTasksCompleted,
-            icon: Target,
+            icon: ({ className }: { className?: string }) => <img src="/assets/weekly_task.png" alt="Weekly Tasks" className={`object-contain ${className}`} />,
             color: "text-purple-500"
         },
         {
             label: "Monthly Tasks",
             value: monthlyTasksCompleted,
-            icon: Target,
+            icon: ({ className }: { className?: string }) => <img src="/assets/monthly_task.png" alt="Monthly Tasks" className={`object-contain ${className}`} />,
             color: "text-green-500"
         },
         {
             label: "Total XP",
             value: state.totalXP || 0,
-            icon: Zap,
+            icon: ({ className }: { className?: string }) => <img src="/assets/xp.png" alt="XP" className={`object-contain ${className}`} />,
             color: "text-orange-500"
         },
         {
-            label: "Total Coins Earned",
+            label: "Total Tokens Earned",
             value: state.totalCoins || 0,
-            icon: Coins,
+            icon: ({ className }: { className?: string }) => <img src="/assets/token.png" alt="Token" className={`object-contain ${className}`} />,
             color: "text-amber-500"
         }
     ];

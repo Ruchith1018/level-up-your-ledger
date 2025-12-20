@@ -195,7 +195,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     };
     await persistState(updatedState);
 
-    toast.success(`+${amount} Coin${amount !== 1 ? 's' : ''}`, {
+    toast.success(`+${amount} Token${amount !== 1 ? 's' : ''}`, {
       className: "text-yellow-500 border-yellow-500",
     });
   };
@@ -315,7 +315,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       await persistState(newState);
       return true;
     }
-    toast.error("Not enough coins!");
+    toast.error("Not enough tokens!");
     return false;
   };
 
@@ -338,7 +338,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     await persistState(newState);
 
-    toast.success(`+${reward} XP & +${coinReward} Coins`, { description: "Task Completed" });
+    toast.success(`+${reward} XP & +${coinReward} Tokens`, { description: "Task Completed" });
   };
 
   const addRedemptionLog = async (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => {

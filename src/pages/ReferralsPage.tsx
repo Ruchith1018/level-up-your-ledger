@@ -102,7 +102,7 @@ export default function ReferralsPage() {
                 r.id === referral.id ? { ...r, claimed: true } : r
             ));
 
-            toast.success(`Claimed ${rewardAmount} Coins!`);
+            toast.success(`Claimed ${rewardAmount} Tokens!`);
 
         } catch (error: any) {
             console.error("Error claiming reward:", error);
@@ -141,7 +141,7 @@ export default function ReferralsPage() {
                                 Referred Users ({referrals.length})
                             </CardTitle>
                             <CardDescription>
-                                Earn 5,000 coins for every approved referral!
+                                Earn 5,000 tokens for every approved referral!
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -217,8 +217,8 @@ export default function ReferralsPage() {
                                                                 <Loader2 className="w-3 h-3 animate-spin" />
                                                             ) : (
                                                                 <>
-                                                                    <Coins className="w-3 h-3" />
-                                                                    Claim 5000
+                                                                    <img src="/assets/token.png" alt="Token" className="w-3 h-3 object-contain" />
+                                                                    Claim 5000 Tokens
                                                                 </>
                                                             )}
                                                         </Button>

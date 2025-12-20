@@ -75,7 +75,7 @@ export function RedeemMoney() {
             return;
         }
         if (gamifyState.coins < amount.coins) {
-            toast.error(`You need ${amount.coins} coins to redeem ${currencyDetails.symbol}${getDisplayAmount(amount.value)}`);
+            toast.error(`You need ${amount.coins} tokens to redeem ${currencyDetails.symbol}${getDisplayAmount(amount.value)}`);
             return;
         }
         setSelectedAmount(amount);
@@ -111,7 +111,7 @@ export function RedeemMoney() {
                 user_name: formData.name,
                 amount: displayValue, // Send formatted amount with symbol
                 base_amount_inr: selectedAmount.value, // Keep track of base INR value
-                coins_spent: selectedAmount.coins,
+                tokens_spent: selectedAmount.coins, // Renamed for clarity in email template if needed, but keeping keys safe or just label
                 payment_method: PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name,
                 currency: settings.currency, // Send currency info
                 date: new Date().toLocaleString(),
@@ -184,7 +184,7 @@ export function RedeemMoney() {
                         Redeem Gift Cards
                     </CardTitle>
                     <CardDescription>
-                        Convert your Earned coins into gift cards. Rate: 100 Coins = {currencyDetails.symbol}{getDisplayAmount(1)}
+                        Convert your Earned tokens into gift cards. Rate: 100 Tokens = {currencyDetails.symbol}{getDisplayAmount(1)}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -226,7 +226,7 @@ export function RedeemMoney() {
                                 >
                                     <span className="text-2xl font-bold">{currencyDetails.symbol}{getDisplayAmount(amount.value)}</span>
                                     <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                                        {amount.coins.toLocaleString()} Coins
+                                        {amount.coins.toLocaleString()} Tokens
                                     </span>
                                     {gamifyState.coins >= amount.coins && (
                                         <div className="absolute top-0 right-0 p-1">
@@ -248,7 +248,7 @@ export function RedeemMoney() {
                         <DialogHeader>
                             <DialogTitle>Complete Redemption</DialogTitle>
                             <DialogDescription>
-                                Redeeming {currencyDetails.symbol}{getDisplayAmount(selectedAmount?.value || 0)} for {selectedAmount?.coins.toLocaleString()} coins via {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name}
+                                Redeeming {currencyDetails.symbol}{getDisplayAmount(selectedAmount?.value || 0)} for {selectedAmount?.coins.toLocaleString()} tokens via {PAYMENT_METHODS.find(m => m.id === selectedMethod)?.name}
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -320,7 +320,7 @@ export function RedeemMoney() {
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <span className="text-sm font-medium text-red-500">-{log.coins.toLocaleString()} Coins</span>
+                                        <span className="text-sm font-medium text-red-500">-{log.coins.toLocaleString()} Tokens</span>
                                         <span className="text-xs text-muted-foreground">{log.upiId}</span>
                                     </div>
                                 </div>

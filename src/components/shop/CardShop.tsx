@@ -114,8 +114,8 @@ export function CardShop() {
                                                             "Free"
                                                         ) : (
                                                             <>
-                                                                <Lock className="w-3 h-3 mr-2" />
-                                                                {theme.price} coins
+                                                                <img src="/assets/token.png" alt="Token" className="w-3 h-3 mr-2 object-contain" />
+                                                                {theme.price} tokens
                                                             </>
                                                         )}
                                                     </>
