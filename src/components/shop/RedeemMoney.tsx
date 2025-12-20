@@ -141,7 +141,7 @@ export function RedeemMoney() {
                 toast.warning("Could not send user receipt, but redemption is processing.");
             }
 
-            if (spendCoins(selectedAmount.coins)) {
+            if (await spendCoins(selectedAmount.coins)) {
                 addRedemptionLog({
                     amount: Number(selectedAmount.value), // Keep numerical value for DB/Log as base (or store string in future)
                     coins: selectedAmount.coins,
@@ -239,7 +239,7 @@ export function RedeemMoney() {
                     </div>
 
                     <p className="text-xs text-center text-muted-foreground pt-4 border-t">
-                        <i><b>Disclaimer:</b> Gift cards and vouchers are digital rewards provided by us, not cash withdrawals. Rewards may take up to 7 days and are subject to availability.</i>
+                        <i><b>Disclaimer:</b> Gift cards and vouchers are digital rewards provided by us, not cash withdrawals. For approval it will take 1-2 working days. Rewards are subject to availability.</i>
                     </p>
                 </CardContent>
 

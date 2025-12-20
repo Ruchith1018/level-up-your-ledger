@@ -130,9 +130,17 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   }, [user]);
 
 
+  // State Ref to prevent stale closures in async functions
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // Helper to persist state to DB
   const persistState = async (newState: GamificationState) => {
-    setState(newState); // Optimistic
+    stateRef.current = newState; // Update ref immediately
+    setState(newState); // Optimistic update for UI
 
     if (!user) return;
 
@@ -167,22 +175,23 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   }, [hasCheckedStreak, isLoading, user]);
 
   const rewardXP = async (amount: number, reason: string) => {
-    const updatedState = addXP(state, amount, reason);
+    const updatedState = addXP(stateRef.current, amount, reason);
     await persistState(updatedState);
     toast.success(`+${amount} XP`, { description: reason });
   };
 
   const deductXP = async (amount: number, reason: string) => {
-    const updatedState = removeXP(state, amount, reason);
+    const updatedState = removeXP(stateRef.current, amount, reason);
     await persistState(updatedState);
     toast.info(`-${amount} XP`, { description: reason });
   };
 
   const earnCoins = async (amount: number) => {
+    const currentState = stateRef.current;
     const updatedState = {
-      ...state,
-      coins: state.coins + amount,
-      totalCoins: (state.totalCoins || 0) + amount,
+      ...currentState,
+      coins: currentState.coins + amount,
+      totalCoins: (currentState.totalCoins || 0) + amount,
     };
     await persistState(updatedState);
 
@@ -192,15 +201,16 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   };
 
   const updateStreak = async () => {
-    const { streak: daysSinceLastCheck, isNewDay } = checkStreak(state.lastCheckIn);
+    const currentState = stateRef.current;
+    const { streak: daysSinceLastCheck, isNewDay } = checkStreak(currentState.lastCheckIn);
 
     if (isNewDay) {
       if (daysSinceLastCheck === 1) {
         // Consecutive day
-        const newStreak = (state.streak || 0) + 1;
+        const newStreak = (currentState.streak || 0) + 1;
 
         let newState = {
-          ...state,
+          ...currentState,
           streak: newStreak,
           lastCheckIn: new Date().toISOString(),
         };
@@ -209,22 +219,18 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
         // Check for streak badges
         if (newStreak === 7) {
-          // Cannot call async inside sync modification easily without chaining. 
-          // We'll rely on checkBadges or simplified logic here.
-          // But we can just add the badge to state if not present.
           if (!newState.badges.includes(BADGES.WEEK_WARRIOR.id)) {
             newState.badges.push(BADGES.WEEK_WARRIOR.id);
             toast.success(`🏆 Badge Unlocked: Week Warrior!`);
           }
         }
-        // ... (other streak badges logic simplified for brevity, rely on standard badge check if possible, or duplicate logic)
 
         await persistState(newState);
 
       } else if (daysSinceLastCheck > 1) {
         // Streak broken
         const newState = {
-          ...state,
+          ...currentState,
           streak: 1,
           lastCheckIn: new Date().toISOString(),
         };
@@ -235,11 +241,12 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   };
 
   const checkBadges = (transactions: any[], budgetState: any) => {
+    const currentState = stateRef.current;
     // We'll collect new badges then persist once
     let badgesToAdd: string[] = [];
 
     const tryUnlock = (id: string) => {
-      if (!state.badges.includes(id) && !badgesToAdd.includes(id)) {
+      if (!currentState.badges.includes(id) && !badgesToAdd.includes(id)) {
         badgesToAdd.push(id);
       }
     };
@@ -257,17 +264,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     if (incomeTransactions.length >= 10) tryUnlock(BADGES.INCOME_LOGGER.id);
     if (checkIncomeSources(transactions, 3)) tryUnlock(BADGES.INCOME_STREAMER.id);
 
-    // ... (rest of logic same as before, just using tryUnlock)
-
     // 5. Daily Task Streak Badges (using state.claimedTasks)
-    const dailyStreak = calculateDailyTaskStreak(state.claimedTasks);
+    const dailyStreak = calculateDailyTaskStreak(currentState.claimedTasks);
     if (dailyStreak >= 1) tryUnlock(BADGES.DAILY_STARTER.id);
-    // ...
 
     if (badgesToAdd.length > 0) {
       // Unlock them
-      const finalBadges = [...state.badges, ...badgesToAdd];
-      const newState = { ...state, badges: finalBadges };
+      const finalBadges = [...currentState.badges, ...badgesToAdd];
+      const newState = { ...currentState, badges: finalBadges };
       persistState(newState);
 
       // Show toasts
@@ -285,7 +289,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   };
 
   const unlockBadge = async (badgeId: string) => {
-    if (!state.badges.includes(badgeId)) {
+    const currentState = stateRef.current;
+    if (!currentState.badges.includes(badgeId)) {
       const badge = Object.values(BADGES).find((b) => b.id === badgeId);
       if (badge) {
         toast.success(`🏆 Badge Unlocked: ${badge.name}!`, {
@@ -293,18 +298,19 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         });
       }
       const newState = {
-        ...state,
-        badges: [...state.badges, badgeId]
+        ...currentState,
+        badges: [...currentState.badges, badgeId]
       };
       await persistState(newState);
     }
   };
 
   const spendCoins = async (amount: number): Promise<boolean> => {
-    if ((state.coins || 0) >= amount) {
+    const currentState = stateRef.current;
+    if ((currentState.coins || 0) >= amount) {
       const newState = {
-        ...state,
-        coins: (state.coins || 0) - amount
+        ...currentState,
+        coins: (currentState.coins || 0) - amount
       };
       await persistState(newState);
       return true;
@@ -314,7 +320,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   };
 
   const claimTaskReward = async (taskId: string, reward: number) => {
-    if (state.claimedTasks.includes(taskId)) return;
+    const currentState = stateRef.current;
+    if (currentState.claimedTasks.includes(taskId)) return;
 
     let coinReward = 0;
     if (taskId.includes("daily_")) coinReward = 1;
@@ -322,10 +329,10 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     else if (taskId.includes("monthly_")) coinReward = 5;
 
     let newState = {
-      ...state,
-      claimedTasks: [...state.claimedTasks, taskId],
-      coins: (state.coins || 0) + coinReward,
-      totalCoins: (state.totalCoins || 0) + coinReward,
+      ...currentState,
+      claimedTasks: [...currentState.claimedTasks, taskId],
+      coins: (currentState.coins || 0) + coinReward,
+      totalCoins: (currentState.totalCoins || 0) + coinReward,
     };
     newState = addXP(newState, reward, "Task Completed");
 
@@ -335,14 +342,15 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   };
 
   const addRedemptionLog = async (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => {
+    const currentState = stateRef.current;
     const newLog = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
       ...log
     };
     const newState = {
-      ...state,
-      redemptionHistory: [newLog, ...state.redemptionHistory]
+      ...currentState,
+      redemptionHistory: [newLog, ...currentState.redemptionHistory]
     };
     await persistState(newState);
   };
