@@ -40,6 +40,7 @@ const defaultSettings: AppSettings = {
   purchasedThemes: [],
   purchasedCardThemes: [],
   hasAcceptedTerms: false,
+  profileImage: undefined,
 };
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           categories: defaultSettings.categories,
           payment_methods: defaultSettings.paymentMethods,
           premium_theme: defaultSettings.premiumTheme,
+          profile_image: defaultSettings.profileImage,
           user_name: defaultSettings.userName,
           hasCompletedOnboarding: defaultSettings.hasCompletedOnboarding,
           hasCompletedTutorial: defaultSettings.hasCompletedTutorial,
@@ -100,6 +102,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             paymentMethods: createdData.payment_methods,
             premiumTheme: createdData.premium_theme,
             userName: createdData.user_name,
+            profileImage: createdData.profile_image,
             hasCompletedOnboarding: createdData.has_completed_onboarding,
             hasCompletedTutorial: createdData.has_completed_tutorial,
             hasSeenIntro: createdData.has_seen_intro,
@@ -118,6 +121,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           paymentMethods: data.payment_methods,
           premiumTheme: data.premium_theme,
           userName: data.user_name,
+          profileImage: data.profile_image,
           hasCompletedOnboarding: data.has_completed_onboarding,
           hasCompletedTutorial: data.has_completed_tutorial,
           hasSeenIntro: data.has_seen_intro,
@@ -161,6 +165,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               paymentMethods: newData.payment_methods,
               premiumTheme: newData.premium_theme,
               userName: newData.user_name,
+              profileImage: newData.profile_image,
               hasCompletedOnboarding: newData.has_completed_onboarding,
               hasCompletedTutorial: newData.has_completed_tutorial,
               hasSeenIntro: newData.has_seen_intro,
@@ -225,6 +230,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (newSettings.paymentMethods !== undefined) payload.payment_methods = newSettings.paymentMethods;
     if (newSettings.premiumTheme !== undefined) payload.premium_theme = newSettings.premiumTheme;
     if (newSettings.userName !== undefined) payload.user_name = newSettings.userName;
+    if (newSettings.profileImage !== undefined) payload.profile_image = newSettings.profileImage;
     if (newSettings.hasCompletedOnboarding !== undefined) payload.has_completed_onboarding = newSettings.hasCompletedOnboarding;
     if (newSettings.hasCompletedTutorial !== undefined) payload.has_completed_tutorial = newSettings.hasCompletedTutorial;
     if (newSettings.hasSeenIntro !== undefined) payload.has_seen_intro = newSettings.hasSeenIntro;

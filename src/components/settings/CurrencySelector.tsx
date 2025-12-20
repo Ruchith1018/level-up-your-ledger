@@ -89,8 +89,8 @@ export function CurrencySelector() {
                 onClick={() => setIsOpen(true)}
             >
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-full text-primary">
-                        <Coins className="w-5 h-5" />
+                    <div className="h-9 w-9 flex items-center justify-center bg-primary/10 rounded-full text-primary font-bold text-lg">
+                        {currentCurrency.symbol}
                     </div>
                     <div className="flex flex-col">
                         <span className="font-medium">Currency</span>

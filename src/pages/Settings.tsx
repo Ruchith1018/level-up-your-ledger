@@ -6,7 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Moon, Sun, Laptop, User, LogOut, Users } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Laptop, User, LogOut, Users, Pencil, Camera, Loader2, UploadCloud } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -33,6 +35,7 @@ export default function Settings() {
   const { settings, updateSettings, isLoading, resetTheme } = useSettings();
   const [name, setName] = useState(settings.userName || "");
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Sync local name state with settings when they load
   useEffect(() => {
@@ -44,6 +47,38 @@ export default function Settings() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const { user, signOut } = useAuth();
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      setIsUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Optimistic update of the settings so the UI reflects the new image immediately
+      await updateSettings({ ...settings, profileImage: publicUrl });
+      toast.success("Avatar uploaded successfully!");
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error(`Error uploading avatar: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -130,50 +165,111 @@ export default function Settings() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>Profile</CardTitle>
+                  <CardTitle>BudGlio Profile</CardTitle>
                   <CardDescription>Manage your personal information</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Display Name</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="pl-9"
-                            placeholder="Enter your name"
-                          />
-                        </div>
-                        <Button onClick={handleNameUpdate}>Save</Button>
-                      </div>
+                  <div className="flex flex-col items-center space-y-4 py-4">
+                    <div className="relative group">
+                      <Avatar className="h-24 w-24 border-2 border-border">
+                        <AvatarImage src={settings.profileImage} alt={name} className="object-cover" />
+                        <AvatarFallback className="text-2xl bg-muted">
+                          {name ? name.substring(0, 2).toUpperCase() : <User className="h-10 w-10 text-muted-foreground" />}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
 
-                    {user && (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Email</Label>
-                          <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 border">
-                            <span className="text-sm text-muted-foreground">{user.email}</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2">
-                          <Button
-                            variant="outline"
-                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={handleLogoutClick}
-                          >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Log Out
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-semibold">{name || "User"}</h2>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </>
-                    )}
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md rounded-xl">
+                          <DialogHeader>
+                            <DialogTitle>Edit Profile</DialogTitle>
+                            <DialogDescription>
+                              Update your profile information.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-4">
+                              <Label>Profile Image</Label>
+                              <div className="flex justify-center">
+                                <div className="relative group cursor-pointer w-32 h-32 rounded-full overflow-hidden border-2 border-border hover:border-primary transition-colors">
+                                  <Avatar className="w-full h-full">
+                                    <AvatarImage src={settings.profileImage} alt={name} className="object-cover" />
+                                    <AvatarFallback className="text-4xl bg-muted">
+                                      {name ? name.substring(0, 2).toUpperCase() : <User className="h-12 w-12 text-muted-foreground" />}
+                                    </AvatarFallback>
+                                  </Avatar>
+
+                                  {/* Overlay */}
+                                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {isUploading ? (
+                                      <Loader2 className="h-8 w-8 animate-spin mb-1" />
+                                    ) : (
+                                      <Camera className="h-8 w-8 mb-1" />
+                                    )}
+                                    <span className="text-xs font-medium text-center px-2">
+                                      {isUploading ? "Uploading..." : "Click to update"}
+                                    </span>
+                                  </div>
+
+                                  {/* Hidden File Input */}
+                                  <input
+                                    type="file"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={isUploading}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-name">Display Name</Label>
+                              <Input
+                                id="edit-name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Enter your name"
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter className="gap-2 sm:gap-0">
+                            <DialogClose asChild>
+                              <Button variant="secondary">Cancel</Button>
+                            </DialogClose>
+                            <DialogClose asChild>
+                              <Button onClick={() => {
+                                handleNameUpdate();
+                              }}>Save Changes</Button>
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+
+                    <div className="text-sm text-muted-foreground">{user?.email}</div>
                   </div>
+
+                  {user && (
+                    <div className="mt-6 pt-6 border-t flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 px-8"
+                        onClick={handleLogoutClick}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log Out
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -186,7 +282,7 @@ export default function Settings() {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Referral Program</CardTitle>
+                    <CardTitle>BudGlio Referral Program</CardTitle>
                     <CardDescription>Share and earn rewards</CardDescription>
                   </CardHeader>
                   <CardContent>

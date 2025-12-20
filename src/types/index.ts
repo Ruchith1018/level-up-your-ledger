@@ -92,4 +92,5 @@ export interface AppSettings {
   purchasedThemes?: string[];
   purchasedCardThemes?: string[];
   hasAcceptedTerms?: boolean;
+  profileImage?: string;
 }
