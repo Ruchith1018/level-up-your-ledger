@@ -221,7 +221,7 @@ export default function Settings() {
                                   </Avatar>
 
                                   {/* Overlay */}
-                                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
                                     {isUploading ? (
                                       <Loader2 className="h-8 w-8 animate-spin mb-1" />
                                     ) : (
@@ -288,11 +288,19 @@ export default function Settings() {
               </Card>
             </motion.div>
 
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+            >
+              <GamificationStats />
+            </motion.div>
+
             {user && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
+                transition={{ delay: 0.1 }}
               >
                 <Card>
                   <CardHeader>
@@ -339,7 +347,7 @@ export default function Settings() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.2 }}
             >
               <Card>
                 <CardHeader>
@@ -396,20 +404,10 @@ export default function Settings() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <GamificationStats />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
               <ExportImport />
             </motion.div>
-
-
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}

@@ -102,7 +102,7 @@ export function EarningPieChart() {
                 </Select>
             </CardHeader>
             <CardContent>
-                <div className="h-[300px] relative">
+                <div className="h-[300px] w-full min-w-0 relative">
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none w-[100px] flex flex-col items-center justify-center">
                         <div className={`${getFontSizeClass(totalIncome)} font-bold transition-all duration-200`}>{currencySymbol}{totalIncome.toFixed(0)}</div>
                         <div className="text-xs text-muted-foreground">Total</div>

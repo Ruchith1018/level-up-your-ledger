@@ -158,7 +158,7 @@ export function BudgetOverview() {
                 <div className="max-w-[60%]">
                   <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Card Holder</div>
                   <div className="font-medium tracking-wider uppercase truncate text-[10px] sm:text-base">
-                    {settings.userName || "User"}
+                    {settings.userName || user?.user_metadata?.full_name || "User"}
                   </div>
                 </div>
                 <div className="text-right">

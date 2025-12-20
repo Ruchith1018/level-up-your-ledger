@@ -57,7 +57,7 @@ export function GamificationStats() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Gamification Stats</CardTitle>
+                <CardTitle>BudGlio Stats</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

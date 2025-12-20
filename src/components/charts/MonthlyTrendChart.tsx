@@ -80,7 +80,7 @@ export function MonthlyTrendChart() {
         </Select>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="h-[250px]">
+        <div className="h-[250px] w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
