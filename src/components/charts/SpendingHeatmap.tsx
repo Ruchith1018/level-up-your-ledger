@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAvailableMonths } from "@/hooks/useAvailableMonths";
 
 export function SpendingHeatmap() {
   const { state } = useExpenses();
@@ -19,13 +20,7 @@ export function SpendingHeatmap() {
   const currencySymbol = getCurrencySymbol(settings.currency);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
 
-  const last6Months = Array.from({ length: 6 }, (_, i) => {
-    const d = dayjs().subtract(i, "month");
-    return {
-      value: d.format("YYYY-MM"),
-      label: d.format("MMMM YYYY"),
-    };
-  });
+  const availableMonths = useAvailableMonths();
 
   // Get spending for each day
   const daysInMonth = dayjs(selectedMonth).daysInMonth();
@@ -70,7 +65,7 @@ export function SpendingHeatmap() {
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
           <SelectContent>
-            {last6Months.map((month) => (
+            {availableMonths.map((month) => (
               <SelectItem key={month.value} value={month.value} className="text-xs">
                 {month.label}
               </SelectItem>

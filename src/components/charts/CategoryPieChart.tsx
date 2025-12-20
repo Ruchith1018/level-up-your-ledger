@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAvailableMonths } from "@/hooks/useAvailableMonths";
 
 const COLORS = [
   "#3b82f6", // Blue (Bills & Utilities)
@@ -30,13 +31,7 @@ export function CategoryPieChart() {
   const currencySymbol = getCurrencySymbol(settings.currency);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
 
-  const last6Months = Array.from({ length: 6 }, (_, i) => {
-    const d = dayjs().subtract(i, "month");
-    return {
-      value: d.format("YYYY-MM"),
-      label: d.format("MMMM YYYY"),
-    };
-  });
+  const availableMonths = useAvailableMonths();
 
   const categoryData = getExpensesByCategory(selectedMonth);
 
@@ -57,7 +52,7 @@ export function CategoryPieChart() {
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
-              {last6Months.map((month) => (
+              {availableMonths.map((month) => (
                 <SelectItem key={month.value} value={month.value} className="text-xs">
                   {month.label}
                 </SelectItem>
@@ -91,7 +86,7 @@ export function CategoryPieChart() {
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
           <SelectContent>
-            {last6Months.map((month) => (
+            {availableMonths.map((month) => (
               <SelectItem key={month.value} value={month.value} className="text-xs">
                 {month.label}
               </SelectItem>
