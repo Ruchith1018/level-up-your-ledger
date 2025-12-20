@@ -87,7 +87,7 @@ export function SpendingHeatmap() {
               <div className="text-xs font-semibold">{day}</div>
               {total > 0 && (
                 <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-card border border-border rounded p-2 text-xs -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap shadow-lg z-10 w-max pointer-events-none">
-                  <span className="font-semibold text-primary">{currencySymbol}{total.toFixed(2)}</span>
+                  <span className="font-semibold text-destructive">{currencySymbol}{total.toFixed(2)}</span>
                 </div>
               )}
             </motion.div>

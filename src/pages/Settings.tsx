@@ -54,6 +54,20 @@ export default function Settings() {
 
     try {
       setIsUploading(true);
+
+      // Delete old avatar if it exists and is hosted on Supabase
+      if (settings.profileImage && settings.profileImage.includes('avatars')) {
+        try {
+          const oldPath = settings.profileImage.split('/').pop();
+          if (oldPath) {
+            await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
+          }
+        } catch (err) {
+          console.error("Error deleting old avatar:", err);
+          // Continue with upload even if delete fails
+        }
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
