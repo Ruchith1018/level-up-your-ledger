@@ -18,7 +18,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { CURRENCIES } from "@/constants/currencies";
 
 export default function Gamification() {
-    const { state, claimableBadges } = useGamification();
+    const { state, claimableBadges, isLoading } = useGamification();
     const { state: expenseState } = useExpenses();
     const navigate = useNavigate();
     const nextLevelXP = xpThreshold(state.level);
@@ -126,6 +126,73 @@ export default function Gamification() {
         </div>
     );
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background pb-24">
+                <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+                    <div className="container mx-auto px-4 py-4">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} disabled>
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                            <div>
+                                <h1 className="text-2xl font-bold">Gamification</h1>
+                                <p className="text-sm text-muted-foreground">Loading your progress...</p>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
+                    {/* Stats Skeleton */}
+                    <div className="grid grid-cols-2 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <Card key={i} className="h-full">
+                                <CardContent className="p-4 flex flex-col justify-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-9 h-9 bg-muted rounded-full animate-pulse" />
+                                        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+                                    </div>
+                                    <div className="h-8 w-16 bg-muted rounded animate-pulse" />
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Level Progress Skeleton */}
+                    <Card>
+                        <CardHeader>
+                            <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex justify-between">
+                                <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+                                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                            </div>
+                            <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                            <div className="h-4 w-48 mx-auto bg-muted rounded animate-pulse" />
+                        </CardContent>
+                    </Card>
+
+                    {/* Tasks Skeleton */}
+                    <Card>
+                        <CardHeader>
+                            <div className="h-6 w-40 bg-muted rounded animate-pulse" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-10 w-full mb-4 bg-muted rounded animate-pulse" />
+                            <div className="space-y-4">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="h-24 w-full bg-muted rounded-lg animate-pulse" />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-background pb-24">
             <GamificationTutorialOverlay isActive={showTour} onComplete={handleTourComplete} />
@@ -175,7 +242,10 @@ export default function Gamification() {
                             className="bg-gradient-to-br from-gold/20 to-yellow-500/20 border-gold/50 h-full cursor-pointer hover:shadow-md transition-all"
                             onClick={() => navigate('/gamification/tokens')}
                         >
-                            <CardContent className="p-4 flex flex-col justify-center gap-2">
+                            <CardContent className="p-4 flex flex-col justify-center gap-2 relative">
+                                <div className="absolute top-3 right-3 text-yellow-500/80">
+                                    <ChevronRight className="w-5 h-5" />
+                                </div>
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-gold/20 rounded-full text-gold">
                                         <img src="/assets/token.png" alt="Token" className="w-5 h-5 object-contain" />
