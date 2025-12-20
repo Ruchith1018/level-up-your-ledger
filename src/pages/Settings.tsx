@@ -406,6 +406,14 @@ export default function Settings() {
                         <p className="text-xs text-muted-foreground">
                           Share this code with friends to earn rewards!
                         </p>
+                        {user.user_metadata?.referred_by && (
+                          <div className="pt-2 mt-2 border-t text-xs text-muted-foreground flex items-center gap-1">
+                            <span>Referred by:</span>
+                            <span className="font-mono font-medium text-foreground">
+                              User_{user.user_metadata.referred_by}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <Button
