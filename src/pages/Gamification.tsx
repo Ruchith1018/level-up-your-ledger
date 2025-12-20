@@ -14,9 +14,11 @@ import { getDailyTasks, getWeeklyTasks, getMonthlyTasks } from "@/utils/gamifica
 import { useMemo, useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { GamificationTutorialOverlay } from "@/components/tutorial/GamificationTutorialOverlay";
+import { useSettings } from "@/contexts/SettingsContext";
+import { CURRENCIES } from "@/constants/currencies";
 
 export default function Gamification() {
-    const { state } = useGamification();
+    const { state, claimableBadges } = useGamification();
     const { state: expenseState } = useExpenses();
     const navigate = useNavigate();
     const nextLevelXP = xpThreshold(state.level);
@@ -48,8 +50,11 @@ export default function Gamification() {
     const weeklyTransactions = expenseState.items.filter(t => dayjs(t.date).isAfter(startOfWeek));
     const monthlyTransactions = expenseState.items.filter(t => dayjs(t.date).isAfter(startOfMonth));
 
+    const { settings } = useSettings();
+    const currencySymbol = CURRENCIES.find(c => c.code === settings.currency)?.symbol || settings.currency;
+
     const dailyTasks = useMemo(() => {
-        const tasks = getDailyTasks(today);
+        const tasks = getDailyTasks(today, settings.currency);
         return tasks.map(task => {
             const uniqueId = `${task.id}_${today.format('YYYY-MM-DD')}`;
             return {
@@ -59,10 +64,10 @@ export default function Gamification() {
                 isClaimed: state.claimedTasks?.includes(uniqueId)
             };
         });
-    }, [dailyTransactions, state.claimedTasks]);
+    }, [dailyTransactions, state.claimedTasks, settings.currency]);
 
     const weeklyTasks = useMemo(() => {
-        const tasks = getWeeklyTasks(today);
+        const tasks = getWeeklyTasks(today, settings.currency);
         return tasks.map(task => {
             const uniqueId = `${task.id}_${today.format('YYYY-Www')}`;
             return {
@@ -72,10 +77,10 @@ export default function Gamification() {
                 isClaimed: state.claimedTasks?.includes(uniqueId)
             };
         });
-    }, [weeklyTransactions, state.claimedTasks]);
+    }, [weeklyTransactions, state.claimedTasks, settings.currency]);
 
     const monthlyTasks = useMemo(() => {
-        const tasks = getMonthlyTasks(today);
+        const tasks = getMonthlyTasks(today, settings.currency);
         return tasks.map(task => {
             const uniqueId = `${task.id}_${today.format('YYYY-MM')}`;
             return {
@@ -85,7 +90,7 @@ export default function Gamification() {
                 isClaimed: state.claimedTasks?.includes(uniqueId)
             };
         });
-    }, [monthlyTransactions, state.claimedTasks]);
+    }, [monthlyTransactions, state.claimedTasks, settings.currency]);
 
     const { claimTaskReward } = useGamification();
 
@@ -166,7 +171,10 @@ export default function Gamification() {
                         transition={{ delay: 0.2 }}
                         id="gami-coins-card"
                     >
-                        <Card className="bg-gradient-to-br from-gold/20 to-yellow-500/20 border-gold/50 h-full">
+                        <Card
+                            className="bg-gradient-to-br from-gold/20 to-yellow-500/20 border-gold/50 h-full cursor-pointer hover:shadow-md transition-all"
+                            onClick={() => navigate('/gamification/tokens')}
+                        >
                             <CardContent className="p-4 flex flex-col justify-center gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-gold/20 rounded-full text-gold">
@@ -274,10 +282,31 @@ export default function Gamification() {
                         </CardHeader>
                         <CardContent>
                             <Tabs defaultValue="daily" className="w-full">
-                                <TabsList className="grid w-full grid-cols-3 mb-4">
-                                    <TabsTrigger value="daily">Daily</TabsTrigger>
-                                    <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                                    <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                                <TabsList className="grid w-full grid-cols-3 mb-4 h-auto p-1">
+                                    <TabsTrigger value="daily" className="flex items-center gap-2 py-2">
+                                        Daily
+                                        {dailyTasks.filter(t => t.progress >= t.total && !t.isClaimed).length > 0 && (
+                                            <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce">
+                                                {dailyTasks.filter(t => t.progress >= t.total && !t.isClaimed).length}
+                                            </span>
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="weekly" className="flex items-center gap-2 py-2">
+                                        Weekly
+                                        {weeklyTasks.filter(t => t.progress >= t.total && !t.isClaimed).length > 0 && (
+                                            <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce">
+                                                {weeklyTasks.filter(t => t.progress >= t.total && !t.isClaimed).length}
+                                            </span>
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="monthly" className="flex items-center gap-2 py-2">
+                                        Monthly
+                                        {monthlyTasks.filter(t => t.progress >= t.total && !t.isClaimed).length > 0 && (
+                                            <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce">
+                                                {monthlyTasks.filter(t => t.progress >= t.total && !t.isClaimed).length}
+                                            </span>
+                                        )}
+                                    </TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="daily" className="space-y-4">
                                     {dailyTasks.map(renderTask)}
@@ -305,8 +334,13 @@ export default function Gamification() {
                             <img src="/assets/badge.png" alt="Badge" className="w-5 h-5 object-contain" />
                             Badges
                         </h2>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/gamification/badges')}>
-                            Show More <ChevronRight className="w-4 h-4 ml-1" />
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/gamification/badges')} className="gap-2">
+                            {claimableBadges.length > 0 && (
+                                <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce">
+                                    {claimableBadges.length}
+                                </span>
+                            )}
+                            Show More <ChevronRight className="w-4 h-4" />
                         </Button>
                     </div>
 
@@ -346,8 +380,8 @@ export default function Gamification() {
                     <Card>
                         <CardContent className="p-0">
                             <div className="divide-y divide-border">
-                                {state.history?.length > 0 ? (
-                                    state.history.slice(0, 10).map((item, index) => (
+                                {state.history?.filter(h => (h.xpEarned || 0) > 0).length > 0 ? (
+                                    state.history.filter(h => (h.xpEarned || 0) > 0).slice(0, 10).map((item, index) => (
                                         <div key={index} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-green-500/10 text-green-500 rounded-full">

@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { GamificationState } from "@/types";
-import { addXP, removeXP, checkStreak, XP_REWARDS, BADGES, checkTransactionCount, checkSavingsRate, checkIncomeSources, calculateDailyTaskStreak, calculateWeeklyTaskStreak, calculateMonthlyTaskStreak } from "@/utils/gamify";
+import { addXP, removeXP, checkStreak, XP_REWARDS, BADGES, getBadgeProgress } from "@/utils/gamify";
+import { getDailyTasks, getWeeklyTasks, getMonthlyTasks } from "@/utils/gamificationTasks";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import { useExpenses } from "./ExpenseContext";
 import { useBudget } from "./BudgetContext";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "./AuthContext";
+import { useSettings } from "./SettingsContext";
+import { CURRENCIES } from "@/constants/currencies";
 
 interface GamificationContextType {
   state: GamificationState;
@@ -16,7 +20,9 @@ interface GamificationContextType {
   unlockBadge: (badgeId: string) => Promise<void>;
   spendCoins: (amount: number) => Promise<boolean>;
   claimTaskReward: (taskId: string, reward: number) => Promise<void>;
-  checkBadges: (transactions: any[], budgetState: any) => void;
+  revertTransactionReward: (type: "expense" | "income") => Promise<void>;
+  claimableBadges: string[];
+  totalUnclaimedTasks: number;
 
   addRedemptionLog: (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => Promise<void>;
   isLoading: boolean;
@@ -198,6 +204,19 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     toast.success(`+${amount} Token${amount !== 1 ? 's' : ''}`, {
       className: "text-yellow-500 border-yellow-500",
     });
+
+    // Log history
+    const historyItem = {
+      date: new Date().toISOString(),
+      reason: "Tokens Earned",
+      coinsEarned: amount,
+      xpEarned: 0
+    };
+    const finalState = {
+      ...updatedState,
+      history: [historyItem, ...updatedState.history]
+    };
+    await persistState(finalState);
   };
 
   const updateStreak = async () => {
@@ -240,53 +259,105 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const checkBadges = (transactions: any[], budgetState: any) => {
-    const currentState = stateRef.current;
-    // We'll collect new badges then persist once
-    let badgesToAdd: string[] = [];
+  const { state: expenseState } = useExpenses();
+  const { state: budgetState } = useBudget();
+  const { settings } = useSettings();
+  const [claimableBadges, setClaimableBadges] = useState<string[]>([]);
 
-    const tryUnlock = (id: string) => {
-      if (!currentState.badges.includes(id) && !badgesToAdd.includes(id)) {
-        badgesToAdd.push(id);
+
+
+
+  // Calculate claimable badges reactively
+  useEffect(() => {
+    if (!state.badges || !expenseState.items) return;
+
+    const newClaimable: string[] = [];
+    const allBadges = Object.values(BADGES);
+
+    allBadges.forEach(badge => {
+      // Skip if already unlocked
+      if (state.badges.includes(badge.id)) return;
+
+      const progress = getBadgeProgress(
+        badge.id,
+        expenseState.items,
+        state.claimedTasks,
+        state.streak,
+        budgetState
+      );
+
+      if (progress.current >= progress.target) {
+        newClaimable.push(badge.id);
       }
-    };
+    });
 
-    // 1. First Steps
-    if (checkTransactionCount(transactions, 1)) tryUnlock(BADGES.FIRST_STEPS.id);
-    if (checkTransactionCount(transactions, 10)) tryUnlock(BADGES.LOG_10.id);
-    if (checkTransactionCount(transactions, 50)) tryUnlock(BADGES.LOG_50.id);
-    if (checkTransactionCount(transactions, 100)) tryUnlock(BADGES.TRACKER_ELITE.id);
-    if (checkTransactionCount(transactions, 500)) tryUnlock(BADGES.LOG_500.id);
-    if (checkTransactionCount(transactions, 1000)) tryUnlock(BADGES.FINANCE_GURU.id);
-
-    // 3. Income Badges
-    const incomeTransactions = transactions.filter((t: any) => t.type === 'income');
-    if (incomeTransactions.length >= 10) tryUnlock(BADGES.INCOME_LOGGER.id);
-    if (checkIncomeSources(transactions, 3)) tryUnlock(BADGES.INCOME_STREAMER.id);
-
-    // 5. Daily Task Streak Badges (using state.claimedTasks)
-    const dailyStreak = calculateDailyTaskStreak(currentState.claimedTasks);
-    if (dailyStreak >= 1) tryUnlock(BADGES.DAILY_STARTER.id);
-
-    if (badgesToAdd.length > 0) {
-      // Unlock them
-      const finalBadges = [...currentState.badges, ...badgesToAdd];
-      const newState = { ...currentState, badges: finalBadges };
-      persistState(newState);
-
-      // Show toasts
-      badgesToAdd.forEach(id => {
-        const badge = Object.values(BADGES).find((b) => b.id === id);
-        if (badge) {
-          setTimeout(() => {
-            toast.success(`🏆 Badge Unlocked: ${badge.name}!`, {
-              description: badge.description,
-            });
-          }, 100);
-        }
-      });
+    // Only update if changed to avoid loops
+    if (JSON.stringify(newClaimable) !== JSON.stringify(claimableBadges)) {
+      setClaimableBadges(newClaimable);
     }
-  };
+  }, [state.badges, state.claimedTasks, state.streak, expenseState.items, budgetState]);
+
+  // Calculate total unclaimed tasks reactively
+  const [totalUnclaimedTasks, setTotalUnclaimedTasks] = useState(0);
+
+  useEffect(() => {
+    if (expenseState.isLoading || !expenseState.items) return;
+
+    const today = dayjs();
+    const startOfWeek = dayjs().startOf('week');
+    const startOfMonth = dayjs().startOf('month');
+
+    const dailyTransactions = expenseState.items.filter(t => dayjs(t.date).isSame(today, 'day'));
+    const weeklyTransactions = expenseState.items.filter(t => dayjs(t.date).isAfter(startOfWeek));
+    const monthlyTransactions = expenseState.items.filter(t => dayjs(t.date).isAfter(startOfMonth));
+
+    const dailyTasks = getDailyTasks(today, settings.currency).map(task => ({
+      ...task,
+      uniqueId: `${task.id}_${today.format('YYYY-MM-DD')}`,
+    }));
+
+    const weeklyTasks = getWeeklyTasks(today, settings.currency).map(task => ({
+      ...task,
+      uniqueId: `${task.id}_${today.format('YYYY-Www')}`,
+    }));
+
+    const monthlyTasks = getMonthlyTasks(today, settings.currency).map(task => ({
+      ...task,
+      uniqueId: `${task.id}_${today.format('YYYY-MM')}`,
+    }));
+
+    let count = 0;
+    const tasksToCheck = [...dailyTasks, ...weeklyTasks, ...monthlyTasks];
+
+    // Check Unclaimed Count AND Invalid Claims (Reversion)
+    tasksToCheck.forEach(task => {
+      // Calculate raw progress first
+      let currentProgress = 0;
+      if (task.id.startsWith("daily_")) {
+        currentProgress = task.checkProgress(dailyTransactions);
+      } else if (task.id.startsWith("weekly_")) {
+        currentProgress = task.checkProgress(weeklyTransactions);
+      } else if (task.id.startsWith("monthly_")) {
+        currentProgress = task.checkProgress(monthlyTransactions);
+      }
+
+      const cappedProgress = Math.min(currentProgress, task.total);
+
+      // Case 1: Task completed but NOT claimed -> Increment notification count
+      if (cappedProgress >= task.total && !state.claimedTasks.includes(task.uniqueId)) {
+        count++;
+      }
+
+      // Case 2: Task IS claimed but progress is no longer met -> REVERT
+      if (state.claimedTasks.includes(task.uniqueId) && cappedProgress < task.total) {
+        // Found an invalid claim!
+        revertTaskReward(task.uniqueId, task.reward);
+      }
+    });
+
+    setTotalUnclaimedTasks(count);
+
+  }, [expenseState.items, state.claimedTasks]);
 
   const unlockBadge = async (badgeId: string) => {
     const currentState = stateRef.current;
@@ -310,7 +381,13 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     if ((currentState.coins || 0) >= amount) {
       const newState = {
         ...currentState,
-        coins: (currentState.coins || 0) - amount
+        coins: (currentState.coins || 0) - amount,
+        history: [{
+          date: new Date().toISOString(),
+          reason: "Tokens Spent",
+          coinsSpent: amount,
+          xpEarned: 0
+        }, ...currentState.history]
       };
       await persistState(newState);
       return true;
@@ -319,14 +396,94 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     return false;
   };
 
+  const getCoinReward = (taskId: string) => {
+    if (taskId.includes("daily_")) return 1;
+    if (taskId.includes("weekly_")) return 3;
+    if (taskId.includes("monthly_")) return 5;
+    return 0;
+  };
+
+  const revertTaskReward = async (taskId: string, rewardXP: number) => {
+    const currentState = stateRef.current;
+    if (!currentState.claimedTasks.includes(taskId)) return;
+
+    const coinReward = getCoinReward(taskId);
+
+    // Manual deduction (skipping removeXP to avoid auto-history log)
+    let newState = {
+      ...currentState,
+      xp: Math.max(0, currentState.xp - rewardXP),
+      totalXP: Math.max(0, (currentState.totalXP || 0) - rewardXP),
+      coins: Math.max(0, (currentState.coins || 0) - coinReward),
+      totalCoins: Math.max(0, (currentState.totalCoins || 0) - coinReward),
+      claimedTasks: currentState.claimedTasks.filter(id => id !== taskId)
+    };
+
+    // Remove the corresponding "Task Completed" history entry
+    // We look for the most recent entry that matches the rewards and reason
+    const historyIndex = newState.history.findIndex(h =>
+      h.reason === "Task Completed" &&
+      h.xpEarned === rewardXP &&
+      (h.coinsEarned === coinReward || (coinReward === 0 && !h.coinsEarned))
+    );
+
+    if (historyIndex !== -1) {
+      // Remove that specific entry
+      const newHistory = [...newState.history];
+      newHistory.splice(historyIndex, 1);
+      newState.history = newHistory;
+    }
+
+    await persistState(newState);
+    toast.warning(`Task Reverted`, { description: "Transaction requirement no longer met" });
+  };
+
+  const revertTransactionReward = async (type: "expense" | "income") => {
+    const currentState = stateRef.current;
+
+    // Constants for transaction rewards (mirrors addTransaction in useTransaction.ts)
+    const xpAmount = 5;
+    const coinAmount = 1;
+
+    let newState = {
+      ...currentState,
+      xp: Math.max(0, currentState.xp - xpAmount),
+      totalXP: Math.max(0, (currentState.totalXP || 0) - xpAmount),
+      coins: Math.max(0, (currentState.coins || 0) - coinAmount),
+      totalCoins: Math.max(0, (currentState.totalCoins || 0) - coinAmount),
+    };
+
+    // Remove history entries
+    // 1. Remove "Added expense" or "Added income"
+    const reason = type === "expense" ? "Added expense" : "Added income";
+    const xpHistoryIndex = newState.history.findIndex(h => h.reason === reason && h.xpEarned === xpAmount);
+
+    if (xpHistoryIndex !== -1) {
+      const newHistory = [...newState.history];
+      newHistory.splice(xpHistoryIndex, 1);
+      newState.history = newHistory;
+    }
+
+    // 2. Remove "Tokens Earned" (1 coin)
+    const coinHistoryIndex = newState.history.findIndex(h => h.reason === "Tokens Earned" && h.coinsEarned === coinAmount);
+
+    if (coinHistoryIndex !== -1) {
+      const newHistory = [...newState.history];
+      newHistory.splice(coinHistoryIndex, 1);
+      newState.history = newHistory;
+    }
+
+    await persistState(newState);
+    // Silent toast or just info? User expects it to just "disappear" based on request.
+    // But helpful to know it happened.
+    toast.info(`${type === 'expense' ? 'Expense' : 'Income'} deleted`, { description: "Rewards reverted" });
+  };
+
   const claimTaskReward = async (taskId: string, reward: number) => {
     const currentState = stateRef.current;
     if (currentState.claimedTasks.includes(taskId)) return;
 
-    let coinReward = 0;
-    if (taskId.includes("daily_")) coinReward = 1;
-    else if (taskId.includes("weekly_")) coinReward = 3;
-    else if (taskId.includes("monthly_")) coinReward = 5;
+    const coinReward = getCoinReward(taskId);
 
     let newState = {
       ...currentState,
@@ -335,6 +492,19 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       totalCoins: (currentState.totalCoins || 0) + coinReward,
     };
     newState = addXP(newState, reward, "Task Completed");
+
+    // Enhance history logic for claiming to be consistent
+    const latestHistory = newState.history[0];
+    if (latestHistory && latestHistory.reason === "Task Completed") {
+      const enhancedHistory = {
+        ...latestHistory,
+        coinsEarned: coinReward
+      };
+      newState = {
+        ...newState,
+        history: [enhancedHistory, ...newState.history.slice(1)]
+      };
+    }
 
     await persistState(newState);
 
@@ -366,7 +536,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         unlockBadge,
         spendCoins,
         claimTaskReward,
-        checkBadges,
+        revertTransactionReward,
+        claimableBadges,
+        totalUnclaimedTasks,
         addRedemptionLog,
         isLoading,
       }}

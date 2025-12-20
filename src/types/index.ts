@@ -37,7 +37,7 @@ export interface GamificationState {
   lastCheckIn: string;
   badges: string[];
   claimedTasks: string[];
-  history: Array<{ date: string; xpEarned: number; reason: string }>;
+  history: Array<{ date: string; xpEarned?: number; coinsEarned?: number; coinsSpent?: number; reason: string }>;
   redemptionHistory: Array<{
     id: string;
     date: string;

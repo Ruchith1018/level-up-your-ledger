@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import ThemeShopPage from "./pages/ThemeShopPage";
 import Gamification from "./pages/Gamification";
 import BadgesPage from "./pages/BadgesPage";
+import TokenHistoryPage from "./pages/TokenHistoryPage";
 import IntroPage from "./pages/IntroPage";
 import NotFound from "./pages/NotFound";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -72,6 +73,7 @@ const App = () => (
                                                         <Route path="/shop" element={<ThemeShopPage />} />
                                                         <Route path="/gamification" element={<Gamification />} />
                                                         <Route path="/gamification/badges" element={<BadgesPage />} />
+                                                        <Route path="/gamification/tokens" element={<TokenHistoryPage />} />
                                                     </Route>
 
                                                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

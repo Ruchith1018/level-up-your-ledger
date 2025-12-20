@@ -22,7 +22,7 @@ export interface TransactionData {
 export function useTransaction() {
     const { addExpense, deleteExpense, state: expenseState, getTotalByType } = useExpenses();
     const { addBudget, updateBudget, getBudgetByMonth } = useBudget();
-    const { rewardXP, deductXP, unlockBadge, earnCoins, spendCoins, checkBadges } = useGamification();
+    const { rewardXP, deductXP, earnCoins, spendCoins, revertTransactionReward } = useGamification();
     const { state: subscriptionState, revertPayment } = useSubscriptions();
     const { settings } = useSettings();
 
@@ -89,14 +89,7 @@ export function useTransaction() {
         }
         earnCoins(1);
 
-        // Check for badges
-        // The expenseState.items will not yet contain the newTransaction, as addExpense dispatches asynchronously.
-        // We need to construct the list of transactions including the new one for badge checks.
-        const allTransactionsIncludingNew = [newTransaction, ...expenseState.items];
-
-        // Pass the budget state (we can get it from context if needed, but for now passing existingBudget is close enough or we can fetch fresh)
-        // Actually checkBadges needs the whole list.
-        checkBadges(allTransactionsIncludingNew, existingBudget);
+        // Check for badges is now reactive in GamificationContext
 
         // Check for first transaction reward
         if (expenseState.items.length === 0) {
@@ -109,7 +102,10 @@ export function useTransaction() {
     };
 
     const deleteTransaction = (id: string) => {
-        // Check if this transaction is a subscription payment
+        // Find transaction to check type and subscription status
+        const transaction = expenseState.items.find(t => t.id === id);
+
+        // Subscription check
         const subscription = subscriptionState.subscriptions.find(
             s => s.lastPaymentTransactionId === id
         );
@@ -121,12 +117,16 @@ export function useTransaction() {
             });
         }
 
+        // Revert Gamification Rewards (Base XP + Coin)
+        if (transaction) {
+            revertTransactionReward(transaction.type);
+        } else {
+            // Fallback if transaction not found (shouldn't happen often)
+            deductXP(5, "Transaction deleted");
+            spendCoins(1);
+        }
+
         deleteExpense(id);
-        spendCoins(1);
-        deductXP(5, "Transaction deleted");
-        toast.success("Transaction deleted", {
-            description: "1 Coin deducted, 5 XP deducted",
-        });
     };
 
     return { addTransaction, deleteTransaction };

@@ -7,7 +7,7 @@ import { ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export function XPBar() {
-  const { state } = useGamification();
+  const { state, claimableBadges, totalUnclaimedTasks } = useGamification();
   const navigate = useNavigate();
   const nextLevelXP = xpThreshold(state.level);
   const progress = (state.xp / nextLevelXP) * 100;
@@ -20,7 +20,14 @@ export function XPBar() {
       className="bg-card rounded-xl p-4 border border-border shadow-sm cursor-pointer hover:shadow-md transition-shadow relative"
       onClick={() => navigate("/gamification")}
     >
-      <ChevronRight className="absolute top-2 right-2 w-4 h-4 text-muted-foreground animate-pulse" />
+      <div className="absolute top-2 right-2 flex items-center gap-1">
+        {(claimableBadges?.length || 0) + (totalUnclaimedTasks || 0) > 0 && (
+          <span className="flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce z-10 shadow-sm">
+            {(claimableBadges?.length || 0) + (totalUnclaimedTasks || 0)}
+          </span>
+        )}
+        <ChevronRight className="w-4 h-4 text-muted-foreground animate-pulse" />
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
         <div className="flex flex-wrap items-center gap-2">
