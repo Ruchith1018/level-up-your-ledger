@@ -162,8 +162,8 @@ export function BudgetOverview() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Expires</div>
-                  <div className="font-medium tracking-wider text-[10px] sm:text-base">{dayjs().endOf('month').format('MM/YY')}</div>
+                  <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Issued</div>
+                  <div className="font-medium tracking-wider text-[10px] sm:text-base">{user?.created_at ? dayjs(user.created_at).format('MM/YY') : dayjs().format('MM/YY')}</div>
                 </div>
               </div>
 

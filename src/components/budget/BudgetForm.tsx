@@ -31,7 +31,7 @@ interface BudgetFormProps {
 
 export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
     const { addBudget, updateBudget } = useBudget();
-    const { settings } = useSettings();
+    const { settings, addCategory } = useSettings(); // Destructure addCategory
     const currencySymbol = getCurrencySymbol(settings.currency);
     const [open, setOpen] = useState(false);
     const [totalBudget, setTotalBudget] = useState<string>("");
@@ -127,7 +127,7 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
         return newErrors.length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => { // Make async
         e.preventDefault();
 
         if (!validateForm()) {
@@ -137,11 +137,16 @@ export function BudgetForm({ trigger, initialData }: BudgetFormProps) {
         const total = parseFloat(totalBudget);
         const limits: Record<string, number> = {};
 
-        categoryLimits
+        // Add new categories to global settings and build limits object
+        const categoryPromises = categoryLimits
             .filter((cl) => cl.category.trim() !== "")
-            .forEach((cl) => {
-                limits[cl.category.trim()] = cl.limit;
+            .map(async (cl) => {
+                const categoryName = cl.category.trim();
+                limits[categoryName] = cl.limit;
+                await addCategory(categoryName);
             });
+
+        await Promise.all(categoryPromises);
 
         if (isEditing && initialData) {
             updateBudget({
