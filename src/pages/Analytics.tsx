@@ -1,5 +1,6 @@
 import { DailySpendingTrend } from "@/components/charts/DailySpendingTrend";
 import { SpendingHeatmap } from "@/components/charts/SpendingHeatmap";
+import { EarningHeatmap } from "@/components/charts/EarningHeatmap";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/charts/MonthlyTrendChart";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function Analytics() {
 
             {/* Heatmap Skeleton */}
             <Skeleton className="w-full h-[200px] rounded-xl" />
+            <Skeleton className="w-full h-[200px] rounded-xl" />
 
             {/* Charts Grid Skeleton */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -59,7 +61,10 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <SpendingHeatmap />
+              <div className="space-y-6">
+                <SpendingHeatmap />
+                <EarningHeatmap />
+              </div>
             </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
