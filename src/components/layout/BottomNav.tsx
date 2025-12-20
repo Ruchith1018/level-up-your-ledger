@@ -155,7 +155,7 @@ function BottomNavContent() {
 
 export function BottomNav() {
     const location = useLocation();
-    const hiddenRoutes = ["/intro", "/auth", "/gamification", "/income", "/expenses", "/savings", "/referrals"];
+    const hiddenRoutes = ["/intro", "/auth", "/gamification", "/income", "/expenses", "/savings", "/referrals", "/transactions"];
     const isHidden = hiddenRoutes.includes(location.pathname);
 
     return (

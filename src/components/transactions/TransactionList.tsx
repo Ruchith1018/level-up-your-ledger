@@ -8,12 +8,13 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useState } from "react";
+import { useTransaction } from "@/hooks/useTransaction";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 
-import { useTransaction } from "@/hooks/useTransaction";
-
 export function TransactionList() {
+  const navigate = useNavigate();
   const { state } = useExpenses();
   const { deleteTransaction } = useTransaction();
   const { settings } = useSettings();
@@ -24,8 +25,9 @@ export function TransactionList() {
   if (recentTransactions.length === 0) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Transactions</CardTitle>
+          <Button variant="ghost" className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50" onClick={() => navigate("/transactions")}>ALL</Button>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
@@ -38,8 +40,9 @@ export function TransactionList() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Transactions</CardTitle>
+        <Button variant="ghost" onClick={() => navigate("/transactions")}>ALL</Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">

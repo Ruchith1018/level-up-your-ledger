@@ -29,6 +29,7 @@ import IncomePage from "./pages/IncomePage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ReferralsPage from "./pages/ReferralsPage";
 import SavingsPage from "./pages/SavingsPage";
+import TransactionsPage from "./pages/TransactionsPage";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
@@ -67,6 +68,7 @@ const App = () => (
                                                         <Route path="/income" element={<IncomePage />} />
                                                         <Route path="/expenses" element={<ExpensesPage />} />
                                                         <Route path="/savings" element={<SavingsPage />} />
+                                                        <Route path="/transactions" element={<TransactionsPage />} />
                                                         <Route path="/shop" element={<ThemeShopPage />} />
                                                         <Route path="/gamification" element={<Gamification />} />
                                                         <Route path="/gamification/badges" element={<BadgesPage />} />
