@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { useTutorial } from "@/contexts/TutorialContext";
 
@@ -20,7 +20,11 @@ export default function AuthPage() {
     const [otp, setOtp] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [referralCode, setReferralCode] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const generateReferralId = () => {
         return Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -53,6 +57,13 @@ export default function AuthPage() {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+
         try {
             const myReferralId = generateReferralId();
 
@@ -199,13 +210,29 @@ export default function AuthPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="password">Password</Label>
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                        />
+                                        <div className="relative">
+                                            <Input
+                                                id="password"
+                                                type={showPassword ? "text" : "password"}
+                                                required
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="pr-10"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? (
+                                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                ) : (
+                                                    <Eye className="h-4 w-4 text-muted-foreground" />
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                     <Button type="submit" className="w-full" disabled={loading}>
                                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -276,13 +303,58 @@ export default function AuthPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="register-password">Password</Label>
-                                        <Input
-                                            id="register-password"
-                                            type="password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                        />
+                                        <div className="relative">
+                                            <Input
+                                                id="register-password"
+                                                type={showRegisterPassword ? "text" : "password"}
+                                                required
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="pr-10"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                                onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                                            >
+                                                {showRegisterPassword ? (
+                                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                ) : (
+                                                    <Eye className="h-4 w-4 text-muted-foreground" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirm-password">Confirm Password</Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="confirm-password"
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                required
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                className={`pr-10 ${confirmPassword && password !== confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            >
+                                                {showConfirmPassword ? (
+                                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                                ) : (
+                                                    <Eye className="h-4 w-4 text-muted-foreground" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                        {confirmPassword && password !== confirmPassword && (
+                                            <p className="text-xs text-destructive">Passwords do not match</p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="referral">Referral ID (Optional)</Label>

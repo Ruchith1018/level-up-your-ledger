@@ -1,41 +1,121 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useGamification } from "@/contexts/GamificationContext";
 import { useSettings } from "@/contexts/SettingsContext";
-import { CreditCard, Check, Lock } from "lucide-react";
+import { CreditCard, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { CARD_THEMES } from "@/constants/cardThemes";
-
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Add Razorpay type to window
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 export function CardShop() {
-    const { state: gamifyState, spendCoins, isLoading: isGamificationLoading } = useGamification();
     const { settings, updateSettings, isLoading: isSettingsLoading } = useSettings();
+    const { user } = useAuth();
+    const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
-    const isLoading = isGamificationLoading || isSettingsLoading;
-
+    const isLoading = isSettingsLoading;
     const purchasedThemes = settings.purchasedCardThemes || [];
 
-    const purchaseTheme = async (theme: typeof CARD_THEMES[0]) => {
-        if (theme.id === "default" || purchasedThemes.includes(theme.id)) {
-            // Apply default as 'default' string or null if strictly resetting, 
-            // but for cardTheme we often use 'default' string in DB. 
-            // However, consistent null usage is safer if DB allows.
-            // Let's stick to theme.id since card themes usually have "default" as an ID.
-            applyTheme(theme);
-            return;
+    const getPrice = (themeId: string, currency: string) => {
+        if (currency === "INR") {
+            if (themeId === "gold" || themeId === "platinum") return { amount: 100, symbol: "₹" };
+            return { amount: 50, symbol: "₹" };
+        } else {
+            // Default to USD for other currencies
+            if (themeId === "gold" || themeId === "platinum") return { amount: 1.50, symbol: "$" };
+            return { amount: 0.75, symbol: "$" };
         }
+    };
 
-        if (await spendCoins(theme.price)) {
-            const updated = [...purchasedThemes, theme.id];
-            // Apply and save purchase in one go
-            await updateSettings({
-                purchasedCardThemes: updated,
-                cardTheme: theme.id
+    const handlePurchase = async (theme: typeof CARD_THEMES[0]) => {
+        if (!user) return;
+        setPurchasingId(theme.id);
+
+        try {
+            const currency = settings.currency || "INR";
+            const priceDetails = getPrice(theme.id, currency);
+
+            // 1. Create Order via Edge Function
+            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
+                body: {
+                    amount: priceDetails.amount * 100, // Amount in smallest unit (paise or cents)
+                    currency: currency
+                }
             });
-            toast.success(`${theme.name} card theme purchased!`);
+
+            if (orderError) throw orderError;
+
+            // 2. Open Razorpay Checkout
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "BudGlio",
+                description: `Purchase ${theme.name} Card`,
+                image: "/logo.jpg",
+                order_id: orderData.id,
+                handler: async function (response: any) {
+                    try {
+                        // 3. Verify Payment via Edge Function
+                        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
+                            body: {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                cardThemeId: theme.id,
+                                userId: user.id
+                            }
+                        });
+
+                        if (verifyError) throw verifyError;
+
+                        // Success! Update local state to reflect change immediately
+                        const updatedPurchased = [...(settings.purchasedCardThemes || []), theme.id];
+                        updateSettings({
+                            purchasedCardThemes: updatedPurchased,
+                            cardTheme: theme.id
+                        });
+
+                        toast.success(`Purchase successful! ${theme.name} is now active.`);
+
+                    } catch (err: any) {
+                        console.error("Verification failed", err);
+                        toast.error("Payment verification failed. Please contact support if money was deducted.");
+                    } finally {
+                        setPurchasingId(null);
+                    }
+                },
+                prefill: {
+                    name: user.user_metadata?.name || user.email,
+                    email: user.email,
+                    contact: ""
+                },
+                theme: {
+                    color: "#3399cc"
+                },
+                modal: {
+                    ondismiss: function () {
+                        setPurchasingId(null);
+                    }
+                }
+            };
+
+            const rzp1 = new window.Razorpay(options);
+            rzp1.open();
+
+        } catch (error: any) {
+            console.error("Purchase failed", error);
+            toast.error(error.message || "Failed to initiate payment");
+            setPurchasingId(null);
         }
     };
 
@@ -67,6 +147,7 @@ export function CardShop() {
                         {CARD_THEMES.map((theme, index) => {
                             const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
                             const isActive = (settings.cardTheme || "default") === theme.id;
+                            const priceDetails = getPrice(theme.id, settings.currency || "INR");
 
                             return (
                                 <motion.div
@@ -101,23 +182,18 @@ export function CardShop() {
                                                 <p className="text-xs text-muted-foreground">{theme.description}</p>
                                             </div>
                                             <Button
-                                                onClick={() => purchaseTheme(theme)}
-                                                disabled={!isPurchased && gamifyState.coins < theme.price}
-                                                className="w-full"
+                                                onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                disabled={purchasingId !== null}
+                                                className="w-full relative"
                                                 variant={isPurchased ? "outline" : "default"}
                                             >
-                                                {isPurchased ? (
+                                                {purchasingId === theme.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : isPurchased ? (
                                                     isActive ? "Applied" : "Apply"
                                                 ) : (
                                                     <>
-                                                        {theme.price === 0 ? (
-                                                            "Free"
-                                                        ) : (
-                                                            <>
-                                                                <img src="/assets/token.png" alt="Token" className="w-3 h-3 mr-2 object-contain" />
-                                                                {theme.price} tokens
-                                                            </>
-                                                        )}
+                                                        Buy for {priceDetails.symbol}{priceDetails.amount}
                                                     </>
                                                 )}
                                             </Button>

@@ -236,6 +236,7 @@ export function OnboardingDialog() {
             userName: userName.trim(),
             currency: currency, // Ensure currency is saved
             hasCompletedOnboarding: true,
+            hasSeenIntro: true,
         });
         toast.success(`Welcome to BudGlio, ${userName}! 🎉`);
         startTutorial();

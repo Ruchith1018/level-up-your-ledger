@@ -34,7 +34,9 @@ export default function Settings() {
   const navigate = useNavigate();
   const { settings, updateSettings, isLoading, resetTheme } = useSettings();
   const [name, setName] = useState(settings.userName || "");
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  // const [showConfirmDelete, setShowConfirmDelete] = useState(false); // Removed
+  const [showPasswordStep, setShowPasswordStep] = useState(false);
+  const [showFinalDelete, setShowFinalDelete] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   // Dialog State
@@ -61,6 +63,7 @@ export default function Settings() {
   }, [previewImage]);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
   const { user, signOut } = useAuth();
 
@@ -155,7 +158,41 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const initDeleteProcess = () => {
+    setDeletePassword("");
+    setShowPasswordStep(true);
+  };
+
+  const handleVerifyPassword = async () => {
+    if (!user) return;
+    if (!deletePassword) {
+      toast.error("Please enter your password");
+      return;
+    }
+
+    setIsUploading(true); // Reuse loading state for UI feedback
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: deletePassword,
+      });
+
+      if (authError) {
+        toast.error("Incorrect password");
+        return;
+      }
+
+      // Password correct
+      setShowPasswordStep(false);
+      setShowFinalDelete(true);
+    } catch (e) {
+      toast.error("Verification failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFinalDelete = async () => {
     if (!user) return;
     try {
       toast.loading("Deleting data...");
@@ -513,7 +550,7 @@ export default function Settings() {
                         Permanently delete all data and reset the app.
                       </p>
                     </div>
-                    <Button variant="destructive" onClick={() => setShowConfirmDelete(true)} className="w-full sm:w-auto">
+                    <Button variant="destructive" onClick={initDeleteProcess} className="w-full sm:w-auto">
                       Delete Account
                     </Button>
                   </div>
@@ -521,8 +558,40 @@ export default function Settings() {
               </Card>
             </motion.div>
 
-            <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
-              <AlertDialogContent>
+            {/* Step 1: Password Verification */}
+            <Dialog open={showPasswordStep} onOpenChange={setShowPasswordStep}>
+              <DialogContent className="sm:max-w-md rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle>Verify Identity</DialogTitle>
+                  <DialogDescription>
+                    Please enter your password to continue with account deletion.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pass-verify">Password</Label>
+                    <Input
+                      id="pass-verify"
+                      type="password"
+                      placeholder="Enter password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleVerifyPassword()}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setShowPasswordStep(false)}>Cancel</Button>
+                  <Button onClick={handleVerifyPassword} disabled={isUploading || !deletePassword}>
+                    {isUploading ? "Verifying..." : "Verify & Continue"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Step 2: Final Confirmation */}
+            <AlertDialog open={showFinalDelete} onOpenChange={setShowFinalDelete}>
+              <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -532,8 +601,8 @@ export default function Settings() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={handleDeleteAccount}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleFinalDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg"
                   >
                     Delete Forever
                   </AlertDialogAction>
@@ -560,6 +629,6 @@ export default function Settings() {
           </>
         )}
       </main>
-    </div>
+    </div >
   );
 }
