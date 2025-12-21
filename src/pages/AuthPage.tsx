@@ -31,9 +31,8 @@ export default function AuthPage() {
         setLoading(true);
         setAuthMode('login');
         try {
-            await supabase.auth.signOut(); // Ensure clean state
+            // await supabase.auth.signOut(); // Removed to allow normal login
 
-            // Step 1: Verify Password
             const { error: passwordError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -41,22 +40,9 @@ export default function AuthPage() {
 
             if (passwordError) throw passwordError;
 
-            // Step 2: If password correct, Sign Out immediately to enforce OTP step for final session
-            // We only wanted to verify "Knowledge" (Password) before proceeding to "Possession" (OTP)
-            await supabase.auth.signOut();
-
-            // Step 3: Send OTP
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                    shouldCreateUser: false,
-                }
-            });
-
-            if (otpError) throw otpError;
-
-            setIsVerifying(true);
-            toast.success("Password verified. Please check your email for the OTP.");
+            // No longer forcing OTP after password
+            toast.success("Logged in successfully!");
+            navigate("/");
         } catch (error: any) {
             toast.error(error.message || "Login failed");
         } finally {
@@ -89,8 +75,16 @@ export default function AuthPage() {
                 return;
             }
 
-            setIsVerifying(true);
-            toast.success("Please check your email for the verification code.");
+            // If session exists (Email confirmations disabled), log in directly
+            if (data.session) {
+                toast.success("Account created successfully!");
+                navigate("/");
+            } else {
+                // Email confirmations enabled, but user wants to remove OTP verification screen
+                // We just tell them to check email (Standard link flow)
+                toast.success("Account created. Please check your email to verify.");
+                // setIsVerifying(true); // User requested to remove this
+            }
         } catch (error: any) {
             toast.error(error.message || "Failed to register");
         } finally {
@@ -215,7 +209,7 @@ export default function AuthPage() {
                                     </div>
                                     <Button type="submit" className="w-full" disabled={loading}>
                                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Verify & Send OTP
+                                        Login
                                     </Button>
                                 </form>
                             )}

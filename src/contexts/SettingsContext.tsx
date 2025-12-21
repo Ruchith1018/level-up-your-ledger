@@ -61,13 +61,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         .from("user_settings")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      console.log("Fetched Settings:", data, error);
-
-      if (error && error.code === 'PGRST116') {
+      if (error) {
+        console.error("Error fetching settings:", error);
+      } else if (!data) {
         // Not found, insert defaults
-        // ... (rest of logic)
         const newSettings = {
           user_id: user.id,
           currency: defaultSettings.currency,
@@ -86,13 +85,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           purchased_card_themes: []
         };
 
-        const { data: createdData } = await supabase
+        const { data: createdDataList, error: createError } = await supabase
           .from("user_settings")
           .insert(newSettings)
-          .select()
-          .single();
+          .select();
 
-        if (createdData) {
+        if (createError) {
+          console.error("Error creating settings:", createError);
+        } else if (createdDataList && createdDataList.length > 0) {
+          const createdData = createdDataList[0];
+          console.log("Created default settings for user");
           setSettings({
             currency: createdData.currency,
             locale: createdData.locale,
@@ -111,7 +113,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             purchasedCardThemes: createdData.purchased_card_themes || []
           });
         }
-      } else if (data) {
+      } else {
+        // Settings found
         setSettings({
           currency: data.currency,
           locale: data.locale,
@@ -142,7 +145,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     const channel = supabase
-      .channel('settings_changes')
+      .channel(`settings_changes_${user.id}`)
       .on(
         'postgres_changes',
         {
