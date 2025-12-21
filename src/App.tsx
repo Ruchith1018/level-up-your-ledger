@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// Note: React Router v7 future flags will be available when upgrading to v7
 import { ExpenseProvider } from "@/contexts/ExpenseContext";
 import { BudgetProvider } from "@/contexts/BudgetContext";
 import { GamificationProvider } from "@/contexts/GamificationContext";
