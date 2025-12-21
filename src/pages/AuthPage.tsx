@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { useTutorial } from "@/contexts/TutorialContext";
 
@@ -21,10 +21,6 @@ export default function AuthPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [referralCode, setReferralCode] = useState("");
-    const [pendingUserData, setPendingUserData] = useState<{
-        referral_id: string;
-        referred_by: string | null;
-    } | null>(null);
 
     const generateReferralId = () => {
         return Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -35,7 +31,8 @@ export default function AuthPage() {
         setLoading(true);
         setAuthMode('login');
         try {
-            // First verify credentials with signInWithPassword
+            // await supabase.auth.signOut(); // Removed to allow normal login
+
             const { error: passwordError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -43,21 +40,9 @@ export default function AuthPage() {
 
             if (passwordError) throw passwordError;
 
-            // If password is correct, sign out and send OTP
-            await supabase.auth.signOut();
-
-            // Send OTP for verification
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                    shouldCreateUser: false,
-                }
-            });
-
-            if (otpError) throw otpError;
-
-            toast.success("OTP sent to your email!");
-            setIsVerifying(true);
+            // No longer forcing OTP after password
+            toast.success("Logged in successfully!");
+            navigate("/");
         } catch (error: any) {
             toast.error(error.message || "Login failed");
         } finally {
@@ -68,11 +53,9 @@ export default function AuthPage() {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setAuthMode('register');
         try {
             const myReferralId = generateReferralId();
 
-            // First create the account
             const { error, data } = await supabase.auth.signUp({
                 email,
                 password,
@@ -92,14 +75,16 @@ export default function AuthPage() {
                 return;
             }
 
-            // Store pending user data for after verification
-            setPendingUserData({
-                referral_id: myReferralId,
-                referred_by: referralCode || null,
-            });
-
-            toast.success("Account created! Please check your email for verification code.");
-            setIsVerifying(true);
+            // If session exists (Email confirmations disabled), log in directly
+            if (data.session) {
+                toast.success("Account created successfully!");
+                navigate("/");
+            } else {
+                // Email confirmations enabled, but user wants to remove OTP verification screen
+                // We just tell them to check email (Standard link flow)
+                toast.success("Account created. Please check your email to verify.");
+                // setIsVerifying(true); // User requested to remove this
+            }
         } catch (error: any) {
             toast.error(error.message || "Failed to register");
         } finally {
@@ -114,12 +99,12 @@ export default function AuthPage() {
             const { error } = await supabase.auth.verifyOtp({
                 email,
                 token: otp,
-                type: authMode === 'login' ? 'email' : 'signup',
+                type: authMode === 'login' ? 'magiclink' : 'signup',
             });
 
             if (error) throw error;
 
-            toast.success(authMode === 'login' ? "Logged in successfully!" : "Email verified successfully!");
+            toast.success(authMode === 'login' ? "Logged in successfully!" : "Email verified successfully! Logging you in...");
 
             // Allow time for AuthContext to update via onAuthStateChange
             setTimeout(() => {
@@ -132,38 +117,6 @@ export default function AuthPage() {
         }
     };
 
-    const handleResendOtp = async () => {
-        setLoading(true);
-        try {
-            if (authMode === 'login') {
-                const { error } = await supabase.auth.signInWithOtp({
-                    email,
-                    options: {
-                        shouldCreateUser: false,
-                    }
-                });
-                if (error) throw error;
-            } else {
-                const { error } = await supabase.auth.resend({
-                    type: 'signup',
-                    email,
-                });
-                if (error) throw error;
-            }
-            toast.success("OTP resent to your email!");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to resend OTP");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleBack = () => {
-        setIsVerifying(false);
-        setOtp("");
-        setPendingUserData(null);
-    };
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
             <Card className="w-full max-w-md">
@@ -171,82 +124,67 @@ export default function AuthPage() {
                     <img src="/logo.jpg" alt="BudGlio Logo" className="w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover" />
                     <CardTitle className="text-2xl font-bold">Welcome to BudGlio</CardTitle>
                     <CardDescription>
-                        {isVerifying 
-                            ? "Enter the verification code sent to your email"
-                            : "Your journey to financial freedom starts here"
-                        }
+                        Your journey to financial freedom starts here
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isVerifying ? (
-                        <form onSubmit={handleVerifyOtp} className="space-y-4">
-                            <div className="space-y-4 text-center">
-                                <div className="space-y-2">
-                                    <Label className="text-lg font-medium">
-                                        {authMode === 'login' ? 'Login Verification' : 'Email Verification'}
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        We sent a 6-digit code to <span className="font-medium">{email}</span>
-                                    </p>
-                                </div>
-                                <div className="flex justify-center">
-                                    <InputOTP
-                                        maxLength={6}
-                                        value={otp}
-                                        onChange={(value) => setOtp(value)}
-                                    >
-                                        <InputOTPGroup>
-                                            <InputOTPSlot index={0} />
-                                            <InputOTPSlot index={1} />
-                                            <InputOTPSlot index={2} />
-                                        </InputOTPGroup>
-                                        <InputOTPSeparator />
-                                        <InputOTPGroup>
-                                            <InputOTPSlot index={3} />
-                                            <InputOTPSlot index={4} />
-                                            <InputOTPSlot index={5} />
-                                        </InputOTPGroup>
-                                    </InputOTP>
-                                </div>
-                            </div>
-                            <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
-                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                {authMode === 'login' ? 'Verify & Login' : 'Verify Email'}
-                            </Button>
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="flex-1"
-                                    onClick={handleBack}
-                                    disabled={loading}
-                                >
-                                    <ArrowLeft className="mr-2 h-4 w-4" />
-                                    Back
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="flex-1"
-                                    onClick={handleResendOtp}
-                                    disabled={loading}
-                                >
-                                    Resend Code
-                                </Button>
-                            </div>
-                        </form>
-                    ) : (
-                        <Tabs defaultValue="login" className="w-full" onValueChange={(val) => {
-                            setIsVerifying(false);
-                            setOtp("");
-                            setAuthMode(val as 'login' | 'register');
-                        }}>
-                            <TabsList className="grid w-full grid-cols-2 mb-4">
-                                <TabsTrigger value="login">Login</TabsTrigger>
-                                <TabsTrigger value="register">Register</TabsTrigger>
-                            </TabsList>
+                    <Tabs defaultValue="login" className="w-full" onValueChange={(val) => {
+                        setIsVerifying(false);
+                        setOtp("");
+                        setAuthMode(val as 'login' | 'register');
+                    }}>
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsTrigger value="login">Login</TabsTrigger>
+                            <TabsTrigger value="register">Register</TabsTrigger>
+                        </TabsList>
 
-                            <TabsContent value="login">
+                        <TabsContent value="login">
+                            {isVerifying ? (
+                                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                                    <div className="space-y-4 text-center">
+                                        <div className="space-y-2">
+                                            <Label>Enter Login Code</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                We sent a code to {email}
+                                            </p>
+                                        </div>
+                                        <div className="flex justify-center">
+                                            <InputOTP
+                                                maxLength={8}
+                                                value={otp}
+                                                onChange={(value) => setOtp(value)}
+                                                pattern="^[0-9]*$"
+                                            >
+                                                <InputOTPGroup>
+                                                    <InputOTPSlot index={0} />
+                                                    <InputOTPSlot index={1} />
+                                                    <InputOTPSlot index={2} />
+                                                    <InputOTPSlot index={3} />
+                                                </InputOTPGroup>
+                                                <InputOTPSeparator />
+                                                <InputOTPGroup>
+                                                    <InputOTPSlot index={4} />
+                                                    <InputOTPSlot index={5} />
+                                                    <InputOTPSlot index={6} />
+                                                    <InputOTPSlot index={7} />
+                                                </InputOTPGroup>
+                                            </InputOTP>
+                                        </div>
+                                    </div>
+                                    <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Verify & Login
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="w-full"
+                                        onClick={() => setIsVerifying(false)}
+                                    >
+                                        Back
+                                    </Button>
+                                </form>
+                            ) : (
                                 <form onSubmit={handleLogin} className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="email">Email</Label>
@@ -271,15 +209,59 @@ export default function AuthPage() {
                                     </div>
                                     <Button type="submit" className="w-full" disabled={loading}>
                                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Continue
+                                        Login
                                     </Button>
-                                    <p className="text-xs text-center text-muted-foreground">
-                                        You'll receive a verification code after entering correct credentials
-                                    </p>
                                 </form>
-                            </TabsContent>
+                            )}
+                        </TabsContent>
 
-                            <TabsContent value="register">
+                        <TabsContent value="register">
+                            {isVerifying ? (
+                                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                                    <div className="space-y-4 text-center">
+                                        <div className="space-y-2">
+                                            <Label>Enter Verification Code</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                We sent a code to {email}
+                                            </p>
+                                        </div>
+                                        <div className="flex justify-center">
+                                            <InputOTP
+                                                maxLength={8}
+                                                value={otp}
+                                                onChange={(value) => setOtp(value)}
+                                                pattern="^[0-9]*$"
+                                            >
+                                                <InputOTPGroup>
+                                                    <InputOTPSlot index={0} />
+                                                    <InputOTPSlot index={1} />
+                                                    <InputOTPSlot index={2} />
+                                                    <InputOTPSlot index={3} />
+                                                </InputOTPGroup>
+                                                <InputOTPSeparator />
+                                                <InputOTPGroup>
+                                                    <InputOTPSlot index={4} />
+                                                    <InputOTPSlot index={5} />
+                                                    <InputOTPSlot index={6} />
+                                                    <InputOTPSlot index={7} />
+                                                </InputOTPGroup>
+                                            </InputOTP>
+                                        </div>
+                                    </div>
+                                    <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Verify Email
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="w-full"
+                                        onClick={() => setIsVerifying(false)}
+                                    >
+                                        Back to Register
+                                    </Button>
+                                </form>
+                            ) : (
                                 <form onSubmit={handleRegister} className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="register-email">Email</Label>
@@ -318,13 +300,10 @@ export default function AuthPage() {
                                         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                         Create Account
                                     </Button>
-                                    <p className="text-xs text-center text-muted-foreground">
-                                        You'll receive a verification code to confirm your email
-                                    </p>
                                 </form>
-                            </TabsContent>
-                        </Tabs>
-                    )}
+                            )}
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
         </div>
