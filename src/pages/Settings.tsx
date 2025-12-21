@@ -82,7 +82,7 @@ export default function Settings() {
     resetTheme();
     await signOut();
     localStorage.clear();
-    window.location.href = "/auth";
+    window.location.href = "/intro";
   };
 
   const handleRemoveAvatar = () => {

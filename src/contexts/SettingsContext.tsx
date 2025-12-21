@@ -65,7 +65,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error("Error fetching settings:", error);
-      } else if (!data) {
+      }
+
+      // If no data found OR we just created it (but logic below handles creation), 
+      // ensure we initialize defaults.
+      if (!data) {
         // Not found, insert defaults
         const newSettings = {
           user_id: user.id,

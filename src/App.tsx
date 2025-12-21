@@ -38,13 +38,13 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-import { DataMigration } from "@/components/auth/DataMigration";
+
 
 const App = () => (
     <QueryClientProvider client={queryClient}>
         <TooltipProvider>
             <AuthProvider>
-                <DataMigration />
+
                 <SettingsProvider>
                     <ExpenseProvider>
                         <BudgetProvider>

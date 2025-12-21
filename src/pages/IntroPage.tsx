@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Sparkles, TrendingUp, Calendar, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const slides = [
     {
@@ -35,6 +36,13 @@ export default function IntroPage() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const navigate = useNavigate();
     const { updateSettings } = useSettings();
+    const { user } = useAuth();
+
+    useEffect(() => {
+        if (user) {
+            navigate("/dashboard");
+        }
+    }, [user, navigate]);
 
     const nextSlide = () => {
         if (currentSlide < slides.length - 1) {
