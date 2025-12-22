@@ -39,10 +39,14 @@ export default function AdminDashboard() {
         const { data: referralsCount, error: refError } = await supabase.rpc('get_pending_referrals_count');
         if (refError) console.error("Error fetching pending referrals:", refError);
 
+        // Fetch total purchase count (Items sold)
+        const { data: purchasesCount, error: purchError } = await supabase.rpc('get_total_purchase_count');
+        if (purchError) console.error("Error fetching purchases count:", purchError);
+
         setStats({
             totalUsers: usersCount || 0,
             pendingReferrals: referralsCount || 0,
-            totalPurchases: 0 // Placeholder until we verify purchase source
+            totalPurchases: purchasesCount || 0
         });
     };
 
@@ -94,8 +98,8 @@ export default function AdminDashboard() {
                         <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">--</div>
-                        <p className="text-xs text-muted-foreground">Total purchase value</p>
+                        <div className="text-2xl font-bold">{stats.totalPurchases}</div>
+                        <p className="text-xs text-muted-foreground">Items Sold (Themes & Cards)</p>
                     </CardContent>
                 </Card>
             </div>

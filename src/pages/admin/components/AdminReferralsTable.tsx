@@ -141,7 +141,16 @@ export default function AdminReferralsTable() {
                                         <TableRow key={referral.email}>
                                             <TableCell>{format(new Date(referral.created_at), 'MMM d, yyyy')}</TableCell>
                                             <TableCell className="font-medium text-xs font-mono">{referral.referral_id || "N/A"}</TableCell>
-                                            <TableCell className="font-medium">{referral.email}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    {referral.email}
+                                                    {referral.user_exists === false && (
+                                                        <Badge variant="destructive" className="h-5 text-[10px] px-1.5 bg-red-100 text-red-600 hover:bg-red-200 border-none">
+                                                            Deleted
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             <TableCell>{referral.referred_by}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center space-x-2">
