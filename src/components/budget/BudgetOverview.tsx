@@ -9,7 +9,7 @@ import { PiggyBank, TrendingUp, TrendingDown, Pencil, AlertTriangle, ChevronRigh
 import dayjs from "dayjs";
 import { motion } from "framer-motion";
 import { BudgetForm } from "./BudgetForm";
-import { CARD_THEMES } from "@/constants/cardThemes";
+import { CARD_THEMES, ALL_THEMES } from "@/constants/cardThemes";
 import { useNavigate } from "react-router-dom";
 
 export function BudgetOverview() {
@@ -21,7 +21,7 @@ export function BudgetOverview() {
   const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
 
-  const activeTheme = CARD_THEMES.find(t => t.id === settings.cardTheme) || CARD_THEMES[0];
+  const activeTheme = ALL_THEMES.find(t => t.id === settings.cardTheme) || CARD_THEMES[0];
 
   const referralId = user?.user_metadata?.referral_id || "0000000000000000";
   const formattedReferralId = referralId.replace(/(.{4})/g, '$1 ').trim();
@@ -96,8 +96,12 @@ export function BudgetOverview() {
         >
           {/* Card Background */}
           <div
-            className="absolute inset-0 transition-all duration-500"
-            style={{ background: activeTheme.gradient }}
+            className="absolute inset-0 transition-all duration-500 bg-cover bg-center"
+            style={{
+              background: (activeTheme as any).image
+                ? `url(${(activeTheme as any).image}) top center/cover no-repeat`
+                : activeTheme.gradient
+            }}
           >
             {/* Decorative Lines */}
             <div className="absolute inset-0 opacity-10"
