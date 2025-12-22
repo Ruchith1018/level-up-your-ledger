@@ -21,14 +21,39 @@ export function BudgetOverview() {
   const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
 
-  const activeTheme = ALL_THEMES.find(t => t.id === settings.cardTheme) || CARD_THEMES[0];
+  /* 
+    If id is 'custom', we construct a transient theme object 
+    so the rest of the UI can use it easily, 
+    but we pull the image from settings.
+  */
+  const activeTheme = settings.cardTheme === 'custom'
+    ? {
+      id: 'custom',
+      name: 'Custom Theme',
+      description: 'User Custom Theme',
+      price: 0,
+      colors: { primary: '', secondary: '', accent: '' }, // unused
+      preview: '', // unused
+      gradient: 'linear-gradient(45deg, #1a1a1a, #4a4a4a)',
+      textColor: 'text-white',
+      chipColor: 'from-yellow-200 to-yellow-500',
+      image: settings.customCardImage
+    }
+    : ALL_THEMES.find(t => t.id === settings.cardTheme) || CARD_THEMES[0];
 
   const referralId = user?.user_metadata?.referral_id || "0000000000000000";
   const formattedReferralId = referralId.replace(/(.{4})/g, '$1 ').trim();
 
+  // Overlay settings (fallback to true for everything if not custom)
+  const overlay = settings.cardTheme === 'custom'
+    ? (settings.customCardOverlay || { showBalance: true, showCardNumber: true, showExpiry: true, showChip: true, showCardHolder: true })
+    : { showBalance: true, showCardNumber: true, showExpiry: true, showChip: true, showCardHolder: true };
+
   const currentBudget = getCurrentBudget();
   const totalExpense = getTotalByType("expense", currentMonth);
   const totalIncome = getTotalByType("income", currentMonth);
+
+  // ... (calculations omitted for brevity) ...
 
   // Calculate Rollover
   const previousMonth = dayjs().subtract(1, 'month').format("YYYY-MM");
@@ -50,6 +75,7 @@ export function BudgetOverview() {
     }, 0);
 
   if (!currentBudget) {
+    // ... (no change to no-budget view)
     return (
       <Card>
         <CardHeader>
@@ -69,6 +95,7 @@ export function BudgetOverview() {
   const budgetUsed = (totalExpense / effectiveTotal) * 100;
   const isOverBudget = remaining < 0;
 
+  // ... (fontSize helper) ...
   const getFontSizeClass = (amount: number, type: 'main' | 'sub') => {
     const length = amount.toFixed(2).length;
     if (type === 'main') {
@@ -103,7 +130,7 @@ export function BudgetOverview() {
                 : activeTheme.gradient
             }}
           >
-            {/* Decorative Lines */}
+            {/* Decorative Lines only if NOT custom image to keep user image clean, or keep them? Let's keep them for consistency unless toggled off later */}
             <div className="absolute inset-0 opacity-10"
               style={{
                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #ffffff 10px, #ffffff 11px)'
@@ -116,12 +143,14 @@ export function BudgetOverview() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className={`font-medium text-[10px] sm:text-sm tracking-wider opacity-80`}>BudGlio Card</h3>
-                {/* Chip */}
-                <div className={`mt-2 sm:mt-3 w-8 h-6 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
-                  <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/20" />
-                  <div className="absolute top-0 left-1/2 h-full w-[1px] bg-black/20" />
-                  <div className="absolute top-1/2 left-1/2 w-2 h-2 sm:w-4 sm:h-4 border border-black/20 rounded-sm transform -translate-x-1/2 -translate-y-1/2" />
-                </div>
+                {/* Chip - Toggled */}
+                {overlay.showChip && (
+                  <div className={`mt-2 sm:mt-3 w-8 h-6 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor || 'from-yellow-200 to-yellow-500'} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
+                    <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/20" />
+                    <div className="absolute top-0 left-1/2 h-full w-[1px] bg-black/20" />
+                    <div className="absolute top-1/2 left-1/2 w-2 h-2 sm:w-4 sm:h-4 border border-black/20 rounded-sm transform -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                )}
               </div>
               <div className="flex flex-col items-end gap-1 sm:gap-2">
                 {/* Edit Button */}
@@ -146,15 +175,20 @@ export function BudgetOverview() {
             </div>
 
             <div className="space-y-1 sm:space-y-2 flex-1 flex flex-col justify-center">
-              <div className="space-y-0.5">
-                <div className="text-[8px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
-                <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md truncate leading-none pb-1`}>
-                  {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
+              {overlay.showBalance && (
+                <div className="space-y-0.5">
+                  <div className="text-[8px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
+                  <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md truncate leading-none pb-1`}>
+                    {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
+                  </div>
                 </div>
-              </div>
-              <div className="font-mono text-xs sm:text-lg tracking-[0.15em] sm:tracking-[0.2em] drop-shadow-md opacity-80 truncate">
-                {formattedReferralId}
-              </div>
+              )}
+
+              {overlay.showCardNumber && (
+                <div className="font-mono text-xs sm:text-lg tracking-[0.15em] sm:tracking-[0.2em] drop-shadow-md opacity-80 truncate">
+                  {formattedReferralId}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1 sm:space-y-2">
@@ -162,12 +196,14 @@ export function BudgetOverview() {
                 <div className="max-w-[60%]">
                   <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Card Holder</div>
                   <div className="font-medium tracking-wider uppercase truncate text-[9px] sm:text-sm">
-                    {settings.userName || user?.user_metadata?.full_name || "User"}
+                    {overlay.showCardHolder ? (settings.userName || user?.user_metadata?.full_name || "User") : ""}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Issued</div>
-                  <div className="font-medium tracking-wider text-[9px] sm:text-sm">{user?.created_at ? dayjs(user.created_at).format('MM/YY') : dayjs().format('MM/YY')}</div>
+                  <div className="font-medium tracking-wider text-[9px] sm:text-sm">
+                    {overlay.showExpiry ? (user?.created_at ? dayjs(user.created_at).format('MM/YY') : dayjs().format('MM/YY')) : ""}
+                  </div>
                 </div>
               </div>
 

@@ -33,14 +33,15 @@ export default function ThemeShopPage() {
                 >
                     <Tabs defaultValue="redeem" className="space-y-6">
                         <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="redeem">
-                                Gift Cards
-                            </TabsTrigger>
+
                             <TabsTrigger value="cards">
                                 BudGlio Cards
                             </TabsTrigger>
                             <TabsTrigger value="themes">
                                 BudGlio Themes
+                            </TabsTrigger>
+                            <TabsTrigger value="redeem">
+                                Gift Cards
                             </TabsTrigger>
                         </TabsList>
 

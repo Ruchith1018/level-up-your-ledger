@@ -93,4 +93,12 @@ export interface AppSettings {
   purchasedCardThemes?: string[];
   hasAcceptedTerms?: boolean;
   profileImage?: string;
+  customCardImage?: string;
+  customCardOverlay?: {
+    showBalance: boolean;
+    showCardNumber: boolean;
+    showExpiry: boolean;
+    showChip: boolean;
+    showCardHolder: boolean;
+  };
 }
