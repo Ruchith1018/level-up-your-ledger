@@ -15,7 +15,7 @@ export default function ThemeShopPage() {
             <header className="h-[88px] border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 flex items-center transition-all duration-200">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hidden md:flex">
+                        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="flex md:hidden">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>

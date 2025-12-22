@@ -121,7 +121,7 @@ export default function Subscriptions() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hidden md:flex">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="flex md:hidden">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
@@ -287,7 +287,7 @@ export default function Subscriptions() {
             <Skeleton className="w-full h-24 rounded-lg" />
 
             {/* Grid Skeleton */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Skeleton className="h-[200px] rounded-xl" />
               <Skeleton className="h-[200px] rounded-xl" />
               <Skeleton className="h-[200px] rounded-xl" />
@@ -328,7 +328,7 @@ export default function Subscriptions() {
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {state.subscriptions.map((subscription) => (
                   <SubscriptionCard
                     key={subscription.id}

@@ -13,6 +13,7 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { SavingsProvider } from "@/contexts/SavingsContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Notifications from "./pages/Notifications";
 import Analytics from "./pages/Analytics";
 import Subscriptions from "./pages/Subscriptions";
 import Settings from "./pages/Settings";
@@ -64,6 +65,7 @@ const App = () => (
                                                         <Route element={<AppLayout />}>
                                                             <Route path="/" element={<Index />} />
                                                             <Route path="/dashboard" element={<Dashboard />} />
+                                                            <Route path="/notifications" element={<Notifications />} />
                                                             <Route path="/analytics" element={<Analytics />} />
                                                             <Route path="/subscriptions" element={<Subscriptions />} />
                                                             <Route path="/settings" element={<Settings />} />

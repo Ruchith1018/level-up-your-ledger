@@ -11,6 +11,13 @@ import { useAuth } from "./AuthContext";
 import { useSettings } from "./SettingsContext";
 import { CURRENCIES } from "@/constants/currencies";
 
+const REDEEMABLE_ITEMS = [
+  { value: 100, coins: 10000 },
+  { value: 250, coins: 25000 },
+  { value: 500, coins: 50000 },
+  { value: 1000, coins: 100000 },
+];
+
 interface GamificationContextType {
   state: GamificationState;
   rewardXP: (amount: number, reason: string) => Promise<void>;
@@ -22,7 +29,12 @@ interface GamificationContextType {
   claimTaskReward: (taskId: string, reward: number) => Promise<void>;
   revertTransactionReward: (type: "expense" | "income") => Promise<void>;
   claimableBadges: string[];
+  unclaimedTaskItems: any[];
   totalUnclaimedTasks: number;
+  dismissedIds: string[];
+  dismissNotification: (id: string) => void;
+  coinAnimation: { amount: number; id: number } | null;
+  redeemableItems: any[];
 
   addRedemptionLog: (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => Promise<void>;
   isLoading: boolean;
@@ -204,6 +216,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     toast.success(`+${amount} Token${amount !== 1 ? 's' : ''}`, {
       className: "text-yellow-500 border-yellow-500",
     });
+    showCoinAnimation(amount);
 
     // Log history
     const historyItem = {
@@ -269,7 +282,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   // Calculate claimable badges reactively
   useEffect(() => {
-    if (!state.badges || !expenseState.items) return;
+    if (isLoading || expenseState.isLoading || !state.badges || !expenseState.items) return;
 
     const newClaimable: string[] = [];
     const allBadges = Object.values(BADGES);
@@ -295,13 +308,13 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     if (JSON.stringify(newClaimable) !== JSON.stringify(claimableBadges)) {
       setClaimableBadges(newClaimable);
     }
-  }, [state.badges, state.claimedTasks, state.streak, expenseState.items, budgetState]);
+  }, [state.badges, state.claimedTasks, state.streak, expenseState.items, budgetState, isLoading, expenseState.isLoading]);
 
   // Calculate total unclaimed tasks reactively
-  const [totalUnclaimedTasks, setTotalUnclaimedTasks] = useState(0);
+  const [unclaimedTaskItems, setUnclaimedTaskItems] = useState<any[]>([]);
 
   useEffect(() => {
-    if (expenseState.isLoading || !expenseState.items) return;
+    if (expenseState.isLoading || !expenseState.items || isLoading) return;
 
     const today = dayjs();
     const startOfWeek = dayjs().startOf('week');
@@ -326,7 +339,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       uniqueId: `${task.id}_${today.format('YYYY-MM')}`,
     }));
 
-    let count = 0;
+    const unclaimed: any[] = [];
     const tasksToCheck = [...dailyTasks, ...weeklyTasks, ...monthlyTasks];
 
     // Check Unclaimed Count AND Invalid Claims (Reversion)
@@ -343,9 +356,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
       const cappedProgress = Math.min(currentProgress, task.total);
 
-      // Case 1: Task completed but NOT claimed -> Increment notification count
+      // Case 1: Task completed but NOT claimed -> Add to list
       if (cappedProgress >= task.total && !state.claimedTasks.includes(task.uniqueId)) {
-        count++;
+        unclaimed.push({ ...task, progress: cappedProgress });
       }
 
       // Case 2: Task IS claimed but progress is no longer met -> REVERT
@@ -355,9 +368,19 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
     });
 
-    setTotalUnclaimedTasks(count);
+    setUnclaimedTaskItems(unclaimed);
 
-  }, [expenseState.items, state.claimedTasks]);
+  }, [expenseState.items, state.claimedTasks, settings.currency, isLoading]);
+
+  // Calculate redeemable items
+  const [redeemableItems, setRedeemableItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const available = REDEEMABLE_ITEMS.filter(item => state.coins >= item.coins);
+    setRedeemableItems(available);
+  }, [state.coins, isLoading]);
 
   const unlockBadge = async (badgeId: string) => {
     const currentState = stateRef.current;
@@ -508,7 +531,40 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     await persistState(newState);
 
+    if (coinReward > 0) {
+      showCoinAnimation(coinReward);
+    }
+
     toast.success(`+${reward} XP & +${coinReward} Tokens`, { description: "Task Completed" });
+  };
+
+  // Notification persistence
+  const [dismissedIds, setDismissedIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('dismissedNotifications');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const dismissNotification = (id: string) => {
+    setDismissedIds(prev => {
+      const newIds = [...prev, id];
+      localStorage.setItem('dismissedNotifications', JSON.stringify(newIds));
+      return newIds;
+    });
+  };
+
+  // Coin Animation State
+  const [coinAnimation, setCoinAnimation] = useState<{ amount: number; id: number } | null>(null);
+
+  const showCoinAnimation = (amount: number) => {
+    setCoinAnimation({ amount, id: Date.now() });
+    // We don't auto-clear here, the component handles exit animation, but we can reset if needed.
+    // Actually simpler to just set it and let the component react to the change or use a "key".
+    // Auto-clearing is safer to reset state.
+    setTimeout(() => setCoinAnimation(null), 3000);
   };
 
   const addRedemptionLog = async (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => {
@@ -538,7 +594,12 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         claimTaskReward,
         revertTransactionReward,
         claimableBadges,
-        totalUnclaimedTasks,
+        unclaimedTaskItems,
+        totalUnclaimedTasks: unclaimedTaskItems.length,
+        dismissedIds,
+        dismissNotification,
+        coinAnimation,
+        redeemableItems,
         addRedemptionLog,
         isLoading,
       }}

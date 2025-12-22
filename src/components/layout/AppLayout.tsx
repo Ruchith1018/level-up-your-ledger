@@ -1,11 +1,16 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
+import { CoinCelebration } from "@/components/gamification/CoinCelebration";
 
 export function AppLayout() {
+    const location = useLocation();
+    const isNotificationsPage = location.pathname === "/notifications";
+
     return (
         <div className="min-h-screen w-full bg-background font-sans antialiased">
+            <CoinCelebration />
             <AppSidebar />
             <main className="flex-1 md:pl-64 flex flex-col min-h-screen transition-all duration-300 ease-in-out">
                 <div className="flex-1">
@@ -13,7 +18,7 @@ export function AppLayout() {
                 </div>
                 <Footer />
             </main>
-            <BottomNav />
+            {!isNotificationsPage && <BottomNav />}
         </div>
     );
 }

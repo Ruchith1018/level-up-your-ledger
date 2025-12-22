@@ -8,7 +8,7 @@ import { AddExpenseModal } from "@/components/transactions/AddExpenseModal";
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 import { SurplusDialog } from "@/components/budget/SurplusDialog";
 import { motion } from "framer-motion";
-import { BarChart3, Calendar, Settings, Palette } from "lucide-react";
+import { BarChart3, Calendar, Settings, Palette, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -22,9 +22,14 @@ export default function Dashboard() {
   const { settings } = useSettings();
   const { state: expenseState } = useExpenses();
   const { state: budgetState } = useBudget();
-  const { isLoading: isGamificationLoading } = useGamification();
+  const { isLoading: isGamificationLoading, claimableBadges, unclaimedTaskItems, dismissedIds, redeemableItems } = useGamification();
 
   const isLoading = expenseState.isLoading || budgetState.isLoading || isGamificationLoading;
+
+  const notificationCount =
+    (claimableBadges?.filter(id => !dismissedIds?.includes(`badge-${id}`))?.length || 0) +
+    (unclaimedTaskItems?.filter(task => !dismissedIds?.includes(`task-${task.uniqueId}`))?.length || 0) +
+    (redeemableItems?.filter(item => !dismissedIds?.includes(`redeem-${item.value}`))?.length || 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,6 +49,23 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Gamified Finance Tracker</p>
               </div>
             </motion.div>
+
+            {/* Mobile Notification Icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative md:hidden"
+              onClick={() => navigate("/notifications")}
+            >
+              <Bell className="w-6 h-6 text-foreground" />
+              {notificationCount > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center w-3 h-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                </span>
+              )}
+            </Button>
+
             <div className="hidden md:flex gap-2">
               <Button id="nav-analytics-desktop" variant="ghost" size="icon" onClick={() => navigate("/analytics")}>
                 <BarChart3 className="w-5 h-5" />
