@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="md:hidden border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <motion.div
@@ -80,7 +80,7 @@ export default function Dashboard() {
             <Skeleton className="w-full h-20 rounded-xl" />
 
             {/* Budget Cards Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <Skeleton className="w-full h-[280px] rounded-xl" />
               <div className="grid grid-cols-2 gap-4">
                 <Skeleton className="h-[120px] rounded-lg" />
@@ -90,7 +90,7 @@ export default function Dashboard() {
             </div>
 
             {/* Charts Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="p-4 border rounded-xl space-y-4">
                 <div className="flex justify-between">
                   <Skeleton className="h-6 w-1/3" />
@@ -120,12 +120,12 @@ export default function Dashboard() {
           <>
             <XPBar />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <BudgetOverview />
               <CategoryBudgets />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <CategoryPieChart />
               <MonthlyTrendChart />
             </div>

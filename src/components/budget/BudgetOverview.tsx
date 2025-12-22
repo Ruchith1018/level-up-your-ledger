@@ -72,15 +72,15 @@ export function BudgetOverview() {
   const getFontSizeClass = (amount: number, type: 'main' | 'sub') => {
     const length = amount.toFixed(2).length;
     if (type === 'main') {
-      if (length > 13) return "text-lg sm:text-4xl";
-      if (length > 10) return "text-xl sm:text-5xl";
-      return "text-2xl sm:text-5xl";
+      if (length > 13) return "text-lg sm:text-xl";
+      if (length > 10) return "text-xl sm:text-2xl";
+      return "text-2xl sm:text-3xl";
     }
     // sub cards - more aggressive scaling for 2-column grid
     if (length > 11) return "text-xs";
-    if (length > 8) return "text-sm sm:text-lg";
-    if (length > 6) return "text-base sm:text-xl";
-    return "text-lg sm:text-2xl";
+    if (length > 8) return "text-sm sm:text-base";
+    if (length > 6) return "text-base sm:text-lg";
+    return "text-lg sm:text-xl";
   };
 
   return (
@@ -92,7 +92,7 @@ export function BudgetOverview() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="relative w-full aspect-[1.586/1] rounded-xl overflow-hidden shadow-xl card-shine min-w-[280px]"
+          className="relative w-full max-w-[420px] mx-auto aspect-[1.586/1] min-h-[220px] rounded-xl overflow-hidden shadow-xl card-shine min-w-[280px]"
         >
           {/* Card Background */}
           <div
@@ -108,12 +108,12 @@ export function BudgetOverview() {
           </div>
 
           {/* Card Content */}
-          <div className={`relative h-full p-3 sm:p-6 flex flex-col justify-between ${activeTheme.textColor}`}>
+          <div className={`relative h-full p-3 sm:p-5 pb-5 sm:pb-7 flex flex-col justify-between ${activeTheme.textColor}`}>
             <div className="flex justify-between items-start">
               <div>
                 <h3 className={`font-medium text-[10px] sm:text-sm tracking-wider opacity-80`}>BudGlio Card</h3>
                 {/* Chip */}
-                <div className={`mt-2 sm:mt-4 w-8 h-6 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
+                <div className={`mt-2 sm:mt-3 w-8 h-6 sm:w-12 sm:h-9 bg-gradient-to-br ${activeTheme.chipColor} rounded-md border border-black/10 relative overflow-hidden shadow-sm`}>
                   <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/20" />
                   <div className="absolute top-0 left-1/2 h-full w-[1px] bg-black/20" />
                   <div className="absolute top-1/2 left-1/2 w-2 h-2 sm:w-4 sm:h-4 border border-black/20 rounded-sm transform -translate-x-1/2 -translate-y-1/2" />
@@ -141,29 +141,29 @@ export function BudgetOverview() {
               </div>
             </div>
 
-            <div className="space-y-2 sm:space-y-4">
-              <div className="space-y-0.5 sm:space-y-1">
+            <div className="space-y-1 sm:space-y-2 flex-1 flex flex-col justify-center">
+              <div className="space-y-0.5">
                 <div className="text-[8px] sm:text-xs opacity-60 uppercase tracking-wider">Remaining Balance</div>
-                <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md truncate`}>
+                <div className={`${getFontSizeClass(Math.abs(remaining), 'main')} font-mono font-bold tracking-widest drop-shadow-md truncate leading-none pb-1`}>
                   {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(2)}
                 </div>
               </div>
-              <div className="font-mono text-xs sm:text-xl tracking-[0.15em] sm:tracking-[0.2em] drop-shadow-md opacity-80 truncate">
+              <div className="font-mono text-xs sm:text-lg tracking-[0.15em] sm:tracking-[0.2em] drop-shadow-md opacity-80 truncate">
                 {formattedReferralId}
               </div>
             </div>
 
-            <div className="space-y-1.5 sm:space-y-3">
+            <div className="space-y-1 sm:space-y-2">
               <div className="flex justify-between items-end">
                 <div className="max-w-[60%]">
                   <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Card Holder</div>
-                  <div className="font-medium tracking-wider uppercase truncate text-[10px] sm:text-base">
+                  <div className="font-medium tracking-wider uppercase truncate text-[9px] sm:text-sm">
                     {settings.userName || user?.user_metadata?.full_name || "User"}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[7px] sm:text-[10px] opacity-60 uppercase tracking-widest mb-0.5">Issued</div>
-                  <div className="font-medium tracking-wider text-[10px] sm:text-base">{user?.created_at ? dayjs(user.created_at).format('MM/YY') : dayjs().format('MM/YY')}</div>
+                  <div className="font-medium tracking-wider text-[9px] sm:text-sm">{user?.created_at ? dayjs(user.created_at).format('MM/YY') : dayjs().format('MM/YY')}</div>
                 </div>
               </div>
 
