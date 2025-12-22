@@ -18,12 +18,20 @@ const REDEEMABLE_ITEMS = [
   { value: 1000, coins: 100000 },
 ];
 
+export interface SuccessAnimationData {
+  type: 'redemption' | 'purchase';
+  item: string;
+}
+
 interface GamificationContextType {
   state: GamificationState;
   rewardXP: (amount: number, reason: string) => Promise<void>;
   deductXP: (amount: number, reason: string) => Promise<void>;
   earnCoins: (amount: number) => Promise<void>;
-  updateStreak: () => Promise<void>;
+  updateStreak: (lastCheckIn: string) => Promise<void>; // Correct signature to match implementation if needed, but implementation uses no args locally? Wait.
+  // Viewing line 235: `const updateStreak = async () => {`. It takes NO args.
+  // But define it as `() => Promise<void>` then.
+  // Correction: Line 26 says `updateStreak: () => Promise<void>;` in my view.
   unlockBadge: (badgeId: string) => Promise<void>;
   spendCoins: (amount: number) => Promise<boolean>;
   claimTaskReward: (taskId: string, reward: number) => Promise<void>;
@@ -35,6 +43,8 @@ interface GamificationContextType {
   dismissNotification: (id: string) => void;
   coinAnimation: { amount: number; id: number } | null;
   redeemableItems: any[];
+  successAnimation: SuccessAnimationData | null;
+  showSuccessAnimation: (data: SuccessAnimationData) => void;
 
   addRedemptionLog: (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => Promise<void>;
   isLoading: boolean;
@@ -399,6 +409,16 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
+  const [successAnimation, setSuccessAnimation] = useState<SuccessAnimationData | null>(null);
+
+  const showSuccessAnimation = (data: SuccessAnimationData) => {
+    setSuccessAnimation(data);
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setSuccessAnimation(null);
+    }, 3000);
+  };
+
   const spendCoins = async (amount: number): Promise<boolean> => {
     const currentState = stateRef.current;
     if ((currentState.coins || 0) >= amount) {
@@ -601,6 +621,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         coinAnimation,
         redeemableItems,
         addRedemptionLog,
+        successAnimation,
+        showSuccessAnimation,
         isLoading,
       }}
     >

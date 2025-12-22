@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart3, Calendar, Home, ShoppingBag, Settings, LogOut, Bell } from "lucide-react";
+import { BarChart3, Calendar, Home, ShoppingBag, Settings, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,6 @@ import { playNotificationSound } from "@/utils/audio";
 export function AppSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { signOut } = useAuth();
     const { claimableBadges, unclaimedTaskItems, dismissedIds, redeemableItems } = useGamification();
 
     const notificationCount =
@@ -69,11 +68,6 @@ export function AppSidebar() {
         },
     ];
 
-    const handleSignOut = async () => {
-        await signOut();
-        navigate("/auth");
-    };
-
     return (
         <div className="hidden md:flex h-screen w-64 flex-col fixed left-0 top-0 border-r bg-card/50 backdrop-blur-xl z-50">
             {/* Header / Logo */}
@@ -115,18 +109,6 @@ export function AppSidebar() {
                         </Button>
                     );
                 })}
-            </div>
-
-            {/* Footer / User Actions */}
-            <div className="p-4 mt-auto">
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={handleSignOut}
-                >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out
-                </Button>
             </div>
         </div>
     );

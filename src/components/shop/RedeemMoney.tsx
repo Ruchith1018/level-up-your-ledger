@@ -27,7 +27,7 @@ const BASE_AMOUNTS = [
 
 export function RedeemMoney() {
     const { user } = useAuth();
-    const { state: gamifyState, spendCoins, addRedemptionLog } = useGamification();
+    const { state: gamifyState, spendCoins, addRedemptionLog, showSuccessAnimation } = useGamification();
     const { settings } = useSettings(); // Use settings
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
     const [selectedAmount, setSelectedAmount] = useState<typeof BASE_AMOUNTS[0] | null>(null);
@@ -153,6 +153,11 @@ export function RedeemMoney() {
                 setFormData({ name: "", email: "" });
                 setSelectedAmount(null);
                 setSelectedMethod(null);
+
+                showSuccessAnimation({
+                    type: 'redemption',
+                    item: `${currencyDetails.symbol}${getDisplayAmount(selectedAmount.value)} Gift Card`
+                });
 
                 toast.success("Redemption Successful!", {
                     description: "Your money will be credited within 3-7 working days.",

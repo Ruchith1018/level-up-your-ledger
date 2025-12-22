@@ -11,7 +11,7 @@ import { THEMES } from "@/constants/themes";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ThemeShop() {
-  const { state: gamifyState, spendCoins, isLoading: isGamificationLoading } = useGamification();
+  const { state: gamifyState, spendCoins, isLoading: isGamificationLoading, showSuccessAnimation } = useGamification();
   const { settings, updateSettings, isLoading: isSettingsLoading } = useSettings();
 
   const isLoading = isGamificationLoading || isSettingsLoading;
@@ -32,6 +32,12 @@ export function ThemeShop() {
         purchasedThemes: updated,
         premiumTheme: theme.id
       });
+
+      showSuccessAnimation({
+        type: 'redemption',
+        item: `${theme.name} Theme`
+      });
+
       toast.success(`${theme.name} theme purchased and applied!`);
     }
   };

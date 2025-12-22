@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useGamification } from "@/contexts/GamificationContext"; // Added import
 import { CreditCard, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -19,6 +20,7 @@ declare global {
 
 export function CardShop() {
     const { settings, updateSettings, isLoading: isSettingsLoading } = useSettings();
+    const { showSuccessAnimation } = useGamification();
     const { user } = useAuth();
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
@@ -83,6 +85,11 @@ export function CardShop() {
                         updateSettings({
                             purchasedCardThemes: updatedPurchased,
                             cardTheme: theme.id
+                        });
+
+                        showSuccessAnimation({
+                            type: 'purchase',
+                            item: `${theme.name} Card`
                         });
 
                         toast.success(`Purchase successful! ${theme.name} is now active.`);
