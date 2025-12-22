@@ -28,6 +28,8 @@ import { TutorialProvider } from "@/contexts/TutorialContext";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthPage from "./pages/AuthPage";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import IncomePage from "./pages/IncomePage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ReferralsPage from "./pages/ReferralsPage";
@@ -59,6 +61,10 @@ const App = () => (
                                                     {/* Public Routes */}
                                                     <Route path="/intro" element={<IntroPage />} />
                                                     <Route path="/auth" element={<AuthPage />} />
+
+                                                    {/* Admin Routes */}
+                                                    <Route path="/admin" element={<AdminLogin />} />
+                                                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
                                                     {/* Protected Routes */}
                                                     <Route element={<ProtectedRoute />}>
