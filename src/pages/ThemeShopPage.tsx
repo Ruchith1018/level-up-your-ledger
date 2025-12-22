@@ -31,7 +31,7 @@ export default function ThemeShopPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <Tabs defaultValue="redeem" className="space-y-6">
+                    <Tabs defaultValue="cards" className="space-y-6">
                         <TabsList className="grid w-full grid-cols-3">
 
                             <TabsTrigger value="cards">
@@ -45,9 +45,7 @@ export default function ThemeShopPage() {
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="redeem" className="space-y-4">
-                            <RedeemMoney />
-                        </TabsContent>
+
 
                         <TabsContent value="cards" className="space-y-4">
                             <CardShop />
@@ -55,6 +53,10 @@ export default function ThemeShopPage() {
 
                         <TabsContent value="themes" className="space-y-4">
                             <ThemeShop />
+                        </TabsContent>
+
+                        <TabsContent value="redeem" className="space-y-4">
+                            <RedeemMoney />
                         </TabsContent>
                     </Tabs>
                 </motion.div>
