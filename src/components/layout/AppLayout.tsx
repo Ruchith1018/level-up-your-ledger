@@ -8,6 +8,7 @@ import { SuccessCelebration } from "@/components/gamification/SuccessCelebration
 export function AppLayout() {
     const location = useLocation();
     const isNotificationsPage = location.pathname === "/notifications";
+    const hideBottomNav = isNotificationsPage || location.pathname === "/family" || location.pathname === "/leaderboard";
 
     return (
         <div className="min-h-screen w-full bg-background font-sans antialiased">
@@ -20,7 +21,7 @@ export function AppLayout() {
                 </div>
                 <Footer />
             </main>
-            {!isNotificationsPage && <BottomNav />}
+            {!hideBottomNav && <BottomNav />}
         </div>
     );
 }

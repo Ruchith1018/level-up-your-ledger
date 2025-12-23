@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart3, Calendar, Home, ShoppingBag, Settings, Bell, Menu, Sun, Moon, LogOut, MessageSquareWarning, UserPlus, Loader2 } from "lucide-react";
+import { BarChart3, Calendar, Home, ShoppingBag, Settings, Bell, Menu, Sun, Moon, LogOut, MessageSquareWarning, UserPlus, Loader2, Users, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +80,16 @@ export function AppSidebar() {
             label: "Notifications",
             icon: Bell,
             path: "/notifications",
+        },
+        {
+            label: "Family",
+            icon: Users,
+            path: "/family",
+        },
+        {
+            label: "Leaderboard",
+            icon: Trophy,
+            path: "/leaderboard",
         },
         {
             label: "Analytics",

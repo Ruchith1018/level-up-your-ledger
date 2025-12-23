@@ -219,8 +219,14 @@ export default function Gamification() {
                         transition={{ delay: 0.1 }}
                         id="gami-level-card"
                     >
-                        <Card className="bg-gradient-to-br from-xp/20 to-accent/20 border-xp/50 h-full">
+                        <Card
+                            className="bg-gradient-to-br from-xp/20 to-accent/20 border-xp/50 h-full cursor-pointer hover:shadow-md transition-all relative"
+                            onClick={() => navigate('/leaderboard')}
+                        >
                             <CardContent className="p-4 flex flex-col justify-center gap-2">
+                                <div className="absolute top-3 right-3 text-xp-foreground/80">
+                                    <ChevronRight className="w-5 h-5" />
+                                </div>
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-xp/20 rounded-full text-xp-foreground">
                                         <img src="/assets/level.png" alt="Level" className="w-5 h-5 object-contain" />

@@ -37,6 +37,8 @@ import SavingsPage from "./pages/SavingsPage";
 import TransactionsPage from "./pages/TransactionsPage";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import FamilyPage from "./pages/FamilyPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +86,8 @@ const App = () => (
                                                             <Route path="/gamification" element={<Gamification />} />
                                                             <Route path="/gamification/badges" element={<BadgesPage />} />
                                                             <Route path="/gamification/tokens" element={<TokenHistoryPage />} />
+                                                            <Route path="/family" element={<FamilyPage />} />
+                                                            <Route path="/leaderboard" element={<LeaderboardPage />} />
                                                         </Route>
                                                     </Route>
 
