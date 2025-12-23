@@ -15,6 +15,17 @@ import { CARD_THEMES, MARVEL_THEMES, ANIME_THEMES } from "@/constants/cardThemes
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { PremiumPackModal } from "@/components/premium/PremiumPackModal";
 
 // Add Razorpay type to window
 declare global {
@@ -28,6 +39,7 @@ export function CardShop() {
     const { showSuccessAnimation } = useGamification();
     const { user } = useAuth();
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
+    const [pendingClaim, setPendingClaim] = useState<{ theme: any, category: 'classic' | 'marvel' | 'anime' } | null>(null);
 
     const isLoading = isSettingsLoading;
     const purchasedThemes = settings.purchasedCardThemes || [];
@@ -138,8 +150,51 @@ export function CardShop() {
         toast.success(`${theme.name} card theme applied!`);
     };
 
+    const handleClaimRequest = (theme: any, category: 'classic' | 'marvel' | 'anime') => {
+        setPendingClaim({ theme, category });
+    };
+
+    const executeClaim = async () => {
+        if (!pendingClaim) return;
+        const { theme, category } = pendingClaim;
+
+        const updatedPurchased = [...(settings.purchasedCardThemes || []), theme.id];
+
+        const claims = { ...settings.premiumPackClaims };
+        if (category === 'classic') claims.classic = true;
+        if (category === 'marvel') claims.marvel = true;
+        if (category === 'anime') claims.anime = true;
+
+        await updateSettings({
+            purchasedCardThemes: updatedPurchased,
+            cardTheme: theme.id,
+            premiumPackClaims: claims as any // Casting to avoid strict type issues if undefined
+        });
+
+        toast.success("Card claimed successfully!");
+        showSuccessAnimation({ type: 'purchase', item: theme.name });
+        setPendingClaim(null);
+    };
+
     return (
         <Card>
+            <AlertDialog open={!!pendingClaim} onOpenChange={(open) => !open && setPendingClaim(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Claim "{pendingClaim?.theme.name}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You can only claim ONE free <strong>{pendingClaim?.category === 'classic' ? 'Classic' : pendingClaim?.category === 'marvel' ? 'Marvel' : 'Anime'}</strong> theme.
+                            <br /><br />
+                            Are you sure you want to choose this one? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={executeClaim} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700">Confirm Claim</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
@@ -169,6 +224,13 @@ export function CardShop() {
                                     const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
                                     const isActive = (settings.cardTheme || "default") === theme.id;
                                     const priceDetails = getPrice(theme.id, settings.currency || "INR");
+
+                                    // Premium Claim Logic
+                                    const canClaimFree = settings.hasPremiumPack &&
+                                        !settings.premiumPackClaims?.classic &&
+                                        !isPurchased;
+
+
 
                                     return (
                                         <motion.div
@@ -202,22 +264,32 @@ export function CardShop() {
                                                         <h3 className="font-semibold mb-1">{theme.name}</h3>
                                                         <p className="text-xs text-muted-foreground">{theme.description}</p>
                                                     </div>
-                                                    <Button
-                                                        onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
-                                                        disabled={purchasingId !== null}
-                                                        className="w-full relative"
-                                                        variant={isPurchased ? "outline" : "default"}
-                                                    >
-                                                        {purchasingId === theme.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : isPurchased ? (
-                                                            isActive ? "Applied" : "Apply"
-                                                        ) : (
-                                                            <>
-                                                                Buy for {priceDetails.symbol}{priceDetails.amount}
-                                                            </>
-                                                        )}
-                                                    </Button>
+
+                                                    {canClaimFree ? (
+                                                        <Button
+                                                            onClick={() => handleClaimRequest(theme, 'classic')}
+                                                            className="w-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white"
+                                                        >
+                                                            Claim Free (Premium)
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                            disabled={purchasingId !== null}
+                                                            className="w-full relative"
+                                                            variant={isPurchased ? "outline" : "default"}
+                                                        >
+                                                            {purchasingId === theme.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : isPurchased ? (
+                                                                isActive ? "Applied" : "Apply"
+                                                            ) : (
+                                                                <>
+                                                                    Buy for {priceDetails.symbol}{priceDetails.amount}
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                 </CardContent>
                                             </Card>
                                         </motion.div>
@@ -237,6 +309,11 @@ export function CardShop() {
                                     const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
                                     const isActive = (settings.cardTheme || "default") === theme.id;
                                     const priceDetails = getPrice(theme.id, settings.currency || "INR");
+
+                                    // Premium Claim Logic
+                                    const canClaimFree = settings.hasPremiumPack &&
+                                        !settings.premiumPackClaims?.marvel &&
+                                        !isPurchased;
 
                                     return (
                                         <motion.div
@@ -275,22 +352,31 @@ export function CardShop() {
                                                         <h3 className="font-semibold mb-1">{theme.name}</h3>
                                                         <p className="text-xs text-muted-foreground">{theme.description}</p>
                                                     </div>
-                                                    <Button
-                                                        onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
-                                                        disabled={purchasingId !== null}
-                                                        className="w-full relative"
-                                                        variant={isPurchased ? "outline" : "default"}
-                                                    >
-                                                        {purchasingId === theme.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : isPurchased ? (
-                                                            isActive ? "Applied" : "Apply"
-                                                        ) : (
-                                                            <>
-                                                                Buy for {priceDetails.symbol}{priceDetails.amount}
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    {canClaimFree ? (
+                                                        <Button
+                                                            onClick={() => handleClaimRequest(theme, 'marvel')}
+                                                            className="w-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white"
+                                                        >
+                                                            Claim Free (Premium)
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                            disabled={purchasingId !== null}
+                                                            className="w-full relative"
+                                                            variant={isPurchased ? "outline" : "default"}
+                                                        >
+                                                            {purchasingId === theme.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : isPurchased ? (
+                                                                isActive ? "Applied" : "Apply"
+                                                            ) : (
+                                                                <>
+                                                                    Buy for {priceDetails.symbol}{priceDetails.amount}
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                 </CardContent>
                                             </Card>
                                         </motion.div>
@@ -310,6 +396,11 @@ export function CardShop() {
                                     const isPurchased = theme.id === "default" || purchasedThemes.includes(theme.id);
                                     const isActive = (settings.cardTheme || "default") === theme.id;
                                     const priceDetails = getPrice(theme.id, settings.currency || "INR");
+
+                                    // Premium Claim Logic
+                                    const canClaimFree = settings.hasPremiumPack &&
+                                        !settings.premiumPackClaims?.anime &&
+                                        !isPurchased;
 
                                     return (
                                         <motion.div
@@ -348,22 +439,31 @@ export function CardShop() {
                                                         <h3 className="font-semibold mb-1">{theme.name}</h3>
                                                         <p className="text-xs text-muted-foreground">{theme.description}</p>
                                                     </div>
-                                                    <Button
-                                                        onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
-                                                        disabled={purchasingId !== null}
-                                                        className="w-full relative"
-                                                        variant={isPurchased ? "outline" : "default"}
-                                                    >
-                                                        {purchasingId === theme.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : isPurchased ? (
-                                                            isActive ? "Applied" : "Apply"
-                                                        ) : (
-                                                            <>
-                                                                Buy for {priceDetails.symbol}{priceDetails.amount}
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    {canClaimFree ? (
+                                                        <Button
+                                                            onClick={() => handleClaimRequest(theme, 'anime')}
+                                                            className="w-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white"
+                                                        >
+                                                            Claim Free (Premium)
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                            disabled={purchasingId !== null}
+                                                            className="w-full relative"
+                                                            variant={isPurchased ? "outline" : "default"}
+                                                        >
+                                                            {purchasingId === theme.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : isPurchased ? (
+                                                                isActive ? "Applied" : "Apply"
+                                                            ) : (
+                                                                <>
+                                                                    Buy for {priceDetails.symbol}{priceDetails.amount}
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                 </CardContent>
                                             </Card>
                                         </motion.div>
@@ -420,6 +520,7 @@ function CustomCardBuilder() {
 
     const [isUploading, setIsUploading] = useState(false);
     const [purchasing, setPurchasing] = useState(false);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
 
     // Local state for builder
     const [customImage, setCustomImage] = useState<string | null>(settings.customCardImage || null);
@@ -701,23 +802,24 @@ function CustomCardBuilder() {
                 </div>
 
                 <div className="pt-4">
+                    <PremiumPackModal open={showPremiumModal} onOpenChange={setShowPremiumModal} />
                     <Button
                         className="w-full"
                         size="lg"
-                        onClick={isPurchased ? handleApply : handlePurchase}
-                        disabled={!customImage || purchasing || isUploading}
+                        onClick={isPurchased ? handleApply : () => setShowPremiumModal(true)}
+                        disabled={purchasing || isUploading || (isPurchased && !customImage)}
                     >
                         {purchasing ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : isPurchased ? (
                             isActive ? "Applied" : "Apply Custom Theme"
                         ) : (
-                            `Unlock Custom Builder (${settings.currency === "INR" ? "₹249" : "$3.00"})`
+                            "Unlock with Premium"
                         )}
                     </Button>
                     {!isPurchased && (
                         <p className="text-xs text-center text-muted-foreground mt-2">
-                            One-time purchase. Change images & settings anytime.
+                            Unlock Custom Builder + Pro Cards + Family Plan
                         </p>
                     )}
                 </div>

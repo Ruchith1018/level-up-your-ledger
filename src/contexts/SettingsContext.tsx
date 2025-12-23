@@ -48,6 +48,12 @@ const defaultSettings: AppSettings = {
     showExpiry: true,
     showChip: true,
     showCardHolder: true
+  },
+  hasPremiumPack: false,
+  premiumPackClaims: {
+    classic: false,
+    marvel: false,
+    anime: false
   }
 };
 
@@ -77,8 +83,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!data) {
-        // ... (creation logic omitted for brevity in replace, effectively unchanged)
-        // Ensure creation logic handles defaults if needed, but for now focusing on mapping
+        // ... creation logic
       } else {
         // Settings found
         setSettings({
@@ -98,14 +103,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           purchasedThemes: data.purchased_themes || [],
           purchasedCardThemes: data.purchased_card_themes || [],
           customCardImage: data.custom_card_image,
-          customCardOverlay: data.custom_card_overlay || defaultSettings.customCardOverlay
+          customCardOverlay: data.custom_card_overlay || defaultSettings.customCardOverlay,
+          hasPremiumPack: data.has_premium_pack || false,
+          premiumPackClaims: data.premium_pack_claims || defaultSettings.premiumPackClaims
         });
       }
       setIsLoading(false);
     };
 
     fetchSettings();
-    // fetchSettings(); // Removed duplicate call
   }, [user?.id]);
 
   // Realtime Updates
@@ -142,7 +148,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               hasSeenIntro: newData.has_seen_intro,
               hasAcceptedTerms: newData.has_accepted_terms,
               purchasedThemes: newData.purchased_themes || [],
-              purchasedCardThemes: newData.purchased_card_themes || []
+              purchasedCardThemes: newData.purchased_card_themes || [],
+              hasPremiumPack: newData.has_premium_pack || false,
+              premiumPackClaims: newData.premium_pack_claims || defaultSettings.premiumPackClaims
             }));
           }
         }
@@ -210,6 +218,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (newSettings.purchasedCardThemes !== undefined) payload.purchased_card_themes = newSettings.purchasedCardThemes;
     if (newSettings.customCardImage !== undefined) payload.custom_card_image = newSettings.customCardImage;
     if (newSettings.customCardOverlay !== undefined) payload.custom_card_overlay = newSettings.customCardOverlay;
+    if (newSettings.hasPremiumPack !== undefined) payload.has_premium_pack = newSettings.hasPremiumPack;
+    if (newSettings.premiumPackClaims !== undefined) payload.premium_pack_claims = newSettings.premiumPackClaims;
 
     const { error } = await supabase
       .from("user_settings")

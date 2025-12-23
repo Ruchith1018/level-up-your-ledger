@@ -101,4 +101,10 @@ export interface AppSettings {
     showChip: boolean;
     showCardHolder: boolean;
   };
+  hasPremiumPack?: boolean;
+  premiumPackClaims?: {
+    classic: boolean;
+    marvel: boolean;
+    anime: boolean;
+  };
 }

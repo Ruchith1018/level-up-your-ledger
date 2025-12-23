@@ -270,7 +270,6 @@ export default function LeaderboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold flex items-center gap-2">
-                                <Trophy className="w-6 h-6 text-yellow-500" />
                                 Leaderboard
                             </h1>
                             <p className="text-sm text-muted-foreground">See who's topping the charts!</p>
