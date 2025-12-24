@@ -39,6 +39,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import FamilyPage from "./pages/FamilyPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import PremiumPage from "./pages/PremiumPage";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ const App = () => (
                                                             <Route path="/gamification/tokens" element={<TokenHistoryPage />} />
                                                             <Route path="/family" element={<FamilyPage />} />
                                                             <Route path="/leaderboard" element={<LeaderboardPage />} />
+                                                            <Route path="/premium" element={<PremiumPage />} />
                                                         </Route>
                                                     </Route>
 

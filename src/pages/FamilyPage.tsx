@@ -1,18 +1,16 @@
 import { Construction, Lock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "@/contexts/SettingsContext";
-import { PremiumPackModal } from "@/components/premium/PremiumPackModal";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 export default function FamilyPage() {
     const { settings } = useSettings();
-    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const navigate = useNavigate();
 
     if (!settings.hasPremiumPack) {
         return (
             <div className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in zoom-in duration-500">
-                <PremiumPackModal open={showPremiumModal} onOpenChange={setShowPremiumModal} />
                 <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 text-center">
                     <div className="relative">
                         <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full" />
@@ -58,7 +56,7 @@ export default function FamilyPage() {
                             <Button
                                 size="lg"
                                 className="w-full bg-violet-600 hover:bg-violet-700 text-white"
-                                onClick={() => setShowPremiumModal(true)}
+                                onClick={() => navigate('/premium')}
                             >
                                 Unlock Premium Pack
                             </Button>

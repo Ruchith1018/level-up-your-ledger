@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useGamification } from "@/contexts/GamificationContext";
@@ -25,12 +26,11 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PremiumPackModal } from "@/components/premium/PremiumPackModal";
 
-// Add Razorpay type to window
+// Add Cashfree type to window
 declare global {
     interface Window {
-        Razorpay: any;
+        Cashfree: any;
     }
 }
 
@@ -40,6 +40,79 @@ export function CardShop() {
     const { user } = useAuth();
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
     const [pendingClaim, setPendingClaim] = useState<{ theme: any, category: 'classic' | 'marvel' | 'anime' } | null>(null);
+    const navigate = useNavigate();
+
+    // Unified Verification Logic
+    const verifyTransaction = async (orderId: string, themeId: string | null) => {
+        if (!orderId || !user) return;
+
+        try {
+            toast.info("Verifying payment status...");
+            // Pass themeId (for backend fulfillment)
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-cashfree-payment', {
+                body: { order_id: orderId, themeId: themeId }
+            });
+
+            if (verifyError) throw verifyError;
+
+            if (verifyData.success) {
+                toast.success("Payment verified successfully!");
+
+                // Refresh settings to reflect backend changes
+                // The backend implementation of verify-cashfree-payment now handles the DB update.
+                // We can trigger a reload or optimistically update if we want invalidation.
+                // For now, let's just trigger a window reload or settings refetch if available.
+                // Since this component uses `useSettings`, and we don't have a direct 'refetch', 
+                // we can rely on `updateSettings` (which writes) or just reload the page for safety to fetch fresh data?
+                // Or best: Call updateSettings with the new data locally? UseSettings usually *updates* the context state too.
+                // Let's keep the frontend update as "Optimistic UI" for now, or "Ensurance".
+
+                const targetThemeId = themeId || localStorage.getItem("pending_purchase_item");
+
+                if (targetThemeId) {
+                    // We still call this to update the UI Context immediately.
+                    // It might write to DB again, but that's safe (idempotent).
+                    const updatedPurchased = [...(settings.purchasedCardThemes || []), targetThemeId];
+                    const uniquePurchased = [...new Set(updatedPurchased)];
+
+                    await updateSettings({
+                        purchasedCardThemes: uniquePurchased,
+                        cardTheme: targetThemeId
+                    });
+
+                    showSuccessAnimation({
+                        type: 'purchase',
+                        item: "New Card"
+                    });
+                    localStorage.removeItem("pending_purchase_item");
+                }
+            } else {
+                console.log("Payment status:", verifyData.status);
+                if (verifyData.status === "PENDING") {
+                    toast.warning("Payment is still pending. Please wait a moment.");
+                } else {
+                    toast.error(`Payment failed: ${verifyData.status}`);
+                }
+            }
+        } catch (err) {
+            console.error("Verification error:", err);
+            toast.error("Failed to verify payment status.");
+        }
+    };
+
+    // Verify Payment on Load (Redirect handling)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get("order_id");
+
+        if (orderId) {
+            // Clear URL
+            window.history.replaceState(null, "", window.location.pathname);
+            const pendingItem = localStorage.getItem("pending_purchase_item");
+            verifyTransaction(orderId, pendingItem);
+        }
+    }, [user, settings.purchasedCardThemes, verifyTransaction]); // Reduced deps to avoid loops
+
 
     const isLoading = isSettingsLoading;
     const purchasedThemes = settings.purchasedCardThemes || [];
@@ -61,86 +134,47 @@ export function CardShop() {
         if (!user) return;
         setPurchasingId(theme.id);
 
+        // Save intent
+        localStorage.setItem("pending_purchase_item", theme.id);
+
         try {
             const currency = settings.currency || "INR";
             const priceDetails = getPrice(theme.id, currency);
 
             // 1. Create Order via Edge Function
-            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
+            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-cashfree-order', {
                 body: {
-                    amount: priceDetails.amount * 100, // Amount in smallest unit (paise or cents)
-                    currency: currency
+                    amount: priceDetails.amount * 100, // Send cents/paise
+                    currency: currency,
+                    customer_id: user.id,
+                    customer_name: user.user_metadata?.name || "User",
+                    customer_email: user.email,
+                    customer_phone: "9999999999"
                 }
             });
 
             if (orderError) throw orderError;
 
-            // 2. Open Razorpay Checkout
-            const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-                amount: orderData.amount,
-                currency: orderData.currency,
-                name: "BudGlio",
-                description: `Purchase ${theme.name} Card`,
-                image: "/logo.jpg",
-                order_id: orderData.id,
-                handler: async function (response: any) {
-                    try {
-                        // 3. Verify Payment via Edge Function
-                        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
-                            body: {
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                cardThemeId: theme.id,
-                                userId: user.id
-                            }
-                        });
+            // 2. Open Cashfree Checkout
+            console.log("Initializing Cashfree...");
+            const cashfree = window.Cashfree({
+                mode: "sandbox"
+            });
+            console.log("Cashfree Object:", cashfree);
 
-                        if (verifyError) throw verifyError;
+            await cashfree.checkout({
+                paymentSessionId: orderData.payment_session_id,
+                redirectTarget: "_modal"
+            });
 
-                        // Success! Update local state to reflect change immediately
-                        const updatedPurchased = [...(settings.purchasedCardThemes || []), theme.id];
-                        updateSettings({
-                            purchasedCardThemes: updatedPurchased,
-                            cardTheme: theme.id
-                        });
-
-                        showSuccessAnimation({
-                            type: 'purchase',
-                            item: `${theme.name} Card`
-                        });
-
-                        toast.success(`Purchase successful! ${theme.name} is now active.`);
-
-                    } catch (err: any) {
-                        console.error("Verification failed", err);
-                        toast.error("Payment verification failed. Please contact support if money was deducted.");
-                    } finally {
-                        setPurchasingId(null);
-                    }
-                },
-                prefill: {
-                    name: user.user_metadata?.name || user.email,
-                    email: user.email,
-                    contact: ""
-                },
-                theme: {
-                    color: "#3399cc"
-                },
-                modal: {
-                    ondismiss: function () {
-                        setPurchasingId(null);
-                    }
-                }
-            };
-
-            const rzp1 = new window.Razorpay(options);
-            rzp1.open();
+            console.log("Checkout resolved. Verifying status...");
+            // 3. Immediately verify after popup closes
+            await verifyTransaction(orderData.order_id, theme.id);
 
         } catch (error: any) {
             console.error("Purchase failed", error);
             toast.error(error.message || "Failed to initiate payment");
+        } finally {
             setPurchasingId(null);
         }
     };
@@ -517,10 +551,10 @@ function CustomCardBuilder() {
 
     const referralId = user?.user_metadata?.referral_id || "0000000000000000";
     const formattedReferralId = referralId.replace(/(.{4})/g, '$1 ').trim();
+    const navigate = useNavigate();
 
     const [isUploading, setIsUploading] = useState(false);
     const [purchasing, setPurchasing] = useState(false);
-    const [showPremiumModal, setShowPremiumModal] = useState(false);
 
     // Local state for builder
     const [customImage, setCustomImage] = useState<string | null>(settings.customCardImage || null);
@@ -802,11 +836,10 @@ function CustomCardBuilder() {
                 </div>
 
                 <div className="pt-4">
-                    <PremiumPackModal open={showPremiumModal} onOpenChange={setShowPremiumModal} />
                     <Button
                         className="w-full"
                         size="lg"
-                        onClick={isPurchased ? handleApply : () => setShowPremiumModal(true)}
+                        onClick={isPurchased ? handleApply : () => navigate('/premium')}
                         disabled={purchasing || isUploading || (isPurchased && !customImage)}
                     >
                         {purchasing ? (
