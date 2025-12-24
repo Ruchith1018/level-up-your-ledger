@@ -554,7 +554,7 @@ function CustomCardBuilder() {
     const navigate = useNavigate();
 
     const [isUploading, setIsUploading] = useState(false);
-    const [purchasing, setPurchasing] = useState(false);
+
 
     // Local state for builder
     const [customImage, setCustomImage] = useState<string | null>(settings.customCardImage || null);
@@ -603,83 +603,7 @@ function CustomCardBuilder() {
         }
     };
 
-    const handlePurchase = async () => {
-        if (!user || !customImage) {
-            toast.error("Please upload an image first");
-            return;
-        }
 
-        setPurchasing(true);
-        try {
-            // Price for custom card
-            const priceAmount = settings.currency === "INR" ? 249 : 3.00;
-            const currency = settings.currency || "INR";
-
-            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
-                body: {
-                    amount: priceAmount * 100,
-                    currency: currency
-                }
-            });
-
-            if (orderError) throw orderError;
-
-            const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-                amount: orderData.amount,
-                currency: orderData.currency,
-                name: "BudGlio",
-                description: "Custom Card Theme",
-                image: "/logo.jpg",
-                order_id: orderData.id,
-                handler: async function (response: any) {
-                    try {
-                        const { error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
-                            body: {
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                cardThemeId: "custom",
-                                userId: user.id
-                            }
-                        });
-
-                        if (verifyError) throw verifyError;
-
-                        // Success
-                        const updatedPurchased = [...(settings.purchasedCardThemes || []), "custom"];
-                        updateSettings({
-                            purchasedCardThemes: updatedPurchased,
-                            cardTheme: "custom",
-                            customCardImage: customImage,
-                            customCardOverlay: overlay
-                        });
-
-                        showSuccessAnimation({
-                            type: 'purchase',
-                            item: "Custom Card"
-                        });
-
-                        toast.success("Custom card unlocked!");
-
-                    } catch (err) {
-                        toast.error("Verification failed.");
-                    } finally {
-                        setPurchasing(false);
-                    }
-                },
-                theme: { color: "#3399cc" }
-            };
-
-            const rzp = new window.Razorpay(options);
-            rzp.open();
-
-        } catch (error: any) {
-            console.error("Purchase error:", error);
-            toast.error(error.message);
-            setPurchasing(false);
-        }
-    };
 
     const handleApply = () => {
         updateSettings({
@@ -840,11 +764,9 @@ function CustomCardBuilder() {
                         className="w-full"
                         size="lg"
                         onClick={isPurchased ? handleApply : () => navigate('/premium')}
-                        disabled={purchasing || isUploading || (isPurchased && !customImage)}
+                        disabled={isUploading || (isPurchased && !customImage)}
                     >
-                        {purchasing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isPurchased ? (
+                        {isPurchased ? (
                             isActive ? "Applied" : "Apply Custom Theme"
                         ) : (
                             "Unlock with Premium"
