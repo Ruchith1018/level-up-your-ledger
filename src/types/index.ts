@@ -108,3 +108,42 @@ export interface AppSettings {
     anime: boolean;
   };
 }
+
+export interface Family {
+  id: string;
+  name: string;
+  share_code: string;
+  created_at: string;
+  created_by: string;
+  currency: string;
+}
+
+export interface FamilyMember {
+  family_id: string;
+  user_id: string;
+  role: 'admin' | 'member' | 'viewer';
+  joined_at: string;
+  allowance: number;
+  visibility_level: 'full' | 'limited' | 'none';
+  // Optional joined fields if fetching with profiles
+  profile?: {
+    name?: string;
+    avatar_url?: string;
+    email?: string;
+  };
+}
+
+export interface FamilyRequest {
+  id: string;
+  family_id: string;
+  user_id: string;
+  request_type: 'invite' | 'join_request';
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  // Optional joined fields
+  family?: Family;
+  profile?: {
+    name?: string;
+    email?: string;
+  };
+}
