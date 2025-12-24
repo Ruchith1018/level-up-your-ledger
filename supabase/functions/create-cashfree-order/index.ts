@@ -56,17 +56,20 @@ serve(async (req) => {
 
         if (!response.ok) {
             console.error("Cashfree Error:", data);
-            throw new Error(data.message || "Failed to create Cashfree order");
+            return new Response(
+                JSON.stringify({ success: false, error: data.message || "Failed to create Cashfree order" }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
         }
 
         return new Response(
-            JSON.stringify(data),
+            JSON.stringify({ success: true, ...data }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         )
     } catch (error) {
         return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+            JSON.stringify({ success: false, error: error.message }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }, // Return 200 to allow client parsing
         )
     }
 })

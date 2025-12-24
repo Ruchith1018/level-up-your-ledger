@@ -9,6 +9,7 @@ import { useGamification } from "@/contexts/GamificationContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { PhoneRequestDialog } from "@/components/payment/PhoneRequestDialog";
 
 declare global {
     interface Window {
@@ -90,29 +91,62 @@ export default function PremiumPage() {
         }
     };
 
-    const handlePurchase = async () => {
+    const [showPhoneDialog, setShowPhoneDialog] = useState(false);
+
+    const handlePurchaseClick = () => {
+        setShowPhoneDialog(true);
+    };
+
+    const proceedWithPurchase = async (phoneNumber: string) => {
         if (!user) return;
+        setShowPhoneDialog(false);
         setIsLoading(true);
 
         try {
-            const currency = "INR";
-            const priceAmount = 249;
+            const currency = settings.currency || "INR";
+            const customerName = settings.userName || user.user_metadata?.name || "User";
 
-            // 1. Create Order
-            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-cashfree-order', {
-                body: {
-                    amount: priceAmount * 100,
-                    currency: currency,
-                    customer_id: user.id,
-                    customer_name: user.user_metadata?.name || "User",
-                    customer_email: user.email,
-                    customer_phone: "9999999999"
+            // Helper function
+            const createOrder = async (amt: number, curr: string) => {
+                const { data, error } = await supabase.functions.invoke('create-cashfree-order', {
+                    body: {
+                        amount: amt * 100,
+                        currency: curr,
+                        customer_id: user.id,
+                        customer_name: customerName,
+                        customer_email: user.email,
+                        customer_phone: phoneNumber
+                    }
+                });
+
+                if (error) throw error;
+                if (data && !data.success) {
+                    throw new Error(data.error || "Order creation failed");
                 }
-            });
+                return data;
+            };
 
-            if (orderError) throw orderError;
+            let orderData;
+            try {
+                // Attempt 1: User Currency
+                const priceAmount = currency === "INR" ? 249 : 3.00;
+                orderData = await createOrder(priceAmount, currency);
+            } catch (firstError: any) {
+                console.log("Attempt 1 (Preferred Currency) failed. Falling back to INR.", firstError.message);
+
+                if (currency !== "INR") {
+                    toast.info(`Retrying payment in INR...`);
+                    // Fallback to INR price
+                    orderData = await createOrder(249, "INR");
+                } else {
+                    throw firstError;
+                }
+            }
 
             // 2. Initialize Cashfree
+            toast.dismiss();
+            toast.loading("Opening secure payment window...");
+
             console.log("Initializing Cashfree...");
             const cashfree = window.Cashfree({
                 mode: "sandbox"
@@ -123,6 +157,7 @@ export default function PremiumPage() {
                 redirectTarget: "_modal"
             });
 
+            toast.dismiss();
             console.log("Checkout resolved. Verifying status...");
             // 3. Verify immediately after popup closes
             await verifyTransaction(orderData.order_id);
@@ -182,6 +217,7 @@ export default function PremiumPage() {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in duration-500 relative overflow-hidden">
+            <PhoneRequestDialog open={showPhoneDialog} onOpenChange={setShowPhoneDialog} onConfirm={proceedWithPurchase} />
 
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-violet-600/20 blur-[120px] -z-10 rounded-full pointer-events-none" />
 
@@ -229,7 +265,9 @@ export default function PremiumPage() {
                             <div className="space-y-2">
                                 <h3 className="text-2xl font-bold">BudGlio Premium</h3>
                                 <div className="flex items-baseline justify-center gap-1">
-                                    <span className="text-5xl font-black">₹249</span>
+                                    <span className="text-5xl font-black">
+                                        {settings.currency === "INR" ? "₹249" : "$3.00"}
+                                    </span>
                                     <span className="text-muted-foreground">/ lifetime</span>
                                 </div>
                                 <p className="text-sm text-green-600 font-medium bg-green-100 dark:bg-green-900/30 inline-block px-3 py-1 rounded-full">
@@ -259,7 +297,7 @@ export default function PremiumPage() {
                             <Button
                                 size="lg"
                                 className="w-full h-14 text-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/25"
-                                onClick={handlePurchase}
+                                onClick={handlePurchaseClick}
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
@@ -271,7 +309,7 @@ export default function PremiumPage() {
                                 )}
                             </Button>
                             <p className="text-xs text-muted-foreground">
-                                Secure payment via Razorpay. No hidden fees.
+                                Secure payment via Cashfree. No hidden fees.
                             </p>
                         </div>
                     </Card>

@@ -26,6 +26,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PhoneRequestDialog } from "@/components/payment/PhoneRequestDialog";
 
 // Add Cashfree type to window
 declare global {
@@ -130,8 +131,25 @@ export function CardShop() {
         }
     };
 
-    const handlePurchase = async (theme: typeof CARD_THEMES[0]) => {
-        if (!user) return;
+    // Phone Dialog State
+    const [showPhoneDialog, setShowPhoneDialog] = useState(false);
+    const [themeToBuy, setThemeToBuy] = useState<typeof CARD_THEMES[0] | null>(null);
+
+    const handlePurchaseClick = (theme: typeof CARD_THEMES[0]) => {
+        setThemeToBuy(theme);
+        setShowPhoneDialog(true);
+    };
+
+    const proceedWithPurchase = async (phoneNumber: string) => {
+        const theme = themeToBuy;
+        if (!user || !theme) return;
+
+        setShowPhoneDialog(false); // Close dialog but keep loading state in UI if needed? 
+        // Actually, let's keep it open or just close and show purchasing indicator on the card.
+        // The dialog handles the "Proceed" button loading? PhoneRequestDialog has isLoading prop.
+        // Let's pass isLoading to it IF we want async inside.
+        // But here I'll try to orchestrate: Close dialog -> setPurchasingId -> Start.
+
         setPurchasingId(theme.id);
 
         // Save intent
@@ -141,19 +159,44 @@ export function CardShop() {
             const currency = settings.currency || "INR";
             const priceDetails = getPrice(theme.id, currency);
 
-            // 1. Create Order via Edge Function
-            const { data: orderData, error: orderError } = await supabase.functions.invoke('create-cashfree-order', {
-                body: {
-                    amount: priceDetails.amount * 100, // Send cents/paise
-                    currency: currency,
-                    customer_id: user.id,
-                    customer_name: user.user_metadata?.name || "User",
-                    customer_email: user.email,
-                    customer_phone: "9999999999"
-                }
-            });
+            // Use settings name or metadata name
+            const customerName = settings.userName || user.user_metadata?.name;
+            // Helper to call API
+            const createOrder = async (amt: number, curr: string) => {
+                const { data, error } = await supabase.functions.invoke('create-cashfree-order', {
+                    body: {
+                        amount: amt * 100, // Send cents/paise
+                        currency: curr,
+                        customer_id: user.id,
+                        customer_name: customerName,
+                        customer_email: user.email,
+                        customer_phone: phoneNumber
+                    }
+                });
 
-            if (orderError) throw orderError;
+                if (error) throw error;
+                if (data && !data.success) {
+                    throw new Error(data.error || "Order creation failed");
+                }
+                return data;
+            };
+
+            let orderData;
+            try {
+                // Attempt 1: User's Currency
+                orderData = await createOrder(priceDetails.amount, currency);
+            } catch (firstError: any) {
+                console.warn("Attempt 1 failed:", firstError.message);
+
+                // If failed and not INR, try INR fallback
+                if (currency !== "INR") {
+                    toast.info(`Could not process ${currency}. Retrying in INR...`);
+                    const inrPrice = getPrice(theme.id, "INR");
+                    orderData = await createOrder(inrPrice.amount, "INR");
+                } else {
+                    throw firstError;
+                }
+            }
 
             // 2. Open Cashfree Checkout
             console.log("Initializing Cashfree...");
@@ -176,6 +219,7 @@ export function CardShop() {
             toast.error(error.message || "Failed to initiate payment");
         } finally {
             setPurchasingId(null);
+            setThemeToBuy(null);
         }
     };
 
@@ -212,6 +256,11 @@ export function CardShop() {
 
     return (
         <Card>
+            <PhoneRequestDialog
+                open={showPhoneDialog}
+                onOpenChange={setShowPhoneDialog}
+                onConfirm={proceedWithPurchase}
+            />
             <AlertDialog open={!!pendingClaim} onOpenChange={(open) => !open && setPendingClaim(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -308,7 +357,7 @@ export function CardShop() {
                                                         </Button>
                                                     ) : (
                                                         <Button
-                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchaseClick(theme)}
                                                             disabled={purchasingId !== null}
                                                             className="w-full relative"
                                                             variant={isPurchased ? "outline" : "default"}
@@ -395,7 +444,7 @@ export function CardShop() {
                                                         </Button>
                                                     ) : (
                                                         <Button
-                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchaseClick(theme)}
                                                             disabled={purchasingId !== null}
                                                             className="w-full relative"
                                                             variant={isPurchased ? "outline" : "default"}
@@ -482,7 +531,7 @@ export function CardShop() {
                                                         </Button>
                                                     ) : (
                                                         <Button
-                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchase(theme)}
+                                                            onClick={() => isPurchased ? applyTheme(theme) : handlePurchaseClick(theme)}
                                                             disabled={purchasingId !== null}
                                                             className="w-full relative"
                                                             variant={isPurchased ? "outline" : "default"}
