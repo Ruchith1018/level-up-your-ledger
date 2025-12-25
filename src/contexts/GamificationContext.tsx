@@ -397,16 +397,46 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   // Calculate total unclaimed tasks reactively
   const [unclaimedTaskItems, setUnclaimedTaskItems] = useState<any[]>([]);
 
+  // Track if initial load is complete
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  const hasLoadedOnce = useRef(false);
+
+  useEffect(() => {
+    if (!expenseState.isLoading && !isLoading && expenseState.items && state.claimedTasks !== undefined) {
+      // Mark that we've loaded at least once
+      if (!hasLoadedOnce.current) {
+        hasLoadedOnce.current = true;
+      }
+
+      // Wait longer to ensure all data is stable before marking as complete
+      // This is especially important for cross-device sync
+      const timer = setTimeout(() => {
+        setIsInitialLoadComplete(true);
+      }, 2000); // Increased from 500ms to 2000ms for better cross-device sync
+      return () => clearTimeout(timer);
+    }
+  }, [expenseState.isLoading, isLoading, expenseState.items, state.claimedTasks]);
+
   useEffect(() => {
     if (expenseState.isLoading || !expenseState.items || isLoading) return;
+
+    // Only perform reversion checks after initial load is complete
+    // This prevents false positives during data loading
+    const shouldCheckReversions = isInitialLoadComplete;
 
     const today = dayjs();
     const startOfWeek = dayjs().startOf('week');
     const startOfMonth = dayjs().startOf('month');
 
     const dailyTransactions = expenseState.items.filter(t => dayjs(t.date).isSame(today, 'day'));
-    const weeklyTransactions = expenseState.items.filter(t => dayjs(t.date).isAfter(startOfWeek));
-    const monthlyTransactions = expenseState.items.filter(t => dayjs(t.date).isAfter(startOfMonth));
+    const weeklyTransactions = expenseState.items.filter(t => {
+      const txDate = dayjs(t.date);
+      return txDate.isSame(startOfWeek, 'day') || txDate.isAfter(startOfWeek);
+    });
+    const monthlyTransactions = expenseState.items.filter(t => {
+      const txDate = dayjs(t.date);
+      return txDate.isSame(startOfMonth, 'day') || txDate.isAfter(startOfMonth);
+    });
 
     const dailyTasks = getDailyTasks(today, settings.currency).map(task => ({
       ...task,
@@ -446,7 +476,19 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       }
 
       // Case 2: Task IS claimed but progress is no longer met -> REVERT
-      if (state.claimedTasks.includes(task.uniqueId) && cappedProgress < task.total) {
+      // Only revert if initial load is complete to avoid false positives during data sync
+      if (shouldCheckReversions &&
+        state.claimedTasks.includes(task.uniqueId) &&
+        cappedProgress < task.total) {
+        // Log for debugging cross-device sync issues
+        console.log('Task reversion detected:', {
+          taskId: task.uniqueId,
+          title: task.title,
+          cappedProgress,
+          required: task.total,
+          transactionCount: expenseState.items.length
+        });
+
         // Found an invalid claim!
         revertTaskReward(task.uniqueId, task.reward);
       }
@@ -454,7 +496,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
     setUnclaimedTaskItems(unclaimed);
 
-  }, [expenseState.items, state.claimedTasks, settings.currency, isLoading]);
+  }, [expenseState.items, state.claimedTasks, settings.currency, isLoading, isInitialLoadComplete]);
 
   // Calculate redeemable items
   const [redeemableItems, setRedeemableItems] = useState<any[]>([]);

@@ -99,7 +99,7 @@ const getDailyPool = (currencyCode: string): Task[] => {
             description: "Add a note to a transaction",
             reward: 5,
             total: 1,
-            checkProgress: (txs) => txs.filter(t => t.notes && t.notes.length > 0).length,
+            checkProgress: (txs) => txs.filter(t => t.notes && t.notes.trim().length > 0).length,
         },
         {
             id: "daily_foodie",
@@ -120,9 +120,18 @@ const getDailyPool = (currencyCode: string): Task[] => {
             reward: 15,
             total: 1,
             checkProgress: (txs) => {
-                const morningExpenses = txs.filter(t => t.type === "expense" && dayjs(t.date).hour() < 12);
-                if (dayjs().hour() >= 12 && morningExpenses.length === 0) return 1;
-                return 0;
+                // Only check this after 12 PM
+                const now = dayjs();
+                if (now.hour() < 12) return 0;
+
+                const morningExpenses = txs.filter(t => {
+                    if (t.type !== "expense") return false;
+                    const txDate = dayjs(t.date);
+                    // Check if transaction is today AND before noon
+                    return txDate.isSame(now, 'day') && txDate.hour() < 12;
+                });
+
+                return morningExpenses.length === 0 ? 1 : 0;
             },
         },
         {
@@ -155,7 +164,7 @@ const getDailyPool = (currencyCode: string): Task[] => {
             description: "Log transactions in 2 different categories",
             reward: 15,
             total: 2,
-            checkProgress: (txs) => new Set(txs.map(t => t.category)).size,
+            checkProgress: (txs) => new Set(txs.filter(t => t.category).map(t => t.category)).size,
         }
     ];
 };
@@ -189,7 +198,7 @@ const getWeeklyPool = (currencyCode: string): Task[] => {
             description: "Spend in 4 different categories",
             reward: 75,
             total: 4,
-            checkProgress: (txs) => new Set(txs.filter(t => t.type === "expense").map(t => t.category)).size,
+            checkProgress: (txs) => new Set(txs.filter(t => t.type === "expense" && t.category).map(t => t.category)).size,
         },
         {
             id: "weekly_disciplined",
@@ -214,7 +223,14 @@ const getWeeklyPool = (currencyCode: string): Task[] => {
             reward: 100,
             total: 1, // Binary completion
             checkProgress: (txs) => {
-                return txs.filter(t => t.type === "income").length >= 3 ? 1 : 0;
+                // Count unique days with expenses
+                const daysWithExpenses = new Set(
+                    txs.filter(t => t.type === "expense").map(t => dayjs(t.date).format("YYYY-MM-DD"))
+                ).size;
+                // If there are 5 or fewer days with expenses in the week (7 days), that means at least 2 days had no expenses
+                const totalDaysInWeek = 7;
+                const daysWithoutExpenses = totalDaysInWeek - daysWithExpenses;
+                return daysWithoutExpenses >= 2 ? 1 : 0;
             }
         },
         {
@@ -248,14 +264,14 @@ const getMonthlyPool = (currencyCode: string): Task[] => {
             description: "Spend in 6 different categories",
             reward: 150,
             total: 6,
-            checkProgress: (txs) => new Set(txs.filter(t => t.type === "expense").map(t => t.category)).size,
+            checkProgress: (txs) => new Set(txs.filter(t => t.type === "expense" && t.category).map(t => t.category)).size,
         },
         {
             id: "monthly_big_saver",
             title: "Big Saver",
             description: `Log total income over ${symbol}${amount2000}`,
             reward: 300,
-            total: 2000,
+            total: amount2000,
             checkProgress: (txs) => txs.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0),
         },
         {
