@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { DailySpendingTrend } from "@/components/charts/DailySpendingTrend";
 import { SpendingHeatmap } from "@/components/charts/SpendingHeatmap";
 import { EarningHeatmap } from "@/components/charts/EarningHeatmap";
@@ -13,8 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Analytics() {
   const navigate = useNavigate();
-  const { state } = useExpenses();
+  const { state, refreshExpenses } = useExpenses();
   const isLoading = state.isLoading;
+
+  useEffect(() => {
+    refreshExpenses();
+  }, []);
 
   return (
     <div className="bg-background">
@@ -34,20 +39,16 @@ export default function Analytics() {
 
       <main id="analytics-content" className="container mx-auto px-4 py-6 space-y-6 pb-24">
         {isLoading ? (
-          <div className="space-y-6">
-            {/* Daily Trend Skeleton */}
-            <Skeleton className="w-full h-[300px] rounded-xl" />
-
-            {/* Heatmap Skeleton */}
-            <Skeleton className="w-full h-[200px] rounded-xl" />
-            <Skeleton className="w-full h-[200px] rounded-xl" />
-
-            {/* Charts Grid Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Skeleton className="w-full h-[350px] rounded-xl" />
-              <Skeleton className="w-full h-[350px] rounded-xl" />
-              <Skeleton className="w-full h-[350px] rounded-xl" />
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+              <img
+                src="/assets/token.png"
+                alt="Loading..."
+                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+              />
             </div>
+            <p className="text-muted-foreground animate-pulse font-medium">Loading analytics...</p>
           </div>
         ) : (
           <>

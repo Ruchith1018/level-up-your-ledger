@@ -24,12 +24,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+        // Get initial session and verify user exists
+        const initializeAuth = async () => {
+            try {
+                // First get the session to see if we have a token
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (session) {
+                    // Critical: Verify the user actually exists on the server
+                    // getSession() just checks the local JWT expiry, which might still be valid for a deleted user
+                    const { data: { user }, error } = await supabase.auth.getUser();
+
+                    if (error || !user) {
+                        // User deleted or invalid
+                        console.log("User invalid or deleted, signing out");
+                        await supabase.auth.signOut();
+                        setSession(null);
+                        setUser(null);
+                    } else {
+                        setSession(session);
+                        setUser(user);
+                    }
+                } else {
+                    setSession(null);
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error("Auth initialization error:", error);
+                setSession(null);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
 
         // Listen for changes
         const {

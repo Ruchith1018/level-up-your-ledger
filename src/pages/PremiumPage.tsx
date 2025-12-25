@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Star, Users, CreditCard, Sparkles, Loader2, ArrowLeft } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -19,11 +19,18 @@ declare global {
 
 export default function PremiumPage() {
     const { user } = useAuth();
-    const { settings, updateSettings } = useSettings();
+    const { settings, updateSettings, isLoading: settingsLoading } = useSettings();
     const { showSuccessAnimation } = useGamification();
     const [isLoading, setIsLoading] = useState(false);
+    const [minLoading, setMinLoading] = useState(true);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const timer = setTimeout(() => setMinLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const isCheckingPremium = settingsLoading || minLoading;
     const isPremium = settings.hasPremiumPack;
 
     const benefits = [
@@ -170,47 +177,130 @@ export default function PremiumPage() {
         }
     };
 
+    // Show loader while checking premium status
+    if (isCheckingPremium) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen space-y-6 bg-background">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                    <img
+                        src="/assets/token.png"
+                        alt="Loading..."
+                        className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                    />
+                </div>
+                <p className="text-muted-foreground animate-pulse font-medium">Checking premium status...</p>
+            </div>
+        );
+    }
+
     if (isPremium) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl animate-in fade-in duration-500">
-                <Button variant="ghost" className="mb-6 gap-2" onClick={() => navigate(-1)}>
-                    <ArrowLeft className="w-4 h-4" /> Back
-                </Button>
+            <div className="min-h-screen bg-background">
+                <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+                    <div className="container mx-auto px-4 py-4">
+                        <Button variant="ghost" className="gap-2" onClick={() => navigate(-1)}>
+                            <ArrowLeft className="w-4 h-4" /> Back
+                        </Button>
+                    </div>
+                </header>
 
-                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-yellow-500/20 blur-[60px] rounded-full" />
+                <main className="container mx-auto px-4 py-12 max-w-4xl">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex flex-col items-center justify-center text-center space-y-8"
+                    >
+                        {/* Premium Badge with Token */}
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 blur-3xl rounded-full animate-pulse" />
+                            <motion.div
+                                initial={{ scale: 0.8, rotate: -10 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: "spring", duration: 0.8, delay: 0.2 }}
+                                className="relative z-10 p-8 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-full shadow-2xl"
+                            >
+                                <Sparkles className="w-20 h-20 text-white" />
+                            </motion.div>
+                        </div>
+
+                        {/* Success Message */}
+                        <div className="space-y-3">
+                            <motion.h1
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="text-5xl md:text-6xl font-black tracking-tight bg-gradient-to-r from-yellow-600 via-orange-500 to-yellow-600 bg-clip-text text-transparent"
+                            >
+                                Premium Member
+                            </motion.h1>
+                            <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.4 }}
+                                className="text-xl text-muted-foreground max-w-md"
+                            >
+                                Thank you for supporting BudGlio! You now have access to all premium features.
+                            </motion.p>
+                        </div>
+
+                        {/* Benefits Grid */}
                         <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", duration: 0.8 }}
-                            className="relative z-10 p-6 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full shadow-2xl"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className="grid sm:grid-cols-2 gap-4 w-full max-w-2xl mt-8"
                         >
-                            <Sparkles className="w-16 h-16 text-white" />
+                            {benefits.map((benefit, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.6 + index * 0.1 }}
+                                >
+                                    <Card className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 border-green-500/20 hover:border-green-500/40 transition-all">
+                                        <CardContent className="p-5 flex items-start gap-4 text-left">
+                                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 text-green-600 dark:text-green-400">
+                                                <Check className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-base mb-1">{benefit.title}</h4>
+                                                <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
                         </motion.div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <h1 className="text-4xl font-bold tracking-tight">You are a Premium Member</h1>
-                        <p className="text-xl text-muted-foreground">Thank you for supporting BudGlio!</p>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-4 w-full max-w-2xl mt-8">
-                        {benefits.map((benefit, index) => (
-                            <Card key={index} className="bg-muted/50 border-muted">
-                                <CardContent className="p-4 flex items-center gap-4 text-left">
-                                    <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
-                                        <Check className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold">{benefit.title}</h4>
-                                        <p className="text-xs text-muted-foreground">Active</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
+                        {/* Action Buttons */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1 }}
+                            className="flex gap-3 pt-4"
+                        >
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                onClick={() => navigate("/shop")}
+                                className="gap-2"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Explore Themes
+                            </Button>
+                            <Button
+                                size="lg"
+                                onClick={() => navigate("/family")}
+                                className="gap-2"
+                            >
+                                <Users className="w-4 h-4" />
+                                Family Dashboard
+                            </Button>
+                        </motion.div>
+                    </motion.div>
+                </main>
             </div>
         );
     }

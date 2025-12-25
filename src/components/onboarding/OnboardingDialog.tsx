@@ -136,7 +136,11 @@ export function OnboardingDialog() {
             return;
         }
         updateSettings({ ...settings, hasAcceptedTerms: true }); // Persist acceptance
-        setStep(1);
+
+        // Only advance to next step if onboarding is NOT complete
+        if (!settings.hasCompletedOnboarding) {
+            setStep(1);
+        }
     };
 
     const handleNameSubmit = () => {

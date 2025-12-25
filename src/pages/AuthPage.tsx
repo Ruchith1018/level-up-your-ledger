@@ -1,42 +1,42 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
-import { useTutorial } from "@/contexts/TutorialContext";
+// Removed unused imports: Tabs, InputOTP, etc.
 
 export default function AuthPage() {
     const navigate = useNavigate();
-    const { startTutorial } = useTutorial();
+    const location = useLocation();
+    const { session, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [isVerifying, setIsVerifying] = useState(false);
-    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-    const [otp, setOtp] = useState("");
+    const [minLoading, setMinLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setMinLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        if (session) {
+            // Check if there's a redirected-from location
+            const from = (location.state as any)?.from?.pathname || "/dashboard";
+            navigate(from, { replace: true });
+        }
+    }, [session, navigate, location]);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [referralCode, setReferralCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-    const generateReferralId = () => {
-        return Math.random().toString(36).substring(2, 10).toUpperCase();
-    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setAuthMode('login');
         try {
-            // await supabase.auth.signOut(); // Removed to allow normal login
-
             const { error: passwordError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -44,9 +44,8 @@ export default function AuthPage() {
 
             if (passwordError) throw passwordError;
 
-            // No longer forcing OTP after password
             toast.success("Logged in successfully!");
-            navigate("/");
+            navigate("/dashboard");
         } catch (error: any) {
             toast.error(error.message || "Login failed");
         } finally {
@@ -54,328 +53,86 @@ export default function AuthPage() {
         }
     };
 
-    const handleRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-
-        if (password !== confirmPassword) {
-            toast.error("Passwords do not match");
-            setLoading(false);
-            return;
-        }
-
-        try {
-            const myReferralId = generateReferralId();
-
-            const { error, data } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        referral_id: myReferralId,
-                        referred_by: referralCode || null,
-                    },
-                },
-            });
-
-            if (error) throw error;
-
-            // Check if user already exists (Supabase specific check)
-            if (data.user && data.user.identities && data.user.identities.length === 0) {
-                toast.error("User already exists! Please login instead.");
-                return;
-            }
-
-            // If session exists (Email confirmations disabled), log in directly
-            if (data.session) {
-                toast.success("Account created successfully!");
-                navigate("/");
-            } else {
-                // Email confirmations enabled, but user wants to remove OTP verification screen
-                // We just tell them to check email (Standard link flow)
-                toast.success("Account created. Please check your email to verify.");
-                // setIsVerifying(true); // User requested to remove this
-            }
-        } catch (error: any) {
-            toast.error(error.message || "Failed to register");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const { error } = await supabase.auth.verifyOtp({
-                email,
-                token: otp,
-                type: authMode === 'login' ? 'magiclink' : 'signup',
-            });
-
-            if (error) throw error;
-
-            toast.success(authMode === 'login' ? "Logged in successfully!" : "Email verified successfully! Logging you in...");
-
-            // Allow time for AuthContext to update via onAuthStateChange
-            setTimeout(() => {
-                navigate("/");
-            }, 500);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to verify OTP");
-        } finally {
-            setLoading(false);
-        }
-    };
+    if (authLoading || minLoading || session) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen space-y-6 bg-background">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                    <img
+                        src="/assets/token.png"
+                        alt="Loading..."
+                        className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                    />
+                </div>
+                <p className="text-muted-foreground animate-pulse font-medium">Verifying session...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center flex flex-col items-center">
                     <img src="/logo.jpg" alt="BudGlio Logo" className="w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover" />
-                    <CardTitle className="text-2xl font-bold">Welcome to BudGlio</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
                     <CardDescription>
-                        Your journey to financial freedom starts here
+                        Login to access your ledger
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="login" className="w-full" onValueChange={(val) => {
-                        setIsVerifying(false);
-                        setOtp("");
-                        setAuthMode(val as 'login' | 'register');
-                    }}>
-                        <TabsList className="grid w-full grid-cols-2 mb-4">
-                            <TabsTrigger value="login">Login</TabsTrigger>
-                            <TabsTrigger value="register">Register</TabsTrigger>
-                        </TabsList>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="name@example.com"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="pr-10"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Login
+                        </Button>
+                    </form>
 
-                        <TabsContent value="login">
-                            {isVerifying ? (
-                                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                                    <div className="space-y-4 text-center">
-                                        <div className="space-y-2">
-                                            <Label>Enter Login Code</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                We sent a code to {email}
-                                            </p>
-                                        </div>
-                                        <div className="flex justify-center">
-                                            <InputOTP
-                                                maxLength={8}
-                                                value={otp}
-                                                onChange={(value) => setOtp(value)}
-                                                pattern="^[0-9]*$"
-                                            >
-                                                <InputOTPGroup>
-                                                    <InputOTPSlot index={0} />
-                                                    <InputOTPSlot index={1} />
-                                                    <InputOTPSlot index={2} />
-                                                    <InputOTPSlot index={3} />
-                                                </InputOTPGroup>
-                                                <InputOTPSeparator />
-                                                <InputOTPGroup>
-                                                    <InputOTPSlot index={4} />
-                                                    <InputOTPSlot index={5} />
-                                                    <InputOTPSlot index={6} />
-                                                    <InputOTPSlot index={7} />
-                                                </InputOTPGroup>
-                                            </InputOTP>
-                                        </div>
-                                    </div>
-                                    <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
-                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Verify & Login
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="w-full"
-                                        onClick={() => setIsVerifying(false)}
-                                    >
-                                        Back
-                                    </Button>
-                                </form>
-                            ) : (
-                                <form onSubmit={handleLogin} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            placeholder="name@example.com"
-                                            required
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="password">Password</Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="password"
-                                                type={showPassword ? "text" : "password"}
-                                                required
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="pr-10"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                            >
-                                                {showPassword ? (
-                                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                                ) : (
-                                                    <Eye className="h-4 w-4 text-muted-foreground" />
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Login
-                                    </Button>
-                                </form>
-                            )}
-                        </TabsContent>
-
-                        <TabsContent value="register">
-                            {isVerifying ? (
-                                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                                    <div className="space-y-4 text-center">
-                                        <div className="space-y-2">
-                                            <Label>Enter Verification Code</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                We sent a code to {email}
-                                            </p>
-                                        </div>
-                                        <div className="flex justify-center">
-                                            <InputOTP
-                                                maxLength={8}
-                                                value={otp}
-                                                onChange={(value) => setOtp(value)}
-                                                pattern="^[0-9]*$"
-                                            >
-                                                <InputOTPGroup>
-                                                    <InputOTPSlot index={0} />
-                                                    <InputOTPSlot index={1} />
-                                                    <InputOTPSlot index={2} />
-                                                    <InputOTPSlot index={3} />
-                                                </InputOTPGroup>
-                                                <InputOTPSeparator />
-                                                <InputOTPGroup>
-                                                    <InputOTPSlot index={4} />
-                                                    <InputOTPSlot index={5} />
-                                                    <InputOTPSlot index={6} />
-                                                    <InputOTPSlot index={7} />
-                                                </InputOTPGroup>
-                                            </InputOTP>
-                                        </div>
-                                    </div>
-                                    <Button type="submit" className="w-full" disabled={loading || otp.length < 6}>
-                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Verify Email
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="w-full"
-                                        onClick={() => setIsVerifying(false)}
-                                    >
-                                        Back to Register
-                                    </Button>
-                                </form>
-                            ) : (
-                                <form onSubmit={handleRegister} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="register-email">Email</Label>
-                                        <Input
-                                            id="register-email"
-                                            type="email"
-                                            placeholder="name@example.com"
-                                            required
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="register-password">Password</Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="register-password"
-                                                type={showRegisterPassword ? "text" : "password"}
-                                                required
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="pr-10"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                                onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                                            >
-                                                {showRegisterPassword ? (
-                                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                                ) : (
-                                                    <Eye className="h-4 w-4 text-muted-foreground" />
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="confirm-password">Confirm Password</Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="confirm-password"
-                                                type={showConfirmPassword ? "text" : "password"}
-                                                required
-                                                value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className={`pr-10 ${confirmPassword && password !== confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            >
-                                                {showConfirmPassword ? (
-                                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                                ) : (
-                                                    <Eye className="h-4 w-4 text-muted-foreground" />
-                                                )}
-                                            </Button>
-                                        </div>
-                                        {confirmPassword && password !== confirmPassword && (
-                                            <p className="text-xs text-destructive">Passwords do not match</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="referral">Referral ID (Optional)</Label>
-                                        <Input
-                                            id="referral"
-                                            placeholder="Enter referral code"
-                                            value={referralCode}
-                                            onChange={(e) => setReferralCode(e.target.value)}
-                                        />
-                                        <p className="text-xs text-muted-foreground">
-                                            Got a code from a friend? Enter it here to earn bonus XP!
-                                        </p>
-                                    </div>
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Create Account
-                                    </Button>
-                                </form>
-                            )}
-                        </TabsContent>
-                    </Tabs>
+                    <div className="mt-6 text-center text-sm">
+                        <span className="text-muted-foreground">No account? </span>
+                        <button
+                            onClick={() => navigate("/")}
+                            className="text-primary hover:underline font-medium"
+                        >
+                            Register here
+                        </button>
+                    </div>
                 </CardContent>
             </Card>
         </div>

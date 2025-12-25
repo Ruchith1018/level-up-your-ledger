@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSubscriptions } from "@/contexts/SubscriptionContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { getCurrencySymbol } from "@/constants/currencies";
@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Subscriptions() {
   const navigate = useNavigate();
-  const { state, addSubscription, updateSubscription, deleteSubscription, toggleActive, getUpcomingSubscriptions } =
+  const { state, addSubscription, updateSubscription, deleteSubscription, toggleActive, getUpcomingSubscriptions, refreshSubscriptions } =
     useSubscriptions();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
@@ -48,6 +48,10 @@ export default function Subscriptions() {
     category: "",
     reminderDaysBefore: 3,
   });
+
+  useEffect(() => {
+    refreshSubscriptions();
+  }, []);
 
   const upcomingSubs = getUpcomingSubscriptions();
 
@@ -282,16 +286,16 @@ export default function Subscriptions() {
 
       <main className="container mx-auto px-4 py-6 space-y-6 pb-24">
         {isLoading ? (
-          <div className="space-y-6">
-            {/* Upcoming Skeleton */}
-            <Skeleton className="w-full h-24 rounded-lg" />
-
-            {/* Grid Skeleton */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Skeleton className="h-[200px] rounded-xl" />
-              <Skeleton className="h-[200px] rounded-xl" />
-              <Skeleton className="h-[200px] rounded-xl" />
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+              <img
+                src="/assets/token.png"
+                alt="Loading..."
+                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+              />
             </div>
+            <p className="text-muted-foreground animate-pulse font-medium">Loading subscriptions...</p>
           </div>
         ) : (
           <>

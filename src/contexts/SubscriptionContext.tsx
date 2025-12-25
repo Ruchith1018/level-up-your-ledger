@@ -28,6 +28,7 @@ interface SubscriptionContextType {
   markAsPaid: (id: string, transactionId: string) => Promise<void>;
   revertPayment: (id: string) => Promise<void>;
   convertSubscriptions: (rate: number) => Promise<void>;
+  refreshSubscriptions: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -102,6 +103,37 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     fetchSubscriptions();
     fetchSubscriptions();
   }, [user?.id]);
+
+  const refreshSubscriptions = async () => {
+    if (!user) return;
+    dispatch({ type: "SET_LOADING", payload: true });
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching subscriptions:", error);
+      toast.error("Failed to load subscriptions");
+      dispatch({ type: "SET_LOADING", payload: false });
+    } else {
+      const mappedData: Subscription[] = (data || []).map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        amount: Number(s.amount),
+        billingDate: s.billing_date,
+        interval: s.interval,
+        paymentMethod: s.payment_method,
+        reminderDaysBefore: s.reminder_days_before,
+        active: s.active,
+        category: s.category,
+        createdAt: s.created_at,
+        lastPaidDate: s.last_paid_date,
+        lastPaymentTransactionId: s.last_payment_transaction_id
+      }));
+      dispatch({ type: "SET_ITEMS", payload: mappedData });
+    }
+  };
 
   const addSubscription = async (subscriptionData: Omit<Subscription, "id" | "createdAt">) => {
     if (!user) return;
@@ -334,6 +366,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         markAsPaid,
         revertPayment,
         convertSubscriptions,
+        refreshSubscriptions,
       }}
     >
       {children}

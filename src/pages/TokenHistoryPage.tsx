@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGamification } from "@/contexts/GamificationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,16 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 
 export default function TokenHistoryPage() {
-    const { state } = useGamification();
+    const { state, isLoading, refreshGamification } = useGamification();
     const navigate = useNavigate();
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: new Date(new Date().setDate(new Date().getDate() - 30)), // Default last 30 days
         to: new Date(),
     });
+
+    useEffect(() => {
+        refreshGamification();
+    }, []);
 
     // Filter History
     const tokenHistory = state.history.filter(item => {
@@ -51,86 +55,102 @@ export default function TokenHistoryPage() {
             </header>
 
             <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
-                {/* Date Filter */}
-                <div className="flex justify-end">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-[280px] justify-start text-left font-normal",
-                                    !dateRange && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange?.from ? (
-                                    dateRange.to ? (
-                                        <>
-                                            {format(dateRange.from, "LLL dd, y")} -{" "}
-                                            {format(dateRange.to, "LLL dd, y")}
-                                        </>
-                                    ) : (
-                                        format(dateRange.from, "LLL dd, y")
-                                    )
-                                ) : (
-                                    <span>Pick a date range</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={dateRange?.from}
-                                selected={dateRange}
-                                onSelect={setDateRange}
-                                numberOfMonths={2}
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
                             />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Transactions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="divide-y divide-border">
-                            {tokenHistory.length > 0 ? (
-                                tokenHistory.map((item, index) => (
-                                    <div key={index} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn(
-                                                "p-2 rounded-full",
-                                                item.coinsEarned ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                                            )}>
-                                                {item.coinsEarned ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">{item.reason}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {format(new Date(item.date), "MMM d, yyyy h:mm a")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className={cn(
-                                                "font-bold",
-                                                item.coinsEarned ? "text-green-500" : "text-red-500"
-                                            )}>
-                                                {item.coinsEarned ? `+${item.coinsEarned}` : `-${item.coinsSpent}`} Tokens
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="p-8 text-center text-muted-foreground">
-                                    No token transactions found in this period.
-                                </div>
-                            )}
                         </div>
-                    </CardContent>
-                </Card>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading token history...</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Date Filter */}
+                        <div className="flex justify-end">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-[280px] justify-start text-left font-normal",
+                                            !dateRange && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {dateRange?.from ? (
+                                            dateRange.to ? (
+                                                <>
+                                                    {format(dateRange.from, "LLL dd, y")} -{" "}
+                                                    {format(dateRange.to, "LLL dd, y")}
+                                                </>
+                                            ) : (
+                                                format(dateRange.from, "LLL dd, y")
+                                            )
+                                        ) : (
+                                            <span>Pick a date range</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={dateRange?.from}
+                                        selected={dateRange}
+                                        onSelect={setDateRange}
+                                        numberOfMonths={2}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Transactions</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-border">
+                                    {tokenHistory.length > 0 ? (
+                                        tokenHistory.map((item, index) => (
+                                            <div key={index} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn(
+                                                        "p-2 rounded-full",
+                                                        item.coinsEarned ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                                                    )}>
+                                                        {item.coinsEarned ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">{item.reason}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {format(new Date(item.date), "MMM d, yyyy h:mm a")}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className={cn(
+                                                        "font-bold",
+                                                        item.coinsEarned ? "text-green-500" : "text-red-500"
+                                                    )}>
+                                                        {item.coinsEarned ? `+${item.coinsEarned}` : `-${item.coinsSpent}`} Tokens
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center text-muted-foreground">
+                                            No token transactions found in this period.
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
+                )}
             </main>
         </div>
     );

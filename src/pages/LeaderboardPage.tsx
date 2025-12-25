@@ -280,7 +280,7 @@ export default function LeaderboardPage() {
 
             <main className="container mx-auto px-4 py-6 max-w-4xl">
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
                         <div className="relative">
                             <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
                             <img

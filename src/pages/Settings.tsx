@@ -85,7 +85,7 @@ export default function Settings() {
     resetTheme();
     await signOut();
     localStorage.clear();
-    window.location.href = "/intro";
+    window.location.href = "/";
   };
 
   const handleRemoveAvatar = () => {
@@ -234,7 +234,7 @@ export default function Settings() {
       localStorage.clear();
       toast.dismiss();
       toast.success("Account data deleted successfully.");
-      setTimeout(() => (window.location.href = "/intro"), 1500);
+      setTimeout(() => (window.location.href = "/"), 1500);
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.dismiss();

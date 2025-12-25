@@ -13,16 +13,20 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useExpenses } from "@/contexts/ExpenseContext";
 
 export default function BadgesPage() {
-    const { state, unlockBadge } = useGamification();
+    const { state, unlockBadge, isLoading, refreshGamification } = useGamification();
     const { state: expenseState } = useExpenses();
     const { state: budgetState } = useBudget();
     const navigate = useNavigate();
     const [selectedBadge, setSelectedBadge] = useState<typeof BADGES[keyof typeof BADGES] | null>(null);
+
+    useEffect(() => {
+        refreshGamification();
+    }, []);
 
     const allBadges = Object.values(BADGES);
     const achievedBadges = allBadges.filter(badge => (state.badges || []).includes(badge.id));
@@ -83,45 +87,61 @@ export default function BadgesPage() {
             </header>
 
             <main className="container mx-auto px-4 py-6 space-y-8 max-w-4xl">
-                {/* Achieved Section */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-primary">
-                        <Trophy className="w-5 h-5" />
-                        Achieved ({achievedBadges.length})
-                    </h2>
-                    {achievedBadges.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {achievedBadges.map(badge => (
-                                <BadgeCard key={badge.id} badge={badge} unlocked={true} />
-                            ))}
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
                         </div>
-                    ) : (
-                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                            <p>No badges earned yet. Keep going!</p>
-                        </div>
-                    )}
-                </motion.div>
-
-                {/* Locked Section */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-muted-foreground">
-                        <Lock className="w-5 h-5" />
-                        Not Achieved ({lockedBadges.length})
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {lockedBadges.map(badge => (
-                            <BadgeCard key={badge.id} badge={badge} unlocked={false} />
-                        ))}
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading badges...</p>
                     </div>
-                </motion.div>
+                ) : (
+                    <>
+                        {/* Achieved Section */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-primary">
+                                <Trophy className="w-5 h-5" />
+                                Achieved ({achievedBadges.length})
+                            </h2>
+                            {achievedBadges.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {achievedBadges.map(badge => (
+                                        <BadgeCard key={badge.id} badge={badge} unlocked={true} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                                    <p>No badges earned yet. Keep going!</p>
+                                </div>
+                            )}
+                        </motion.div>
+
+                        {/* Locked Section */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-muted-foreground">
+                                <Lock className="w-5 h-5" />
+                                Not Achieved ({lockedBadges.length})
+                            </h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {lockedBadges.map(badge => (
+                                    <BadgeCard key={badge.id} badge={badge} unlocked={false} />
+                                ))}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
             </main>
 
             <Dialog open={!!selectedBadge} onOpenChange={(open) => !open && setSelectedBadge(null)}>

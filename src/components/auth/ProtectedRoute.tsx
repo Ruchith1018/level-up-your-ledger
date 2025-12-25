@@ -13,7 +13,7 @@ export const ProtectedRoute = () => {
     }
 
     if (!user) {
-        return <Navigate to="/intro" replace />;
+        return <Navigate to="/" replace />;
     }
 
     return <Outlet />;

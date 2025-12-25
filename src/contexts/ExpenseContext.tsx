@@ -27,6 +27,7 @@ interface ExpenseContextType {
   getExpensesByCategory: (month: string) => Record<string, number>;
   getTotalByType: (type: "expense" | "income", month: string) => number;
   convertExpenses: (rate: number) => Promise<void>;
+  refreshExpenses: () => Promise<void>;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | null>(null);
@@ -99,6 +100,37 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
 
     fetchExpenses();
   }, [user]);
+
+  const refreshExpenses = async () => {
+    if (!user) return;
+    dispatch({ type: "SET_LOADING", payload: true });
+    const { data, error } = await supabase
+      .from("expenses")
+      .select("*")
+      .order("date", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching expenses:", error);
+      toast.error("Failed to load expenses");
+      dispatch({ type: "SET_LOADING", payload: false });
+    } else {
+      const mappedData: Expense[] = (data || []).map((dbItem: any) => ({
+        id: dbItem.id,
+        type: dbItem.type,
+        amount: Number(dbItem.amount),
+        currency: dbItem.currency,
+        category: dbItem.category,
+        merchant: dbItem.merchant,
+        paymentMethod: dbItem.payment_method,
+        date: dbItem.date,
+        notes: dbItem.notes,
+        recurring: dbItem.recurring,
+        tags: dbItem.tags,
+        createdAt: dbItem.created_at
+      }));
+      dispatch({ type: "SET_ITEMS", payload: mappedData });
+    }
+  };
 
   const addExpense = async (expenseData: Omit<Expense, "id" | "createdAt">) => {
     if (!user) return;
@@ -267,6 +299,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         getExpensesByCategory,
         getTotalByType,
         convertExpenses,
+        refreshExpenses,
       }}
     >
       {children}

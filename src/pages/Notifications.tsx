@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Bell, Calendar, Trophy, CheckCircle, Trash2, PartyPopper, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Notifications() {
     const navigate = useNavigate();
-    const { claimableBadges, unclaimedTaskItems, dismissedIds, dismissNotification, isLoading, redeemableItems } = useGamification();
+    const { claimableBadges, unclaimedTaskItems, dismissedIds, dismissNotification, isLoading, redeemableItems, refreshGamification } = useGamification();
     const { getUpcomingSubscriptions } = useSubscriptions();
     const { settings } = useSettings();
 
     // Derived Notifications State
     const upcomingSubs = getUpcomingSubscriptions();
     const currencySymbol = getCurrencySymbol(settings.currency);
+
+    useEffect(() => {
+        refreshGamification();
+    }, []);
 
     const dismissItem = (id: string) => {
         dismissNotification(id);
@@ -61,16 +66,16 @@ export default function Notifications() {
 
             <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6 pb-24">
                 {isLoading ? (
-                    <div className="space-y-6">
-                        <div className="space-y-3">
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-24 w-full rounded-xl" />
-                            <Skeleton className="h-24 w-full rounded-xl" />
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
                         </div>
-                        <div className="space-y-3">
-                            <Skeleton className="h-4 w-32" />
-                            <Skeleton className="h-24 w-full rounded-xl" />
-                        </div>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading notifications...</p>
                     </div>
                 ) : isEmpty ? (
                     <div className="text-center py-20 space-y-4">

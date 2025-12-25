@@ -11,7 +11,8 @@ import { GamificationProvider } from "@/contexts/GamificationContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { SavingsProvider } from "@/contexts/SavingsContext";
-import Index from "./pages/Index";
+import LandingPage from "./pages/LandingPage";
+
 import Dashboard from "./pages/Dashboard";
 import Notifications from "./pages/Notifications";
 import Analytics from "./pages/Analytics";
@@ -21,7 +22,7 @@ import ThemeShopPage from "./pages/ThemeShopPage";
 import Gamification from "./pages/Gamification";
 import BadgesPage from "./pages/BadgesPage";
 import TokenHistoryPage from "./pages/TokenHistoryPage";
-import IntroPage from "./pages/IntroPage";
+
 import NotFound from "./pages/NotFound";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TutorialProvider } from "@/contexts/TutorialContext";
@@ -62,7 +63,8 @@ const App = () => (
                                             <TutorialProvider>
                                                 <Routes>
                                                     {/* Public Routes */}
-                                                    <Route path="/intro" element={<IntroPage />} />
+                                                    <Route path="/" element={<LandingPage />} />
+
                                                     <Route path="/auth" element={<AuthPage />} />
 
                                                     {/* Admin Routes */}
@@ -72,7 +74,6 @@ const App = () => (
                                                     {/* Protected Routes */}
                                                     <Route element={<ProtectedRoute />}>
                                                         <Route element={<AppLayout />}>
-                                                            <Route path="/" element={<Index />} />
                                                             <Route path="/dashboard" element={<Dashboard />} />
                                                             <Route path="/notifications" element={<Notifications />} />
                                                             <Route path="/analytics" element={<Analytics />} />

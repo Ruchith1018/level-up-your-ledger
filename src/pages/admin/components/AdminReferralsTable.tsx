@@ -40,14 +40,13 @@ export default function AdminReferralsTable() {
 
     const handleApprove = async (email: string) => {
         setActionLoading(email);
-        const { error } = await supabase
-            .from('referral_tracking')
-            .update({ referral_status: 1 })
-            .eq('email', email);
+        const { data: result, error } = await supabase.functions.invoke('admin-update-referral', {
+            body: { email, type: 'approve' }
+        });
 
-        if (error) {
-            console.error("Approve Error:", error);
-            toast.error(`Failed: ${error.message}`);
+        if (error || !result?.success) {
+            console.error("Approve Error:", error || result?.error);
+            toast.error(`Failed: ${error?.message || result?.error || 'Unknown error'}`);
         } else {
             toast.success("Referral approved!");
             setReferrals(prev => prev.map(r => r.email === email ? { ...r, referral_status: 1 } : r));
@@ -57,14 +56,13 @@ export default function AdminReferralsTable() {
 
     const handleRevert = async (email: string) => {
         setActionLoading(email);
-        const { error } = await supabase
-            .from('referral_tracking')
-            .update({ referral_status: 0 })
-            .eq('email', email);
+        const { data: result, error } = await supabase.functions.invoke('admin-update-referral', {
+            body: { email, type: 'revert' }
+        });
 
-        if (error) {
-            console.error("Revert Error:", error);
-            toast.error(`Failed: ${error.message}`);
+        if (error || !result?.success) {
+            console.error("Revert Error:", error || result?.error);
+            toast.error(`Failed: ${error?.message || result?.error || 'Unknown error'}`);
         } else {
             toast.success("Approval reverted!");
             setReferrals(prev => prev.map(r => r.email === email ? { ...r, referral_status: 0 } : r));
@@ -74,14 +72,13 @@ export default function AdminReferralsTable() {
 
     const handleToggleClaim = async (email: string, currentStatus: boolean) => {
         setActionLoading(email);
-        const { error } = await supabase
-            .from('referral_tracking')
-            .update({ claimed: !currentStatus })
-            .eq('email', email);
+        const { data: result, error } = await supabase.functions.invoke('admin-update-referral', {
+            body: { email, type: 'toggle_claim', status: !currentStatus }
+        });
 
-        if (error) {
-            console.error("Claim Toggle Error:", error);
-            toast.error(`Failed: ${error.message}`);
+        if (error || !result?.success) {
+            console.error("Claim Toggle Error:", error || result?.error);
+            toast.error(`Failed: ${error?.message || result?.error || 'Unknown error'}`);
         } else {
             toast.success(`Marked as ${!currentStatus ? 'Claimed' : 'Unclaimed'}`);
             setReferrals(prev => prev.map(r => r.email === email ? { ...r, claimed: !currentStatus } : r));

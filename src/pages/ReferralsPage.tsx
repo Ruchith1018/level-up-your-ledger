@@ -146,19 +146,16 @@ export default function ReferralsPage() {
                         </CardHeader>
                         <CardContent>
                             {loading ? (
-                                <div className="space-y-4">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-card/50">
-                                            <div className="flex items-center gap-3">
-                                                <Skeleton className="w-10 h-10 rounded-full" />
-                                                <div className="space-y-2">
-                                                    <Skeleton className="h-4 w-32" />
-                                                    <Skeleton className="h-3 w-24" />
-                                                </div>
-                                            </div>
-                                            <Skeleton className="h-6 w-16 rounded-full" />
-                                        </div>
-                                    ))}
+                                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-300px)] space-y-6">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                                        <img
+                                            src="/assets/token.png"
+                                            alt="Loading..."
+                                            className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                                        />
+                                    </div>
+                                    <p className="text-muted-foreground animate-pulse font-medium">Loading referrals...</p>
                                 </div>
                             ) : referrals.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground">

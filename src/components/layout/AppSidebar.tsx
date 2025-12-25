@@ -118,7 +118,8 @@ export function AppSidebar() {
     const handleLogout = async () => {
         try {
             await signOut();
-            navigate("/auth");
+            await signOut();
+            window.location.href = "/";
         } catch (error) {
             console.error("Logout failed", error);
         }

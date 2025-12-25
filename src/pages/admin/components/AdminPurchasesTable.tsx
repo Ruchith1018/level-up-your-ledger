@@ -89,7 +89,11 @@ export default function AdminPurchasesTable() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge className="bg-emerald-500">Premium</Badge>
+                                                    {p.has_premium_pack ? (
+                                                        <Badge className="bg-emerald-500">Premium</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline">Standard</Badge>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         ))

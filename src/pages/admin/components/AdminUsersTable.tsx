@@ -77,15 +77,18 @@ export default function AdminUsersTable() {
 
     const handleToggleTerms = async (userId: string, currentStatus: boolean) => {
         setActionLoading(userId);
-        // Use RPC to update terms securely
-        const { error } = await supabase.rpc('update_user_terms_by_admin', {
-            target_user_id: userId,
-            new_status: !currentStatus
+        // Use Edge Function to update terms securely
+        const { data: result, error } = await supabase.functions.invoke('admin-update-user', {
+            body: {
+                user_id: userId,
+                action: 'toggle_terms',
+                status: !currentStatus
+            }
         });
 
-        if (error) {
-            console.error("Terms Toggle Error:", error);
-            toast.error(`Update failed: ${error.message}`);
+        if (error || !result?.success) {
+            console.error("Terms Toggle Error:", error || result?.error);
+            toast.error(`Update failed: ${error?.message || result?.error || 'Unknown error'}`);
         } else {
             toast.success(`Terms ${!currentStatus ? 'Accepted' : 'Revoked'}`);
             setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, has_accepted_terms: !currentStatus } : u));
@@ -95,15 +98,18 @@ export default function AdminUsersTable() {
 
     const handleToggleOnboarding = async (userId: string, currentStatus: boolean) => {
         setActionLoading(userId);
-        // Use RPC to update onboarding securely
-        const { error } = await supabase.rpc('update_user_onboarding_by_admin', {
-            target_user_id: userId,
-            new_status: !currentStatus
+        // Use Edge Function to update onboarding securely
+        const { data: result, error } = await supabase.functions.invoke('admin-update-user', {
+            body: {
+                user_id: userId,
+                action: 'toggle_onboarding',
+                status: !currentStatus
+            }
         });
 
-        if (error) {
-            console.error("Onboarding Toggle Error:", error);
-            toast.error(`Update failed: ${error.message}`);
+        if (error || !result?.success) {
+            console.error("Onboarding Toggle Error:", error || result?.error);
+            toast.error(`Update failed: ${error?.message || result?.error || 'Unknown error'}`);
         } else {
             toast.success(`Onboarding ${!currentStatus ? 'Completed' : 'Reset'}`);
             setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, has_completed_onboarding: !currentStatus } : u));

@@ -36,6 +36,7 @@ interface SavingsContextType {
     allocateSavings: (goalId: string, amount: number) => Promise<void>;
     toggleGoalCompletion: (id: string) => Promise<void>;
     convertGoals: (rate: number) => Promise<void>;
+    refreshSavings: () => Promise<void>;
 }
 
 const SavingsContext = createContext<SavingsContextType | null>(null);
@@ -109,6 +110,33 @@ export function SavingsProvider({ children }: { children: React.ReactNode }) {
 
         fetchGoals();
     }, [user]);
+
+    const refreshSavings = async () => {
+        if (!user) return;
+        dispatch({ type: "SET_LOADING", payload: true });
+        const { data, error } = await supabase
+            .from("savings_goals")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Error fetching savings:", error);
+            toast.error("Failed to load savings goals");
+        } else {
+            const mappedData: SavingsGoal[] = (data || []).map((g: any) => ({
+                id: g.id,
+                name: g.name,
+                targetAmount: Number(g.target_amount),
+                currentAmount: Number(g.current_amount),
+                color: g.color,
+                icon: g.icon,
+                deadline: g.deadline,
+                createdAt: g.created_at,
+                isCompleted: g.is_completed
+            }));
+            dispatch({ type: "SET_ITEMS", payload: mappedData });
+        }
+    };
 
     const addGoal = async (goalData: Omit<SavingsGoal, "id" | "createdAt" | "currentAmount" | "isCompleted">) => {
         if (!user) return;
@@ -294,6 +322,7 @@ export function SavingsProvider({ children }: { children: React.ReactNode }) {
                 allocateSavings,
                 toggleGoalCompletion,
                 convertGoals,
+                refreshSavings,
             }}
         >
             {children}

@@ -28,14 +28,14 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (isActive) {
-            if (currentStep === 1 && location.pathname !== '/' && location.pathname !== '/dashboard') {
-                navigate('/');
-            } else if (currentStep === 2 && location.pathname !== '/' && location.pathname !== '/dashboard') {
-                navigate('/');
-            } else if (currentStep === 3 && location.pathname !== '/' && location.pathname !== '/dashboard') {
-                navigate('/');
-            } else if (currentStep === 4 && location.pathname !== '/' && location.pathname !== '/dashboard') {
-                navigate('/');
+            if (currentStep === 1 && location.pathname !== '/dashboard') {
+                navigate('/dashboard');
+            } else if (currentStep === 2 && location.pathname !== '/dashboard') {
+                navigate('/dashboard');
+            } else if (currentStep === 3 && location.pathname !== '/dashboard') {
+                navigate('/dashboard');
+            } else if (currentStep === 4 && location.pathname !== '/dashboard') {
+                navigate('/dashboard');
             } else if (currentStep === 5 && location.pathname !== '/subscriptions') {
                 navigate('/subscriptions');
             }
@@ -45,7 +45,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const startTutorial = () => {
         setIsActive(true);
         setCurrentStep(1);
-        navigate('/');
+        navigate('/dashboard');
     };
 
     const nextStep = () => {

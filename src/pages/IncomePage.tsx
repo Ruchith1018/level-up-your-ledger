@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Select,
@@ -20,11 +20,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function IncomePage() {
     const navigate = useNavigate();
-    const { state: expenseState } = useExpenses();
+    const { state: expenseState, refreshExpenses } = useExpenses();
     const { settings } = useSettings();
     const currencySymbol = getCurrencySymbol(settings.currency);
     const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
     const isLoading = expenseState.isLoading;
+
+    useEffect(() => {
+        refreshExpenses();
+    }, []);
 
     const availableMonths = useMemo(() => {
         const months = new Set<string>();
@@ -69,18 +73,16 @@ export default function IncomePage() {
                 </div>
 
                 {isLoading ? (
-                    <div className="space-y-6">
-                        {/* Total Income Skeleton */}
-                        <Skeleton className="w-full h-[200px] rounded-xl" />
-
-                        {/* List Skeleton */}
-                        <div className="space-y-3">
-                            <Skeleton className="h-6 w-40" />
-                            <Skeleton className="w-full h-20 rounded-xl" />
-                            <Skeleton className="w-full h-20 rounded-xl" />
-                            <Skeleton className="w-full h-20 rounded-xl" />
-                            <Skeleton className="w-full h-20 rounded-xl" />
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
                         </div>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading income...</p>
                     </div>
                 ) : (
                     <>

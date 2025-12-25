@@ -21,7 +21,7 @@ const SettingsContext = createContext<SettingsContextType | null>(null);
 const defaultSettings: AppSettings = {
   currency: "USD",
   locale: "en-US",
-  theme: "system",
+  theme: "dark",
   cardTheme: "default",
   categories: [
     "Food & Dining",

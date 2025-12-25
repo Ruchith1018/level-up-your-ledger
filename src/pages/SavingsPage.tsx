@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useBudget } from "@/contexts/BudgetContext";
@@ -32,7 +32,7 @@ export default function SavingsPage() {
     const { state: budgetState } = useBudget();
     const { getTotalByType, state: expenseState } = useExpenses();
     const { settings } = useSettings();
-    const { state: savingsState, deleteGoal } = useSavings();
+    const { state: savingsState, deleteGoal, refreshSavings } = useSavings();
     const currencySymbol = getCurrencySymbol(settings.currency);
 
     const isLoading = budgetState.isLoading || expenseState.isLoading || savingsState.isLoading;
@@ -42,6 +42,10 @@ export default function SavingsPage() {
     const [allocatingGoal, setAllocatingGoal] = useState<SavingsGoal | null>(null);
     const [goalToDelete, setGoalToDelete] = useState<SavingsGoal | null>(null);
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('all');
+
+    useEffect(() => {
+        refreshSavings();
+    }, []);
 
     const savingsHistory = budgetState.budgets
         .filter(b => b.surplusAction === 'saved')
@@ -102,33 +106,16 @@ export default function SavingsPage() {
                 </div>
 
                 {isLoading ? (
-                    <div className="space-y-8">
-                        {/* Overview Cards Skeleton */}
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Skeleton className="w-full h-32 rounded-xl" />
-                            <Skeleton className="w-full h-32 rounded-xl" />
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
                         </div>
-
-                        {/* Goals Grid Skeleton */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <Skeleton className="h-6 w-32" />
-                                <Skeleton className="h-9 w-24" />
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <Skeleton className="w-full h-64 rounded-xl" />
-                                <Skeleton className="w-full h-64 rounded-xl" />
-                            </div>
-                        </div>
-
-                        {/* History Skeleton */}
-                        <div className="space-y-4">
-                            <Skeleton className="h-6 w-40" />
-                            <div className="space-y-3">
-                                <Skeleton className="w-full h-20 rounded-xl" />
-                                <Skeleton className="w-full h-20 rounded-xl" />
-                            </div>
-                        </div>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading savings...</p>
                     </div>
                 ) : (
                     <>

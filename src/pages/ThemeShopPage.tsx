@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ThemeShop } from "@/components/shop/ThemeShop";
 import { RedeemMoney } from "@/components/shop/RedeemMoney";
 import { CardShop } from "@/components/shop/CardShop";
@@ -6,9 +7,15 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGamification } from "@/contexts/GamificationContext";
 
 export default function ThemeShopPage() {
     const navigate = useNavigate();
+    const { isLoading, refreshGamification } = useGamification();
+
+    useEffect(() => {
+        refreshGamification();
+    }, []);
 
     return (
         <div className="min-h-screen bg-background">
@@ -27,39 +34,53 @@ export default function ThemeShopPage() {
             </header>
 
             <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl pb-24">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    <Tabs defaultValue="cards" className="space-y-6">
-                        <TabsList className="grid w-full grid-cols-3">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
+                        </div>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading shop...</p>
+                    </div>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <Tabs defaultValue="cards" className="space-y-6">
+                            <TabsList className="grid w-full grid-cols-3">
 
-                            <TabsTrigger value="cards">
-                                BudGlio Cards
-                            </TabsTrigger>
-                            <TabsTrigger value="themes">
-                                BudGlio Themes
-                            </TabsTrigger>
-                            <TabsTrigger value="redeem">
-                                Gift Cards
-                            </TabsTrigger>
-                        </TabsList>
+                                <TabsTrigger value="cards">
+                                    BudGlio Cards
+                                </TabsTrigger>
+                                <TabsTrigger value="themes">
+                                    BudGlio Themes
+                                </TabsTrigger>
+                                <TabsTrigger value="redeem">
+                                    Gift Cards
+                                </TabsTrigger>
+                            </TabsList>
 
 
 
-                        <TabsContent value="cards" className="space-y-4">
-                            <CardShop />
-                        </TabsContent>
+                            <TabsContent value="cards" className="space-y-4">
+                                <CardShop />
+                            </TabsContent>
 
-                        <TabsContent value="themes" className="space-y-4">
-                            <ThemeShop />
-                        </TabsContent>
+                            <TabsContent value="themes" className="space-y-4">
+                                <ThemeShop />
+                            </TabsContent>
 
-                        <TabsContent value="redeem" className="space-y-4">
-                            <RedeemMoney />
-                        </TabsContent>
-                    </Tabs>
-                </motion.div>
+                            <TabsContent value="redeem" className="space-y-4">
+                                <RedeemMoney />
+                            </TabsContent>
+                        </Tabs>
+                    </motion.div>
+                )}
             </main>
         </div>
     );

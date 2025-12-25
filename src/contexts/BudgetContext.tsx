@@ -26,6 +26,7 @@ interface BudgetContextType {
   getCurrentBudget: () => Budget | undefined;
   getBudgetByMonth: (month: string) => Budget | undefined;
   convertBudgets: (rate: number) => Promise<void>;
+  refreshBudgets: () => Promise<void>;
 }
 
 const BudgetContext = createContext<BudgetContextType | null>(null);
@@ -95,6 +96,33 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
 
     fetchBudgets();
   }, [user]);
+
+  const refreshBudgets = async () => {
+    if (!user) return;
+    dispatch({ type: "SET_LOADING", payload: true });
+    const { data, error } = await supabase
+      .from("budgets")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching budgets:", error);
+      toast.error("Failed to load budgets");
+      dispatch({ type: "SET_LOADING", payload: false });
+    } else {
+      const mappedData: Budget[] = (data || []).map((b: any) => ({
+        id: b.id,
+        period: b.period,
+        month: b.month,
+        total: Number(b.total),
+        categoryLimits: b.category_limits || {},
+        surplusAction: b.surplus_action,
+        rollover: b.surplus_action === 'rollover', // Back compat
+        createdAt: b.created_at
+      }));
+      dispatch({ type: "SET_ITEMS", payload: mappedData });
+    }
+  };
 
   const addBudget = async (budgetData: Omit<Budget, "id" | "createdAt">) => {
     if (!user) return;
@@ -233,6 +261,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
         getCurrentBudget,
         getBudgetByMonth,
         convertBudgets,
+        refreshBudgets,
       }}
     >
       {children}

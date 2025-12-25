@@ -48,6 +48,7 @@ interface GamificationContextType {
 
   addRedemptionLog: (log: { amount: number; coins: number; upiId: string; status: 'pending' | 'completed' | 'failed' }) => Promise<void>;
   isLoading: boolean;
+  refreshGamification: () => Promise<void>;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -156,6 +157,79 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     };
     fetchProfile();
   }, [user]);
+
+  const refreshGamification = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("gamification_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // Logic to create profile is likely already handled by initial load, but we can preserve it if needed.
+      // For a refresh, if it's missing, maybe we should just clear state or re-attempt create.
+      // Re-using the fetch logic block would be cleaner.
+      // Let's duplicate the fetch logic properly for now as I can't easily extract it without touching useEffect extensively.
+
+      // actually, just ignore create on refresh, assume it exists. If not found, it might mean user deleted account? 
+      // But if it was there before, it should be there now.
+      // However, to be safe, I will just replicate the fetch logic without create, or minimal create if missing.
+      const newProfile = {
+        user_id: user.id,
+        level: 1,
+        xp: 0,
+        total_xp: 0,
+        coins: 0,
+        total_coins: 0,
+        streak: 0,
+        last_check_in: new Date().toISOString(),
+        badges: [],
+        claimed_tasks: [],
+        history: [],
+        redemption_history: [],
+      };
+      const { data: createdData } = await supabase
+        .from("gamification_profiles")
+        .insert(newProfile)
+        .select()
+        .single();
+
+      if (createdData) {
+        setState({
+          level: createdData.level,
+          xp: createdData.xp,
+          totalXP: createdData.total_xp,
+          coins: createdData.coins,
+          totalCoins: createdData.total_coins,
+          streak: createdData.streak,
+          lastCheckIn: createdData.last_check_in,
+          badges: createdData.badges || [],
+          claimedTasks: createdData.claimed_tasks || [],
+          history: createdData.history || [],
+          redemptionHistory: createdData.redemption_history || [],
+          createdAt: createdData.created_at
+        });
+      }
+    } else if (data) {
+      setState({
+        level: data.level,
+        xp: data.xp,
+        totalXP: data.total_xp,
+        coins: data.coins,
+        totalCoins: data.total_coins,
+        streak: data.streak,
+        lastCheckIn: data.last_check_in,
+        badges: data.badges || [],
+        claimedTasks: data.claimed_tasks || [],
+        history: data.history || [],
+        redemptionHistory: data.redemption_history || [],
+        createdAt: data.created_at
+      });
+    }
+    setIsLoading(false);
+  };
 
 
   // State Ref to prevent stale closures in async functions
@@ -624,6 +698,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         successAnimation,
         showSuccessAnimation,
         isLoading,
+        refreshGamification,
       }}
     >
       {children}

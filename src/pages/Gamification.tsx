@@ -18,8 +18,12 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { CURRENCIES } from "@/constants/currencies";
 
 export default function Gamification() {
-    const { state, claimableBadges, isLoading } = useGamification();
+    const { state, claimableBadges, isLoading, refreshGamification } = useGamification();
     const { state: expenseState } = useExpenses();
+
+    useEffect(() => {
+        refreshGamification();
+    }, []);
     const navigate = useNavigate();
     const nextLevelXP = xpThreshold(state.level);
     const progress = (state.xp / nextLevelXP) * 100;
@@ -137,57 +141,24 @@ export default function Gamification() {
                             </Button>
                             <div>
                                 <h1 className="text-2xl font-bold">Gamification</h1>
-                                <p className="text-sm text-muted-foreground">Loading your progress...</p>
+                                <p className="text-sm text-muted-foreground">Your achievements and progress</p>
                             </div>
                         </div>
                     </div>
                 </header>
 
                 <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
-                    {/* Stats Skeleton */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {[1, 2, 3, 4].map((i) => (
-                            <Card key={i} className="h-full">
-                                <CardContent className="p-4 flex flex-col justify-center gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-9 h-9 bg-muted rounded-full animate-pulse" />
-                                        <div className="h-4 w-12 bg-muted rounded animate-pulse" />
-                                    </div>
-                                    <div className="h-8 w-16 bg-muted rounded animate-pulse" />
-                                </CardContent>
-                            </Card>
-                        ))}
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
+                        </div>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading progress...</p>
                     </div>
-
-                    {/* Level Progress Skeleton */}
-                    <Card>
-                        <CardHeader>
-                            <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between">
-                                <div className="h-4 w-12 bg-muted rounded animate-pulse" />
-                                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-                            </div>
-                            <div className="h-4 w-full bg-muted rounded animate-pulse" />
-                            <div className="h-4 w-48 mx-auto bg-muted rounded animate-pulse" />
-                        </CardContent>
-                    </Card>
-
-                    {/* Tasks Skeleton */}
-                    <Card>
-                        <CardHeader>
-                            <div className="h-6 w-40 bg-muted rounded animate-pulse" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-10 w-full mb-4 bg-muted rounded animate-pulse" />
-                            <div className="space-y-4">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="h-24 w-full bg-muted rounded-lg animate-pulse" />
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
                 </main>
             </div>
         );

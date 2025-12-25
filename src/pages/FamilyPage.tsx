@@ -205,16 +205,28 @@ export default function FamilyPage() {
     // 1. Global Loading State (Settings or Family Data)
     if (settingsLoading || loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-screen space-y-6">
-                <div className="relative">
-                    <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
-                    <img
-                        src="/assets/token.png"
-                        alt="Loading..."
-                        className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
-                    />
-                </div>
-                <p className="text-muted-foreground animate-pulse font-medium">Loading...</p>
+            <div className="min-h-screen bg-background">
+                <header className="h-[88px] border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 flex items-center transition-all duration-200">
+                    <div className="container mx-auto px-4">
+                        <div>
+                            <h1 className="text-2xl font-bold">Family Tracking</h1>
+                            <p className="text-sm text-muted-foreground">Manage your shared finances</p>
+                        </div>
+                    </div>
+                </header>
+                <main className="container mx-auto px-4 py-8 max-w-7xl">
+                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                            <img
+                                src="/assets/token.png"
+                                alt="Loading..."
+                                className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
+                            />
+                        </div>
+                        <p className="text-muted-foreground animate-pulse font-medium">Loading...</p>
+                    </div>
+                </main>
             </div>
         );
     }
@@ -222,24 +234,34 @@ export default function FamilyPage() {
     // 2. Premium Lock Screen (Only shown if settings loaded AND no premium)
     if (!settings.hasPremiumPack) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in zoom-in duration-500">
-                <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 text-center">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full" />
-                        <div className="p-8 bg-violet-100 dark:bg-violet-900/30 rounded-full relative z-10">
-                            <Lock className="w-20 h-20 text-violet-600 dark:text-violet-400" />
+            <div className="min-h-screen bg-background">
+                <header className="h-[88px] border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 flex items-center transition-all duration-200">
+                    <div className="container mx-auto px-4">
+                        <div>
+                            <h1 className="text-2xl font-bold">Family Tracking</h1>
+                            <p className="text-sm text-muted-foreground">Manage your shared finances</p>
                         </div>
                     </div>
-                    <div className="space-y-4 max-w-lg">
-                        <h1 className="text-4xl font-bold tracking-tighter">Family Budgeting</h1>
-                        <p className="text-xl text-muted-foreground">
-                            Collaborate, track, and grow your wealth together. Exclusive to Premium Pack members.
-                        </p>
+                </header>
+                <main className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in zoom-in duration-500">
+                    <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 text-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full" />
+                            <div className="p-8 bg-violet-100 dark:bg-violet-900/30 rounded-full relative z-10">
+                                <Lock className="w-20 h-20 text-violet-600 dark:text-violet-400" />
+                            </div>
+                        </div>
+                        <div className="space-y-4 max-w-lg">
+                            <h1 className="text-4xl font-bold tracking-tighter">Family Budgeting</h1>
+                            <p className="text-xl text-muted-foreground">
+                                Collaborate, track, and grow your wealth together. Exclusive to Premium Pack members.
+                            </p>
+                        </div>
+                        <Button size="lg" className="w-full max-w-sm bg-violet-600 hover:bg-violet-700 text-white" onClick={() => navigate('/premium')}>
+                            Unlock Premium Pack
+                        </Button>
                     </div>
-                    <Button size="lg" className="w-full max-w-sm bg-violet-600 hover:bg-violet-700 text-white" onClick={() => navigate('/premium')}>
-                        Unlock Premium Pack
-                    </Button>
-                </div>
+                </main>
             </div>
         );
     }
@@ -247,73 +269,83 @@ export default function FamilyPage() {
     // 3. No Current Family - Show "Create/Join" Dashboard
     if (!membership || !family) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8 animate-in fade-in duration-500">
-                <div className="text-center space-y-4">
-                    <h1 className="text-4xl font-bold tracking-tight">Family Dashboard</h1>
-                    <p className="text-xl text-muted-foreground">
-                        Create or join a family to start tracking expenses together.
-                    </p>
-                </div>
+            <div className="min-h-screen bg-background">
+                <header className="h-[88px] border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 flex items-center transition-all duration-200">
+                    <div className="container mx-auto px-4">
+                        <div>
+                            <h1 className="text-2xl font-bold">Family Tracking</h1>
+                            <p className="text-sm text-muted-foreground">Manage your shared finances</p>
+                        </div>
+                    </div>
+                </header>
+                <main className="container mx-auto px-4 py-8 max-w-4xl space-y-8 animate-in fade-in duration-500">
+                    <div className="text-center space-y-4">
+                        <h1 className="text-4xl font-bold tracking-tight">Family Dashboard</h1>
+                        <p className="text-xl text-muted-foreground">
+                            Create or join a family to start tracking expenses together.
+                        </p>
+                    </div>
 
-                <div className="grid md:grid-cols-2 gap-8 mt-12">
-                    {/* Create Family */}
-                    <Card className="hover:border-primary/50 transition-colors">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Users className="w-6 h-6 text-primary" />
-                                Create a Family
-                            </CardTitle>
-                            <CardDescription>
-                                Become an admin and invite your family members.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-2 mb-6 text-sm text-muted-foreground">
-                                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Invite members via Email or Layout</li>
-                                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Set monthly allowances</li>
-                                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Manage roles and permissions</li>
-                            </ul>
-                            <Button className="w-full" onClick={() => setShowCreateDialog(true)}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create New Family
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div className="grid md:grid-cols-2 gap-8 mt-12">
+                        {/* Create Family */}
+                        <Card className="hover:border-primary/50 transition-colors">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Users className="w-6 h-6 text-primary" />
+                                    Create a Family
+                                </CardTitle>
+                                <CardDescription>
+                                    Become an admin and invite your family members.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-2 mb-6 text-sm text-muted-foreground">
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Invite members via Email or Layout</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Set monthly allowances</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Manage roles and permissions</li>
+                                </ul>
+                                <Button className="w-full" onClick={() => setShowCreateDialog(true)}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create New Family
+                                </Button>
+                            </CardContent>
+                        </Card>
 
-                    {/* Join Family */}
-                    <Card className="hover:border-primary/50 transition-colors">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <LogIn className="w-6 h-6 text-primary" />
-                                Join a Family
-                            </CardTitle>
-                            <CardDescription>
-                                Enter the unique code shared by your family admin.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="code">Family Code</Label>
-                                <Input
-                                    id="code"
-                                    placeholder="e.g. FAM-XYZ123"
-                                    value={joinCode}
-                                    onChange={(e) => setJoinCode(e.target.value)}
-                                />
-                            </div>
-                            <Button variant="outline" className="w-full" onClick={handleJoin} disabled={joining || !joinCode}>
-                                {joining && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                Send Join Request
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+                        {/* Join Family */}
+                        <Card className="hover:border-primary/50 transition-colors">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <LogIn className="w-6 h-6 text-primary" />
+                                    Join a Family
+                                </CardTitle>
+                                <CardDescription>
+                                    Enter the unique code shared by your family admin.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="code">Family Code</Label>
+                                    <Input
+                                        id="code"
+                                        placeholder="e.g. FAM-XYZ123"
+                                        value={joinCode}
+                                        onChange={(e) => setJoinCode(e.target.value)}
+                                    />
+                                </div>
+                                <Button variant="outline" className="w-full" onClick={handleJoin} disabled={joining || !joinCode}>
+                                    {joining && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                    Send Join Request
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                <CreateFamilyDialog
-                    open={showCreateDialog}
-                    onOpenChange={setShowCreateDialog}
-                    onFamilyCreated={fetchFamilyData}
-                />
+                    <CreateFamilyDialog
+                        open={showCreateDialog}
+                        onOpenChange={setShowCreateDialog}
+                        onFamilyCreated={fetchFamilyData}
+                    />
+                </main>
             </div>
         );
     }
@@ -322,75 +354,85 @@ export default function FamilyPage() {
     const isAdmin = membership.role === 'admin';
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-5xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-1">{family.name}</h1>
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <span>{members.length} Members</span>
-                        <span>•</span>
-                        <span>Created {new Date(family.created_at).toLocaleDateString()}</span>
+        <div className="min-h-screen bg-background">
+            <header className="h-[88px] border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 flex items-center transition-all duration-200">
+                <div className="container mx-auto px-4">
+                    <div>
+                        <h1 className="text-2xl font-bold">Family Tracking</h1>
+                        <p className="text-sm text-muted-foreground">Manage your shared finances</p>
+                    </div>
+                </div>
+            </header>
+            <main className="container mx-auto px-4 py-6 max-w-5xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight mb-1">{family.name}</h1>
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <span>{members.length} Members</span>
+                            <span>•</span>
+                            <span>Created {new Date(family.created_at).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        <Button onClick={() => setShowInviteDialog(true)} className="shrink-0 gap-2">
+                            <Share2 className="w-4 h-4" />
+                            Invite Member
+                        </Button>
+                    )}
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-3">
+                    {/* Main Content - Members List */}
+                    <div className="md:col-span-2 space-y-6">
+                        <section className="space-y-3">
+                            <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
+                            <div className="grid gap-3">
+                                {members.map(member => (
+                                    <FamilyMemberCard
+                                        key={member.user_id}
+                                        member={member}
+                                        isCurrentUserAdmin={isAdmin}
+                                        onUpdateRole={handleUpdateRole}
+                                        onRemove={handleRemoveMember}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Pending Requests */}
+                        <section>
+                            <FamilyRequestsList familyId={family.id} isAdmin={isAdmin} />
+                        </section>
+                    </div>
+
+                    {/* Sidebar - Stats / Info */}
+                    <div className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Stats</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">Total Allowance</span>
+                                    <span className="font-medium">₹{members.reduce((acc, m) => acc + (Number(m.allowance) || 0), 0)}</span>
+                                </div>
+                                {/* Add more stats later */}
+                                <div className="p-3 bg-primary/5 rounded-lg text-xs text-muted-foreground leading-relaxed">
+                                    Pro Tip: Monthly allowances reset automatically on the 1st of every month.
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
 
-                {isAdmin && (
-                    <Button onClick={() => setShowInviteDialog(true)} className="shrink-0 gap-2">
-                        <Share2 className="w-4 h-4" />
-                        Invite Member
-                    </Button>
-                )}
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-                {/* Main Content - Members List */}
-                <div className="md:col-span-2 space-y-6">
-                    <section className="space-y-3">
-                        <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
-                        <div className="grid gap-3">
-                            {members.map(member => (
-                                <FamilyMemberCard
-                                    key={member.user_id}
-                                    member={member}
-                                    isCurrentUserAdmin={isAdmin}
-                                    onUpdateRole={handleUpdateRole}
-                                    onRemove={handleRemoveMember}
-                                />
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Pending Requests */}
-                    <section>
-                        <FamilyRequestsList familyId={family.id} isAdmin={isAdmin} />
-                    </section>
-                </div>
-
-                {/* Sidebar - Stats / Info */}
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Stats</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Total Allowance</span>
-                                <span className="font-medium">₹{members.reduce((acc, m) => acc + (Number(m.allowance) || 0), 0)}</span>
-                            </div>
-                            {/* Add more stats later */}
-                            <div className="p-3 bg-primary/5 rounded-lg text-xs text-muted-foreground leading-relaxed">
-                                Pro Tip: Monthly allowances reset automatically on the 1st of every month.
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
-            <InviteMemberDialog
-                open={showInviteDialog}
-                onOpenChange={setShowInviteDialog}
-                familyId={family.id}
-                shareCode={family.share_code}
-            />
+                <InviteMemberDialog
+                    open={showInviteDialog}
+                    onOpenChange={setShowInviteDialog}
+                    familyId={family.id}
+                    shareCode={family.share_code}
+                />
+            </main>
         </div>
     );
 }
