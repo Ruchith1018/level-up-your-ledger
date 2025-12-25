@@ -110,6 +110,47 @@ serve(async (req) => {
                 throw new Error(`Failed to send invite: ${inviteError.message}`);
             }
 
+            // 5. Check for mutual match: Does user have a pending join_request for this family?
+            const { data: matchingJoinRequest } = await supabaseAdmin
+                .from('family_requests')
+                .select('id')
+                .eq('family_id', family_id)
+                .eq('user_id', targetUser.id)
+                .eq('request_type', 'join_request')
+                .eq('status', 'pending')
+                .maybeSingle();
+
+            if (matchingJoinRequest) {
+                // Mutual match found! Automatically add user to family
+                const { error: addError } = await supabaseAdmin
+                    .from('family_members')
+                    .insert({
+                        family_id,
+                        user_id: targetUser.id,
+                        role: 'member'
+                    });
+
+                if (addError) throw addError;
+
+                // Delete both the invite and join request
+                const { error: deleteError } = await supabaseAdmin
+                    .from('family_requests')
+                    .delete()
+                    .eq('family_id', family_id)
+                    .eq('user_id', targetUser.id);
+
+                if (deleteError) throw deleteError;
+
+                return new Response(
+                    JSON.stringify({
+                        success: true,
+                        message: 'Mutual match! User automatically added to family',
+                        autoAccepted: true
+                    }),
+                    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
+
             return new Response(JSON.stringify({ success: true, message: 'Invite sent' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         } else if (action === 'join') {
@@ -178,6 +219,47 @@ serve(async (req) => {
             if (joinError) {
                 console.error('Join Error:', joinError);
                 throw new Error(`Failed to join: ${joinError.message}`);
+            }
+
+            // 5. Check for mutual match: Does family have a pending invite for this user?
+            const { data: matchingInvite } = await supabaseAdmin
+                .from('family_requests')
+                .select('id')
+                .eq('family_id', family.id)
+                .eq('user_id', user.id)
+                .eq('request_type', 'invite')
+                .eq('status', 'pending')
+                .maybeSingle();
+
+            if (matchingInvite) {
+                // Mutual match found! Automatically add user to family
+                const { error: addError } = await supabaseAdmin
+                    .from('family_members')
+                    .insert({
+                        family_id: family.id,
+                        user_id: user.id,
+                        role: 'member'
+                    });
+
+                if (addError) throw addError;
+
+                // Delete both the join request and invite
+                const { error: deleteError } = await supabaseAdmin
+                    .from('family_requests')
+                    .delete()
+                    .eq('family_id', family.id)
+                    .eq('user_id', user.id);
+
+                if (deleteError) throw deleteError;
+
+                return new Response(
+                    JSON.stringify({
+                        success: true,
+                        message: 'Mutual match! You have been automatically added to the family',
+                        autoAccepted: true
+                    }),
+                    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
             }
 
             return new Response(JSON.stringify({ success: true, message: 'Join request sent' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

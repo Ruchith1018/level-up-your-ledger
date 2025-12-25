@@ -163,7 +163,15 @@ export default function FamilyPage() {
             if (error) throw error;
             if (!data.success) throw new Error(data.error);
 
-            toast.success("Join request sent successfully! Waiting for admin approval.");
+            // Check if it was an auto-match
+            if (data.autoAccepted) {
+                toast.success(data.message || "Mutual match! You have been automatically added to the family");
+                // Refresh family data to show the new family dashboard
+                await fetchFamilyData();
+            } else {
+                toast.success("Join request sent successfully! Waiting for admin approval.");
+            }
+
             setJoinCode("");
         } catch (error: any) {
             toast.error(error.message || "Failed to join family");

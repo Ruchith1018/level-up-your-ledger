@@ -139,8 +139,8 @@ export function PendingInvites({ onInviteAccepted }: PendingInvitesProps) {
             // Remove from list
             setInvites(prev => prev.filter(i => i.id !== requestId));
 
-            // If accepted, notify parent to refresh
-            if (action === 'accept' && onInviteAccepted) {
+            // Notify parent to refresh (always, whether accepted or rejected)
+            if (onInviteAccepted) {
                 onInviteAccepted();
             }
         } catch (error: any) {
