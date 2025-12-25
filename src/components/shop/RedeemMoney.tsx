@@ -99,10 +99,15 @@ export function RedeemMoney() {
         setIsLoading(true);
 
         try {
-            // Replace these with your actual EmailJS Service ID, Template ID, and Public Key
-            const serviceId = "service_tgsoyin";
-            const templateId = "template_7vaejkk";
-            const publicKey = "6xRFoK6T6ftdk5xca";
+            const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+            const templateId = import.meta.env.VITE_EMAILJS_REDEMPTION_TEMPLATE_ID;
+            const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+            if (!serviceId || !templateId || !publicKey) {
+                toast.error("Configuration Error: Missing EmailJS keys. Please contact support.");
+                console.error("Missing EmailJS env keys");
+                return;
+            }
 
             const displayValue = `${currencyDetails.symbol}${getDisplayAmount(selectedAmount.value)}`;
 
