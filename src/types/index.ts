@@ -116,6 +116,8 @@ export interface Family {
   created_at: string;
   created_by: string;
   currency: string;
+  // Optional enriched field for invites
+  invitedBy?: string;
 }
 
 export interface FamilyMember {

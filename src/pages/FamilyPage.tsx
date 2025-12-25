@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
@@ -15,6 +15,17 @@ import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
 import { FamilyRequestsList } from "@/components/family/FamilyRequestsList";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useNavigate } from "react-router-dom";
+import { PendingInvites } from "@/components/family/PendingInvites";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function FamilyPage() {
     const { user } = useAuth();
@@ -31,10 +42,12 @@ export default function FamilyPage() {
     // Dialog states
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showInviteDialog, setShowInviteDialog] = useState(false);
+    const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
     // Join state
     const [joinCode, setJoinCode] = useState("");
     const [joining, setJoining] = useState(false);
+    const [leaving, setLeaving] = useState(false);
 
     const fetchFamilyData = async () => {
         if (!user) return;
@@ -200,6 +213,59 @@ export default function FamilyPage() {
         }
     };
 
+    const handleLeaveFamily = async () => {
+        setLeaving(true);
+        try {
+            // Refresh session to ensure token is valid
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+
+            if (refreshError) {
+                console.error("Leave Family: Session refresh failed:", refreshError);
+                toast.error("Session expired. Please re-login.");
+                setLeaving(false);
+                return;
+            }
+
+            const session = refreshedSession;
+
+            if (!session?.access_token) {
+                console.error("Leave Family: Authentication session missing");
+                toast.error("Authentication session missing. Please re-login.");
+                setLeaving(false);
+                return;
+            }
+
+            const { data, error } = await supabase.functions.invoke('manage-family', {
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`
+                },
+                body: {
+                    action: 'leave',
+                    access_token: session.access_token
+                }
+            });
+
+            if (error) throw error;
+            if (!data.success) throw new Error(data.error);
+
+            // Show appropriate message based on whether family was deleted
+            if (data.familyDeleted) {
+                toast.success("You left the family. As the last admin, the family has been deleted.");
+            } else {
+                toast.success("You have left the family successfully");
+            }
+
+            // Refresh family data to show the create/join screen
+            await fetchFamilyData();
+        } catch (error: any) {
+            console.error("Leave family error:", error);
+            toast.error(error.message || "Failed to leave family");
+        } finally {
+            setLeaving(false);
+            setShowLeaveDialog(false);
+        }
+    };
+
     // --- RENDER SECTION ---
 
     // 1. Global Loading State (Settings or Family Data)
@@ -285,6 +351,9 @@ export default function FamilyPage() {
                             Create or join a family to start tracking expenses together.
                         </p>
                     </div>
+
+                    {/* Pending Invites Section */}
+                    <PendingInvites onInviteAccepted={fetchFamilyData} />
 
                     <div className="grid md:grid-cols-2 gap-8 mt-12">
                         {/* Create Family */}
@@ -423,6 +492,34 @@ export default function FamilyPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card className="border-destructive/50">
+                            <CardHeader>
+                                <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Button
+                                    variant="destructive"
+                                    className="w-full gap-2"
+                                    onClick={() => setShowLeaveDialog(true)}
+                                    disabled={leaving}
+                                >
+                                    {leaving ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <LogOut className="w-4 h-4" />
+                                    )}
+                                    Leave Family
+                                </Button>
+                                {isAdmin && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                        {members.filter(m => m.role === 'admin').length <= 1
+                                            ? "As the last admin, leaving will delete the family."
+                                            : "You can leave anytime. Another admin will manage the family."}
+                                    </p>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
 
@@ -432,6 +529,40 @@ export default function FamilyPage() {
                     familyId={family.id}
                     shareCode={family.share_code}
                 />
+
+                <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+                    <AlertDialogContent className="rounded-2xl">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Leave Family?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {isAdmin && members.filter(m => m.role === 'admin').length <= 1 ? (
+                                    <>
+                                        You are the last admin. <strong>Leaving will permanently delete this family</strong> and remove all members. This action cannot be undone.
+                                    </>
+                                ) : (
+                                    "Are you sure you want to leave this family? You'll need a new invitation to rejoin."
+                                )}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={leaving}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleLeaveFamily}
+                                disabled={leaving}
+                                className="bg-destructive hover:bg-destructive/90"
+                            >
+                                {leaving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Leaving...
+                                    </>
+                                ) : (
+                                    "Leave Family"
+                                )}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </main>
         </div>
     );

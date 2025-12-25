@@ -56,7 +56,46 @@ serve(async (req) => {
 
             if (!targetUser) throw new Error('User not found with this Referral ID');
 
-            // 2. Create Invite Request
+            // 2. Check if user is already a member
+            const { data: existingMember } = await supabaseAdmin
+                .from('family_members')
+                .select('user_id')
+                .eq('family_id', family_id)
+                .eq('user_id', targetUser.id)
+                .maybeSingle();
+
+            if (existingMember) {
+                throw new Error('User is already a member of this family');
+            }
+
+            // 3. Check if an invite already exists
+            const { data: existingInvite } = await supabaseAdmin
+                .from('family_requests')
+                .select('*')
+                .eq('family_id', family_id)
+                .eq('user_id', targetUser.id)
+                .eq('request_type', 'invite')
+                .maybeSingle();
+
+            if (existingInvite) {
+                // If invite was rejected, update it to pending
+                if (existingInvite.status === 'rejected') {
+                    const { error: updateError } = await supabaseAdmin
+                        .from('family_requests')
+                        .update({ status: 'pending' })
+                        .eq('id', existingInvite.id);
+
+                    if (updateError) throw updateError;
+                    return new Response(JSON.stringify({ success: true, message: 'Invite re-sent successfully' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+
+                // If already pending, just return success
+                if (existingInvite.status === 'pending') {
+                    return new Response(JSON.stringify({ success: true, message: 'Invite already sent to this user' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+            }
+
+            // 4. Create new invite
             const { error: inviteError } = await supabaseAdmin
                 .from('family_requests')
                 .insert({
@@ -86,7 +125,46 @@ serve(async (req) => {
 
             if (familyError || !family) throw new Error('Invalid Share Code');
 
-            // 2. Create Join Request
+            // 2. Check if user is already a member
+            const { data: existingMember } = await supabaseAdmin
+                .from('family_members')
+                .select('user_id')
+                .eq('family_id', family.id)
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (existingMember) {
+                throw new Error('You are already a member of this family');
+            }
+
+            // 3. Check if a join request already exists
+            const { data: existingRequest } = await supabaseAdmin
+                .from('family_requests')
+                .select('*')
+                .eq('family_id', family.id)
+                .eq('user_id', user.id)
+                .eq('request_type', 'join_request')
+                .maybeSingle();
+
+            if (existingRequest) {
+                // If request was rejected, update it to pending
+                if (existingRequest.status === 'rejected') {
+                    const { error: updateError } = await supabaseAdmin
+                        .from('family_requests')
+                        .update({ status: 'pending' })
+                        .eq('id', existingRequest.id);
+
+                    if (updateError) throw updateError;
+                    return new Response(JSON.stringify({ success: true, message: 'Join request re-sent successfully' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+
+                // If already pending, just return success
+                if (existingRequest.status === 'pending') {
+                    return new Response(JSON.stringify({ success: true, message: 'Join request already sent' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+            }
+
+            // 4. Create new join request
             // Use admin client since we've already validated the user
             const { error: joinError } = await supabaseAdmin
                 .from('family_requests')
@@ -137,13 +215,7 @@ serve(async (req) => {
 
             const newStatus = response === 'accept' ? 'approved' : 'rejected';
 
-            const { error: updateError } = await supabaseAdmin
-                .from('family_requests')
-                .update({ status: newStatus })
-                .eq('id', request_id);
-
-            if (updateError) throw updateError;
-
+            // If accepted, add user to family
             if (newStatus === 'approved') {
                 const { error: addError } = await supabaseAdmin
                     .from('family_members')
@@ -155,7 +227,92 @@ serve(async (req) => {
                 if (addError) throw addError;
             }
 
+            // Delete the request (whether accepted or rejected)
+            const { error: deleteError } = await supabaseAdmin
+                .from('family_requests')
+                .delete()
+                .eq('id', request_id);
+
+            if (deleteError) throw deleteError;
+
             return new Response(JSON.stringify({ success: true, message: `Request ${newStatus}` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+        } else if (action === 'leave') {
+            // User leaves their current family
+
+            // 1. Get user's current membership
+            const { data: membership, error: memberError } = await supabaseAdmin
+                .from('family_members')
+                .select('family_id, role')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (memberError) throw memberError;
+            if (!membership) throw new Error('You are not a member of any family');
+
+            const familyId = membership.family_id;
+
+            // 2. Check if user is an admin
+            if (membership.role === 'admin') {
+                // Count how many admins are in the family
+                const { data: adminCount, error: countError } = await supabaseAdmin
+                    .from('family_members')
+                    .select('user_id', { count: 'exact', head: true })
+                    .eq('family_id', familyId)
+                    .eq('role', 'admin');
+
+                if (countError) throw countError;
+
+                // If this is the last admin, delete the entire family
+                if (adminCount && (adminCount as any).count <= 1) {
+                    // Delete all family members first
+                    const { error: deleteMembersError } = await supabaseAdmin
+                        .from('family_members')
+                        .delete()
+                        .eq('family_id', familyId);
+
+                    if (deleteMembersError) throw deleteMembersError;
+
+                    // Delete all family requests
+                    const { error: deleteRequestsError } = await supabaseAdmin
+                        .from('family_requests')
+                        .delete()
+                        .eq('family_id', familyId);
+
+                    if (deleteRequestsError) throw deleteRequestsError;
+
+                    // Delete the family itself
+                    const { error: deleteFamilyError } = await supabaseAdmin
+                        .from('families')
+                        .delete()
+                        .eq('id', familyId);
+
+                    if (deleteFamilyError) throw deleteFamilyError;
+
+                    return new Response(
+                        JSON.stringify({
+                            success: true,
+                            message: 'You left the family. As the last admin, the family has been deleted.',
+                            familyDeleted: true
+                        }),
+                        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                    );
+                }
+            }
+
+            // 3. Remove user from family (if not last admin scenario)
+            const { error: leaveError } = await supabaseAdmin
+                .from('family_members')
+                .delete()
+                .eq('family_id', familyId)
+                .eq('user_id', user.id);
+
+            if (leaveError) throw leaveError;
+
+            return new Response(
+                JSON.stringify({ success: true, message: 'You have left the family successfully' }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
         }
 
         throw new Error('Invalid Action');

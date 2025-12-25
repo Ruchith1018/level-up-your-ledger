@@ -190,7 +190,7 @@ export function RedeemMoney() {
             <Card className="mt-8">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Wallet className="w-5 h-5 text-green-500" />
+
                         Redeem Gift Cards
                     </CardTitle>
                     <CardDescription>
@@ -206,7 +206,7 @@ export function RedeemMoney() {
                                 <Button
                                     key={method.id}
                                     variant={selectedMethod === method.id ? "default" : "outline"}
-                                    className={`h-24 flex flex-col gap-2 ${selectedMethod === method.id ? "" : "hover:border-primary/50"}`}
+                                    className={`h-auto min-h-[6rem] py-3 flex flex-col gap-2 whitespace-normal text-center ${selectedMethod === method.id ? "" : "hover:border-primary/50"}`}
                                     onClick={() => setSelectedMethod(method.id)}
                                 >
                                     <div className="w-12 h-12 relative flex items-center justify-center rounded-lg overflow-hidden">
