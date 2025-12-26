@@ -686,11 +686,24 @@ const StickyScrollShowcase = () => {
                 {/* Dynamic Background */}
                 <div className="absolute inset-0 z-0 transition-colors duration-1000 ease-in-out bg-slate-950">
                     <div
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[120px] transition-all duration-1000 opacity-20"
+                        className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-[32%] lg:top-1/2 lg:translate-y-[-50%] w-[800px] h-[800px] rounded-full blur-[120px] transition-all duration-1000 opacity-20"
                         style={{
                             background: themeIndex === 0 ? '#1e3a8a' : themeIndex === 1 ? '#eab308' : themeIndex === 2 ? '#ef4444' : '#f97316'
                         }}
                     />
+                </div>
+
+                {/* Heading */}
+                <div className="absolute top-24 left-0 right-0 z-30 text-center">
+                    <motion.h2
+                        initial={{ opacity: 0, y: -20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-green-500 mb-2"
+                    >
+                        Pick Your Power Card
+                    </motion.h2>
+                    <p className="text-slate-400 text-lg">Choose a style that matches your ambition.</p>
                 </div>
 
                 {/* Content Container */}
@@ -698,7 +711,7 @@ const StickyScrollShowcase = () => {
 
                     {/* The Center Card - Absolutely Positioned */}
                     <div
-                        className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[380px] md:max-w-none md:w-[500px] aspect-[1.586/1] rounded-3xl border border-white/10 flex flex-col justify-between group bg-slate-900 shadow-2xl overflow-hidden"
+                        className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-[32%] lg:top-1/2 lg:translate-y-[-50%] w-[90vw] max-w-[380px] md:max-w-none md:w-[500px] aspect-[1.586/1] rounded-3xl border border-white/10 flex flex-col justify-between group bg-slate-900 shadow-2xl overflow-hidden"
                         style={{
                             background: currentTheme.image ? `url(${currentTheme.image}) center/cover no-repeat` : currentTheme.gradient,
                             boxShadow: currentTheme.shadow
@@ -769,80 +782,82 @@ const StickyScrollShowcase = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="absolute top-[65%] left-0 right-0 text-center px-4 flex flex-col items-center"
+                            className="absolute top-[65%] left-0 right-0 px-4 flex flex-col justify-center items-center lg:top-0 lg:bottom-0 lg:left-[58%] lg:right-auto lg:w-auto lg:-translate-x-1/2 lg:pl-0 lg:py-0"
                         >
-                            <h3 className={`text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.headingGradient} mb-4 drop-shadow-sm`}>
-                                {currentTheme.label}
-                            </h3>
-                            <p className="text-slate-400 text-lg max-w-md mx-auto leading-relaxed mb-6">
-                                {currentTheme.desc}
-                            </p>
+                            <div className="flex flex-col items-center text-center lg:items-center lg:text-center max-w-md mx-auto lg:mx-0 w-full">
+                                <h3 className={`text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.headingGradient} mb-4 drop-shadow-sm`}>
+                                    {currentTheme.label}
+                                </h3>
+                                <p className="text-slate-400 text-lg leading-relaxed mb-6">
+                                    {currentTheme.desc}
+                                </p>
 
-                            {/* Sub-Theme Selector for Classic Themes */}
-                            {currentTheme.id === 'gold' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="flex flex-wrap justify-center gap-3 max-w-2xl px-4"
-                                >
-                                    {classicSubThemes.map((subTheme) => (
-                                        <button
-                                            key={subTheme.id}
-                                            onClick={() => setClassicSubThemeId(subTheme.id)}
-                                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${classicSubThemeId === subTheme.id
-                                                ? "bg-white/10 border-white/40 text-white shadow-lg scale-105"
-                                                : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                                                }`}
-                                        >
-                                            {subTheme.name}
-                                        </button>
-                                    ))}
-                                </motion.div>
-                            )}
+                                {/* Sub-Theme Selector for Classic Themes */}
+                                {currentTheme.id === 'gold' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex flex-wrap justify-center gap-3 w-full"
+                                    >
+                                        {classicSubThemes.map((subTheme) => (
+                                            <button
+                                                key={subTheme.id}
+                                                onClick={() => setClassicSubThemeId(subTheme.id)}
+                                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${classicSubThemeId === subTheme.id
+                                                    ? "bg-white/10 border-white/40 text-white shadow-lg scale-105"
+                                                    : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                                                    }`}
+                                            >
+                                                {subTheme.name}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
 
-                            {/* Sub-Theme Selector for Marvel Themes */}
-                            {currentTheme.id === 'marvel' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="flex flex-wrap justify-center gap-2 max-w-3xl px-4"
-                                >
-                                    {marvelSubThemes.map((subTheme) => (
-                                        <button
-                                            key={subTheme.id}
-                                            onClick={() => setMarvelSubThemeId(subTheme.id)}
-                                            className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 border ${marvelSubThemeId === subTheme.id
-                                                ? "bg-red-500/20 border-red-500/50 text-white shadow-lg scale-105"
-                                                : "bg-transparent border-white/10 text-slate-400 hover:bg-red-500/10 hover:text-slate-200"
-                                                }`}
-                                        >
-                                            {subTheme.name}
-                                        </button>
-                                    ))}
-                                </motion.div>
-                            )}
+                                {/* Sub-Theme Selector for Marvel Themes */}
+                                {currentTheme.id === 'marvel' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex flex-wrap justify-center gap-2 w-full"
+                                    >
+                                        {marvelSubThemes.map((subTheme) => (
+                                            <button
+                                                key={subTheme.id}
+                                                onClick={() => setMarvelSubThemeId(subTheme.id)}
+                                                className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 border ${marvelSubThemeId === subTheme.id
+                                                    ? "bg-red-500/20 border-red-500/50 text-white shadow-lg scale-105"
+                                                    : "bg-transparent border-white/10 text-slate-400 hover:bg-red-500/10 hover:text-slate-200"
+                                                    }`}
+                                            >
+                                                {subTheme.name}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
 
-                            {/* Sub-Theme Selector for Anime Themes */}
-                            {currentTheme.id === 'anime' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="flex flex-wrap justify-center gap-2 max-w-3xl px-4"
-                                >
-                                    {animeSubThemes.map((subTheme) => (
-                                        <button
-                                            key={subTheme.id}
-                                            onClick={() => setAnimeSubThemeId(subTheme.id)}
-                                            className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 border ${animeSubThemeId === subTheme.id
-                                                ? "bg-indigo-500/20 border-indigo-500/50 text-white shadow-lg scale-105"
-                                                : "bg-transparent border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:text-slate-200"
-                                                }`}
-                                        >
-                                            {subTheme.name}
-                                        </button>
-                                    ))}
-                                </motion.div>
-                            )}
+                                {/* Sub-Theme Selector for Anime Themes */}
+                                {currentTheme.id === 'anime' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex flex-wrap justify-center gap-2 w-full"
+                                    >
+                                        {animeSubThemes.map((subTheme) => (
+                                            <button
+                                                key={subTheme.id}
+                                                onClick={() => setAnimeSubThemeId(subTheme.id)}
+                                                className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 border ${animeSubThemeId === subTheme.id
+                                                    ? "bg-indigo-500/20 border-indigo-500/50 text-white shadow-lg scale-105"
+                                                    : "bg-transparent border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:text-slate-200"
+                                                    }`}
+                                            >
+                                                {subTheme.name}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </div>
                         </motion.div>
                     </AnimatePresence>
                 </div>
