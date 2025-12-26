@@ -6,6 +6,7 @@ import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X,
 import { PaymentRegistrationDialog } from "@/components/payment/PaymentRegistrationDialog";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { useNavigate } from "react-router-dom";
+import { BenefitsGrid } from "@/components/landing/BenefitsGrid";
 import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 
 const LandingPage = () => {
@@ -14,6 +15,17 @@ const LandingPage = () => {
     const [selectedPlan, setSelectedPlan] = useState<'standard' | 'premium' | null>(null);
     const [minLoading, setMinLoading] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [hidden, setHidden] = useState(false);
+    const { scrollY } = useScroll();
+
+    useMotionValueEvent(scrollY, "change", (latest) => {
+        const previous = scrollY.getPrevious() || 0;
+        if (latest > previous && latest > 150) {
+            setHidden(true);
+        } else {
+            setHidden(false);
+        }
+    });
 
     useEffect(() => {
         const timer = setTimeout(() => setMinLoading(false), 1000);
@@ -47,7 +59,7 @@ const LandingPage = () => {
     return (
         <div className="min-h-screen bg-slate-950 text-white selection:bg-green-500/30 font-sans">
             {/* Navbar */}
-            <header className="fixed top-0 w-full z-50 transition-all duration-300 bg-slate-950/80 backdrop-blur-md border-b border-white/10">
+            <header className={`fixed top-0 w-full z-50 transition-transform duration-300 bg-slate-950/80 backdrop-blur-md border-b border-white/10 ${hidden ? '-translate-y-full' : 'translate-y-0'}`}>
                 <div className="container mx-auto px-4 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-2xl tracking-tight cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                         <img
@@ -116,38 +128,8 @@ const LandingPage = () => {
             <FeaturesSection />
             <StickyScrollShowcase />
 
-            {/* Benefits Section */}
-            <section id="benefits" className="py-24 bg-slate-900 relative">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-bold mb-4">Amazing Benefits</h2>
-                        <div className="w-24 h-1 bg-green-500 mx-auto rounded-full" />
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-12 lg:gap-20 max-w-6xl mx-auto">
-                        <BenefitItem
-                            icon={<Zap className="w-8 h-8 text-yellow-400" />}
-                            title="Unlimited Gamification"
-                            description="Earn XP, unlock badges, and climb the leaderboard as you save money. Make finance fun again."
-                        />
-                        <BenefitItem
-                            icon={<Star className="w-8 h-8 text-green-400" />}
-                            title="Extra Rewards"
-                            description="Get bonus coins for every streak you maintain. The more you save, the more rewarding it becomes."
-                        />
-                        <BenefitItem
-                            icon={<Users className="w-8 h-8 text-blue-400" />}
-                            title="Family Sync"
-                            description="Manage household finances together. Shared budgets, goals, and tracking for the whole family." // Fixed text
-                        />
-                        <BenefitItem
-                            icon={<Shield className="w-8 h-8 text-red-400" />}
-                            title="No Hidden Fees"
-                            description="We are serious. One-time payment, lifetime access. No monthly subscriptions or hidden charges."
-                        />
-                    </div>
-                </div>
-            </section>
+            {/* Benefits Bento Grid Section */}
+            <BenefitsGrid />
 
             {/* Partners/Rewards Section */}
             <section className="py-20 bg-gradient-to-b from-slate-900 to-slate-950">
@@ -862,12 +844,7 @@ const StickyScrollShowcase = () => {
                     </AnimatePresence>
                 </div>
             </div>
-            {/* Divider SVG */}
-            <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none z-50">
-                <svg className="relative block w-full h-[100px] text-slate-900" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                    <path d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z" fill="currentColor"></path>
-                </svg>
-            </div>
+
         </section>
     );
 };
