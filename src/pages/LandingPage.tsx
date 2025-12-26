@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star } from "lucide-react";
+import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star, Sparkles } from "lucide-react";
 import { PaymentRegistrationDialog } from "@/components/payment/PaymentRegistrationDialog";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { useNavigate } from "react-router-dom";
@@ -311,38 +311,129 @@ const LandingPage = () => {
 };
 
 const HeroIntro = ({ scrollToSection }: { scrollToSection: (id: string) => void }) => {
+    // --- Notification Logic ---
+    const [notificationIndex, setNotificationIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setNotificationIndex((prev) => (prev === 0 ? 1 : 0));
+        }, 4000); // 4 seconds per notification
+        return () => clearInterval(interval);
+    }, []);
+
     return (
-        <section className="relative h-screen flex flex-col items-center justify-center text-center px-4 bg-slate-950 z-10">
-            {/* Background Ambience for Intro */}
-            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/10 rounded-full blur-[100px] animate-pulse" />
-            </div>
+        <section className="relative min-h-screen flex items-center bg-slate-900 overflow-hidden pt-20">
+            {/* Background Wave */}
+            {/* Background Wave Removed */}
 
-            <div className="z-10 mt-[-10vh]"> {/* Slight offset up */}
-                <h1 className="text-5xl md:text-8xl font-extrabold tracking-tight mb-8 leading-tight">
-                    Signup for <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-600">BudGlio</span> <br />
-                    & Get <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-600">Smart</span>
-                </h1>
-                <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-                    Gamify your finances, track every penny, and join a community of smart savers.
-                </p>
-                <Button
-                    className="h-16 px-12 text-xl rounded-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 shadow-xl shadow-green-500/20 hover:shadow-green-500/40 transition-all transform hover:scale-105"
-                    onClick={() => scrollToSection('pricing')}
+            <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center relative z-10 w-full">
+                {/* Left: Text Content */}
+                <div className="text-left space-y-6">
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+                            Signup for <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">BudGlio</span> <br />
+                            & Get <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Smart</span>
+                        </h1>
+                        <p className="text-xl md:text-2xl text-slate-400 max-w-lg mb-8 leading-relaxed">
+                            Gamify your finances, track every penny, and join a community of smart savers.
+                        </p>
+                        <div className="flex gap-4">
+                            <Button
+                                className="h-14 px-8 text-lg rounded-full bg-green-600 hover:bg-green-500 text-white shadow-xl shadow-green-500/20 hover:shadow-green-500/30 transition-all transform hover:-translate-y-1"
+                                onClick={() => scrollToSection('pricing')}
+                            >
+                                Get Started
+                            </Button>
+                            <Button
+                                className="h-14 px-8 text-lg rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm transition-all"
+                                onClick={() => scrollToSection('features')}
+                            >
+                                Learn More
+                            </Button>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Right: Illustration (Mock Dashboard) */}
+                <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="relative hidden lg:block"
                 >
-                    Start Saving
-                </Button>
-            </div>
+                    {/* Floating Illustration Container */}
+                    <div className="relative w-full aspect-[4/3]">
+                        {/* Abstract Blobs */}
+                        <div className="absolute top-10 right-10 w-72 h-72 bg-gradient-to-br from-green-500/20 to-emerald-500/5 rounded-full blur-[60px]" />
+                        <div className="absolute bottom-10 left-10 w-72 h-72 bg-gradient-to-br from-blue-500/20 to-purple-500/5 rounded-full blur-[60px]" />
 
-            {/* Scroll Indicator */}
-            <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute bottom-10 z-10 text-slate-500 flex flex-col items-center gap-2"
-            >
-                <span className="text-sm uppercase tracking-widest">Scroll to Explore</span>
-                <div className="w-1 h-12 bg-gradient-to-b from-green-500/50 to-transparent rounded-full" />
-            </motion.div>
+                        {/* Main Dashboard Window */}
+                        <div className="absolute inset-0 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                            {/* Mac Window Header */}
+                            <div className="h-8 bg-slate-800 border-b border-white/5 flex items-center px-4 gap-2">
+                                <div className="w-3 h-3 rounded-full bg-[#FF5F56]" /> {/* Red */}
+                                <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" /> {/* Yellow */}
+                                <div className="w-3 h-3 rounded-full bg-[#27C93F]" /> {/* Green */}
+                            </div>
+                            {/* Content - Image */}
+                            <div className="relative h-full w-full bg-slate-900">
+                                <img
+                                    src="/assets/hero-dashboard.png"
+                                    alt="BudGlio Dashboard"
+                                    className="w-full h-full object-cover object-top"
+                                />
+                                {/* Overlay Gradient for better blending */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Floating Card Element - Cycling Notifications */}
+                        <div className="absolute -right-8 bottom-12 w-56 h-20">
+                            <AnimatePresence mode="wait">
+                                {notificationIndex === 0 ? (
+                                    <motion.div
+                                        key="token"
+                                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                                        transition={{ duration: 0.5 }}
+                                        className="absolute inset-0 bg-slate-800 p-4 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                                            <img src="/assets/token.png" alt="Token" className="w-8 h-8 object-contain" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-white">Tokens Earned</div>
+                                            <div className="text-xs text-yellow-400 font-mono">+ 50 Tokens</div>
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="xp"
+                                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                                        transition={{ duration: 0.5 }}
+                                        className="absolute inset-0 bg-slate-800 p-4 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                            <img src="/assets/xp.png" alt="XP" className="w-8 h-8 object-contain" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-white">XP Earned</div>
+                                            <div className="text-xs text-blue-400 font-mono">+ 500 XP</div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
         </section>
     );
 };
