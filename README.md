@@ -1,4 +1,4 @@
-# BudGlio - Level Up Your Ledger 🚀
+# BudGlio - Level Up Your Ledger
 
 **BudGlio** is a modern, gamified finance tracker designed to make managing your money engaging and rewarding. By combining powerful financial tools with gamification elements like XP, badges, and rewards, BudGlio turns personal finance into a fun journey of growth.
 
