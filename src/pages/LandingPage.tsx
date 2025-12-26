@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star } from "lucide-react";
 import { PaymentRegistrationDialog } from "@/components/payment/PaymentRegistrationDialog";
+import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 
@@ -112,6 +113,7 @@ const LandingPage = () => {
             {/* INTEGRATED SCROLL HERO */}
             {/* Render Hero Section only after loading is complete to ensure refs are hydrated */}
             <HeroIntro scrollToSection={scrollToSection} />
+            <FeaturesSection />
             <StickyScrollShowcase />
 
             {/* Benefits Section */}
