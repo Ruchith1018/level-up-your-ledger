@@ -177,6 +177,8 @@ All colors MUST be HSL.
   }
 }
 
+
+
 @keyframes shine-flow {
   0% {
     transform: translateX(-150%) skewX(-20deg);
@@ -189,6 +191,41 @@ All colors MUST be HSL.
   100% {
     transform: translateX(150%) skewX(-20deg);
   }
+}
+
+/* Custom Animations */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+@keyframes gradient-x {
+
+  0%,
+  100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 3s ease infinite;
 }
 
 /* Custom Scrollbar Styling - Adapts to Theme */

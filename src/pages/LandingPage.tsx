@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star, Sparkles } from "lucide-react";
+import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star, Sparkles, Trophy } from "lucide-react";
 import { PaymentRegistrationDialog } from "@/components/payment/PaymentRegistrationDialog";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { useNavigate } from "react-router-dom";
 import { BenefitsGrid } from "@/components/landing/BenefitsGrid";
 import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { HeroDashboardPreview } from "@/components/landing/HeroDashboardPreview";
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -174,7 +176,7 @@ const LandingPage = () => {
             </section>
 
             {/* Usage Stats / Eligibility */}
-            <section id="eligibility" className="py-20 bg-slate-900/50">
+            <section id="eligibility" className="py-20 bg-slate-900/50 overflow-hidden">
                 <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-center gap-16">
                     <div className="space-y-8 max-w-md">
                         <h2 className="text-4xl font-bold">Eligibility</h2>
@@ -217,7 +219,7 @@ const LandingPage = () => {
             </section>
 
             {/* Pricing Section */}
-            <section id="pricing" className="py-24 px-4 bg-slate-950 relative">
+            <section id="pricing" className="py-24 px-4 bg-slate-950 relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/5 rounded-full blur-[120px]" />
 
                 <div className="container mx-auto relative z-10">
@@ -311,132 +313,87 @@ const LandingPage = () => {
 };
 
 const HeroIntro = ({ scrollToSection }: { scrollToSection: (id: string) => void }) => {
-    // --- Notification Logic ---
-    const [notificationIndex, setNotificationIndex] = useState(0);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setNotificationIndex((prev) => (prev === 0 ? 1 : 0));
-        }, 4000); // 4 seconds per notification
-        return () => clearInterval(interval);
-    }, []);
-
     return (
-        <section className="relative min-h-screen flex items-center bg-slate-900 overflow-hidden pt-20">
-            {/* Background Wave */}
-            {/* Background Wave Removed */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center bg-slate-950 overflow-hidden pt-32 pb-20">
+            {/* --- Background Arc Effect --- */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-[1000px] bg-slate-950 rounded-[100%] border-b border-white/5 shadow-[0_20px_100px_rgba(22,163,74,0.15)] z-0 -mt-[600px]" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150%] h-[800px] bg-green-500/5 rounded-[100%] blur-3xl z-0 -mt-[500px] pointer-events-none" />
 
-            <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center relative z-10 w-full">
-                {/* Left: Text Content */}
-                <div className="text-left space-y-6">
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8 }}
-                    >
-                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
-                            Signup for <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">BudGlio</span> <br />
-                            & Get <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Smart</span>
-                        </h1>
-                        <p className="text-xl md:text-2xl text-slate-400 max-w-lg mb-8 leading-relaxed">
-                            Gamify your finances, track every penny, and join a community of smart savers.
-                        </p>
-                        <div className="flex gap-4">
-                            <Button
-                                className="h-14 px-8 text-lg rounded-full bg-green-600 hover:bg-green-500 text-white shadow-xl shadow-green-500/20 hover:shadow-green-500/30 transition-all transform hover:-translate-y-1"
-                                onClick={() => scrollToSection('pricing')}
-                            >
-                                Get Started
-                            </Button>
-                            <Button
-                                className="h-14 px-8 text-lg rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm transition-all"
-                                onClick={() => scrollToSection('features')}
-                            >
-                                Learn More
-                            </Button>
-                        </div>
-                    </motion.div>
-                </div>
+            {/* Content Container */}
+            <div className="container mx-auto px-4 relative z-10 flex flex-col items-center text-center">
 
-                {/* Right: Illustration (Mock Dashboard) */}
+
+
                 <motion.div
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative hidden lg:block"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="max-w-4xl mx-auto space-y-8 mb-16"
                 >
-                    {/* Floating Illustration Container */}
-                    <div className="relative w-full aspect-[4/3]">
-                        {/* Abstract Blobs */}
-                        <div className="absolute top-10 right-10 w-72 h-72 bg-gradient-to-br from-green-500/20 to-emerald-500/5 rounded-full blur-[60px]" />
-                        <div className="absolute bottom-10 left-10 w-72 h-72 bg-gradient-to-br from-blue-500/20 to-purple-500/5 rounded-full blur-[60px]" />
+                    {/* Badge */}
 
-                        {/* Main Dashboard Window */}
-                        <div className="absolute inset-0 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-                            {/* Mac Window Header */}
-                            <div className="h-8 bg-slate-800 border-b border-white/5 flex items-center px-4 gap-2">
-                                <div className="w-3 h-3 rounded-full bg-[#FF5F56]" /> {/* Red */}
-                                <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" /> {/* Yellow */}
-                                <div className="w-3 h-3 rounded-full bg-[#27C93F]" /> {/* Green */}
-                            </div>
-                            {/* Content - Image */}
-                            <div className="relative h-full w-full bg-slate-900">
-                                <img
-                                    src="/assets/hero-dashboard.png"
-                                    alt="BudGlio Dashboard"
-                                    className="w-full h-full object-cover object-top"
-                                />
-                                {/* Overlay Gradient for better blending */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent pointer-events-none" />
-                            </div>
-                        </div>
 
-                        {/* Floating Card Element - Cycling Notifications */}
-                        <div className="absolute -right-8 bottom-12 w-56 h-20">
-                            <AnimatePresence mode="wait">
-                                {notificationIndex === 0 ? (
-                                    <motion.div
-                                        key="token"
-                                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                                        transition={{ duration: 0.5 }}
-                                        className="absolute inset-0 bg-slate-800 p-4 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4"
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
-                                            <img src="/assets/token.png" alt="Token" className="w-8 h-8 object-contain" />
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-bold text-white">Tokens Earned</div>
-                                            <div className="text-xs text-yellow-400 font-mono">+ 50 Tokens</div>
-                                        </div>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="xp"
-                                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                                        transition={{ duration: 0.5 }}
-                                        className="absolute inset-0 bg-slate-800 p-4 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4"
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                            <img src="/assets/xp.png" alt="XP" className="w-8 h-8 object-contain" />
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-bold text-white">XP Earned</div>
-                                            <div className="text-xs text-blue-400 font-mono">+ 500 XP</div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.1]">
+                        Level Up Your <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 animate-gradient-x"> Financial Legacy </span>
+                        With <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 animate-gradient-x"> BudGlio</span>
+
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                        The first expense tracker that treats your budget like a high-stakes game. Earn XP, unlock themes, and master your money.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+                        <Button
+                            className="h-14 px-10 text-lg rounded-full bg-green-600 hover:bg-green-500 text-white shadow-xl shadow-green-500/20 hover:shadow-green-500/40 transition-all transform hover:-translate-y-1 w-full sm:w-auto"
+                            onClick={() => scrollToSection('pricing')}
+                        >
+                            Start Your Journey
+                        </Button>
+                        <Button
+                            className="h-14 px-10 text-lg rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm transition-all w-full sm:w-auto"
+                            onClick={() => scrollToSection('features')}
+                        >
+                            Explore Features
+                        </Button>
                     </div>
+                </motion.div>
+
+                {/* Dashboard Showcase (3D Perspective) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 50, rotateX: 10 }}
+                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                    transition={{ duration: 1, delay: 0.2 }}
+                    className="relative w-full max-w-5xl mx-auto perspective-1000"
+                >
+                    <div className="relative transform transition-transform duration-700 hover:scale-[1.02]">
+
+
+                        <HeroDashboardPreview />
+
+
+                    </div>
+
+                    {/* Ambience Glow under dashboard */}
+                    <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-[80%] h-40 bg-green-500/20 blur-[100px] rounded-full pointer-events-none" />
                 </motion.div>
             </div>
         </section>
     );
 };
+
+const FloatingTag = ({ text, icon, color, className }: { text: string, icon: React.ReactNode, color: string, className?: string }) => (
+    <motion.div
+        animate={{ y: [0, -15, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: Math.random() * 2 }}
+        className={cn("items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md shadow-lg", color, className)}
+    >
+        {icon}
+        <span className="text-sm font-semibold">{text}</span>
+    </motion.div>
+);
 
 const StickyScrollShowcase = () => {
     // --- Sticky Scroll Logic ---
