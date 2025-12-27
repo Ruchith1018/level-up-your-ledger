@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, TrendingUp, Trophy, Users, ChevronRight, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Trophy, Users, ChevronRight, ArrowRight, Hammer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HeroDashboardPreview } from './HeroDashboardPreview';
 import { AnalyticsPreview } from './AnalyticsPreview';
@@ -196,6 +196,16 @@ export const FeaturesSection = () => {
                                 ) : features[activeFeatureIndex].id === 'analytics' ? (
                                     <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
                                         <AnalyticsPreview className="w-full h-full min-h-0 shadow-none border-none bg-slate-950 rounded-none" />
+                                    </div>
+                                ) : ['gamification', 'family', 'leaderboard'].includes(features[activeFeatureIndex].id) ? (
+                                    <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-in fade-in zoom-in duration-500">
+                                        <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6 ring-1 ring-white/10 shadow-xl">
+                                            <Hammer className="w-10 h-10 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">Under Development</h3>
+                                        <p className="text-slate-400 text-lg max-w-md leading-relaxed">
+                                            We're crafting something special here. Check back soon for updates!
+                                        </p>
                                     </div>
                                 ) : (
                                     <img
