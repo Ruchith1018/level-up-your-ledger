@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, Wallet, CreditCard, ChevronDown, Bell, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
-export const HeroDashboardPreview = () => {
+export const HeroDashboardPreview = ({ className }: { className?: string }) => {
+    const containerRef = useRef(null);
+    const isInView = useInView(containerRef, { amount: 0.1 }); // Only animate if at least 10% visible
+
     // --- State for Animation ---
     const [balance, setBalance] = useState(95670.26);
     const [expenses, setExpenses] = useState(4366.18);
@@ -31,12 +34,22 @@ export const HeroDashboardPreview = () => {
         { name: 'Dec', income: 2390, expenses: 3800 },
     ]);
 
+    // Use ref for stable access to balance inside interval without resetting the effect
+    const balanceRef = useRef(balance);
+    useEffect(() => {
+        balanceRef.current = balance;
+    }, [balance]);
+
     // --- Simulation Effect ---
     useEffect(() => {
+        // Pauses simulation if not in view to save resources
+        if (!isInView) return;
+
         const interval = setInterval(() => {
+            const currentBalance = balanceRef.current;
 
             // Loop Reset Condition (Data Inconsistency Check)
-            if (balance < 80000) {
+            if (currentBalance < 80000) {
                 setBalance(95670.26);
                 setExpenses(4366.18);
                 setSavings(1200.00);
@@ -92,7 +105,7 @@ export const HeroDashboardPreview = () => {
         }, 800); // Update every 0.8 seconds
 
         return () => clearInterval(interval);
-    }, [balance]); // Add expenses dependency to check for reset
+    }, [isInView]); // Removed balance dependency to prevent effect churn
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -113,18 +126,19 @@ export const HeroDashboardPreview = () => {
     };
 
     return (
-        <div className="w-full h-auto min-h-[600px] bg-slate-950 rounded-xl overflow-hidden border border-white/10 shadow-2xl flex flex-col font-sans transition-all duration-500 hover:shadow-green-500/10 group">
+        <div ref={containerRef} className={cn("w-full h-auto min-h-[600px] bg-slate-950 rounded-xl overflow-hidden border border-white/10 shadow-2xl flex flex-col font-sans transition-all duration-500 group", className)}>
 
             {/* --- macOS Header --- */}
             <div className="h-8 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
-                <div className="w-3 h-3 rounded-full bg-[#FF5F56] transition-transform hover:scale-110" />
-                <div className="w-3 h-3 rounded-full bg-[#FFBD2E] transition-transform hover:scale-110" />
-                <div className="w-3 h-3 rounded-full bg-[#27C93F] transition-transform hover:scale-110" />
+                <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
+                <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+                <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
 
                 {/* Simulated Address Bar */}
-                <div className="ml-4 flex-1 max-w-sm h-5 bg-slate-800 rounded flex items-center px-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                    <div className="w-2 h-2 rounded-full bg-slate-600 mr-2" />
-                    <div className="h-1.5 w-24 bg-slate-700 rounded-full" />
+                <div className="flex-1 flex justify-center px-2">
+                    <div className="h-5 bg-slate-800 rounded flex items-center px-2 opacity-50 w-full max-w-sm justify-center">
+                        <div className="text-[10px] text-slate-400 font-medium">budglio.in/dashboard</div>
+                    </div>
                 </div>
 
                 {/* Top Right Stats */}
@@ -143,8 +157,8 @@ export const HeroDashboardPreview = () => {
 
                 {/* 1. Budget Card (Col 5) */}
                 <div className="col-span-12 md:col-span-5 flex flex-col gap-4">
-                    <Card className="bg-slate-900 border-white/10 shadow-lg relative overflow-hidden group/card hover:border-white/20 transition-colors">
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    <Card className="bg-slate-900 border-white/10 shadow-lg relative overflow-hidden group/card transition-colors">
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none" />
                         <CardHeader className="pb-2">
                             <CardTitle className="text-slate-200 text-lg flex justify-between items-center">
                                 <span>Budget Overview</span>
@@ -153,7 +167,7 @@ export const HeroDashboardPreview = () => {
                         </CardHeader>
                         <CardContent>
                             {/* Blue Hero Card Replica */}
-                            <div className="w-full aspect-[1.586/1] rounded-xl bg-gradient-to-br from-blue-700 to-blue-900 p-5 shadow-xl relative overflow-hidden transform transition-transform hover:scale-[1.02] duration-500 group/card-inner">
+                            <div className="w-full aspect-[1.586/1] rounded-xl bg-gradient-to-br from-blue-700 to-blue-900 p-5 shadow-xl relative overflow-hidden transform transition-transform duration-500 group/card-inner">
                                 {/* Diagonal Lines Pattern Overlay */}
                                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(135deg, #ffffff 10%, transparent 10%, transparent 50%, #ffffff 50%, #ffffff 60%, transparent 60%, transparent 100%)', backgroundSize: '10px 10px' }} />
 

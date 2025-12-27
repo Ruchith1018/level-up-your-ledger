@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, TrendingUp, Trophy, Users, ChevronRight, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HeroDashboardPreview } from './HeroDashboardPreview';
+import { AnalyticsPreview } from './AnalyticsPreview';
 
 interface Feature {
     id: string;
@@ -177,7 +179,7 @@ export const FeaturesSection = () => {
                     </div>
 
                     {/* Right Side: Dynamic Image/Preview Area */}
-                    <div className="lg:col-span-8 bg-slate-950 rounded-2xl border border-white/10 relative overflow-hidden aspect-[4/3] lg:aspect-auto min-h-[400px] flex items-center justify-center">
+                    <div className="lg:col-span-8 bg-slate-950 rounded-2xl border border-white/10 relative overflow-hidden aspect-[4/3] flex items-center justify-center">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeFeatureIndex}
@@ -185,13 +187,23 @@ export const FeaturesSection = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 1.05 }}
                                 transition={{ duration: 0.4 }}
-                                className="w-full h-full p-6 md:p-12 flex items-center justify-center bg-transparent"
+                                className="w-full h-full flex items-center justify-center bg-transparent"
                             >
-                                <img
-                                    src={features[activeFeatureIndex].image}
-                                    alt={features[activeFeatureIndex].title}
-                                    className="w-full h-auto rounded-xl shadow-2xl border border-white/10 object-contain hover:scale-105 transition-transform duration-500"
-                                />
+                                {features[activeFeatureIndex].id === 'dashboard' ? (
+                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
+                                        <HeroDashboardPreview className="w-full h-full min-h-0 shadow-none border-none bg-slate-950 rounded-none" />
+                                    </div>
+                                ) : features[activeFeatureIndex].id === 'analytics' ? (
+                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
+                                        <AnalyticsPreview className="w-full h-full min-h-0 shadow-none border-none bg-slate-950 rounded-none" />
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={features[activeFeatureIndex].image}
+                                        alt={features[activeFeatureIndex].title}
+                                        className="w-full h-auto rounded-xl shadow-2xl border border-white/10 object-contain hover:scale-105 transition-transform duration-500"
+                                    />
+                                )}
                             </motion.div>
                         </AnimatePresence>
                     </div>
