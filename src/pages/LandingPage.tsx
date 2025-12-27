@@ -22,9 +22,11 @@ const LandingPage = () => {
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         const previous = scrollY.getPrevious() || 0;
-        if (latest > previous && latest > 150) {
+        if (latest < 100) {
+            setHidden(false);
+        } else if (latest > previous + 5) {
             setHidden(true);
-        } else {
+        } else if (latest < previous - 5) {
             setHidden(false);
         }
     });
@@ -60,65 +62,99 @@ const LandingPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white selection:bg-green-500/30 font-sans">
-            {/* Navbar */}
-            <header className={`fixed top-0 w-full z-50 transition-transform duration-300 bg-slate-950/80 backdrop-blur-md border-b border-white/10 ${hidden ? '-translate-y-full' : 'translate-y-0'}`}>
-                <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-2xl tracking-tight cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            {/* Floating Navbar */}
+            <motion.header
+                initial={{ y: -100, x: "-50%", opacity: 0 }}
+                animate={{
+                    y: hidden ? -100 : 0,
+                    x: "-50%",
+                    opacity: hidden ? 0 : 1
+                }}
+                transition={{ duration: 0.3 }}
+                className="fixed top-6 left-1/2 z-50 w-[95%] max-w-6xl"
+            >
+                <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-8 py-4 shadow-2xl flex items-center justify-between">
+                    {/* Logo Mobile/Desktop */}
+                    <div
+                        className="flex items-center gap-3 font-bold text-xl tracking-tight cursor-pointer shrink-0"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
                         <img
                             src="/logo.jpg"
-                            alt="BudGlio Logo"
-                            className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-green-500/20"
+                            alt="BudGlio"
+                            className="w-9 h-9 rounded-full object-cover shadow-lg shadow-green-500/20"
                         />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">BudGlio</span>
+                        <span className="hidden md:inline bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-green-500">BudGlio</span>
                     </div>
 
-                    <nav className="hidden md:flex items-center gap-8">
-                        {['Benefits', 'Features', 'Eligibility', 'Pricing'].map((item) => (
+                    {/* Desktop Split Nav */}
+                    <nav className="hidden md:flex items-center gap-8 xl:gap-12 whitespace-nowrap">
+                        {[
+                            { label: 'Features', id: 'features' },
+                            { label: 'Card Themes', id: 'card-themes' },
+                            { label: 'Benefits', id: 'benefits' },
+                            { label: 'Rewards', id: 'rewards' },
+                            { label: 'Eligibility & Pricing', id: 'eligibility' }
+                        ].map((item) => (
                             <button
-                                key={item}
-                                onClick={() => scrollToSection(item.toLowerCase())}
-                                className="text-sm font-medium text-slate-300 hover:text-green-400 transition-colors"
+                                key={item.id}
+                                onClick={() => scrollToSection(item.id)}
+                                className="text-sm xl:text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 px-3 py-1.5 rounded-full transition-all duration-300"
                             >
-                                {item}
+                                {item.label}
                             </button>
                         ))}
                     </nav>
 
-                    <div className="hidden md:flex items-center gap-4">
-                        <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-white/10" onClick={() => navigate("/auth")}>Login</Button>
-                        <Button className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 shadow-lg shadow-green-500/20 hover:shadow-green-500/40 transition-all" onClick={() => scrollToSection('pricing')}>
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hidden md:flex text-slate-300 hover:text-white hover:bg-white/10 rounded-full px-4"
+                            onClick={() => navigate("/auth")}
+                        >
+                            Login
+                        </Button>
+                        <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 shadow-lg shadow-green-500/20 hover:shadow-green-500/40 transition-all font-medium"
+                            onClick={() => scrollToSection('pricing')}
+                        >
                             Start Saving
                         </Button>
+                        <button className="md:hidden p-2 text-slate-300 hover:bg-white/5 rounded-full" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        </button>
                     </div>
-
-                    <button className="md:hidden p-2 text-slate-300" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                        {mobileMenuOpen ? <X /> : <Menu />}
-                    </button>
                 </div>
-            </header>
+            </motion.header>
 
             <AnimatePresence>
                 {mobileMenuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="fixed inset-0 top-20 z-40 bg-slate-950/95 backdrop-blur-xl md:hidden flex flex-col p-6 space-y-6"
+                        initial={{ opacity: 0, scale: 0.95, y: -20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                        className="fixed inset-x-4 top-24 z-40 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-3xl md:hidden flex flex-col p-6 space-y-2 shadow-2xl"
                     >
-                        {['Benefits', 'Features', 'Eligibility', 'Pricing'].map((item) => (
+                        {[
+                            { label: 'Features', id: 'features' },
+                            { label: 'Card Themes', id: 'card-themes' },
+                            { label: 'Benefits', id: 'benefits' },
+                            { label: 'Rewards', id: 'rewards' },
+                            { label: 'Eligibility & Pricing', id: 'eligibility' }
+                        ].map((item) => (
                             <button
-                                key={item}
-                                onClick={() => scrollToSection(item.toLowerCase())}
-                                className="text-xl font-medium text-slate-300 text-left border-b border-white/5 pb-4"
+                                key={item.id}
+                                onClick={() => scrollToSection(item.id)}
+                                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
                             >
-                                {item}
+                                {item.label}
                             </button>
                         ))}
-                        <div className="pt-4 space-y-4">
-                            <Button variant="outline" className="w-full justify-center border-white/10 text-slate-300 hover:bg-white/5" onClick={() => navigate("/auth")}>Login</Button>
-                            <Button className="w-full justify-center bg-green-600 hover:bg-green-700" onClick={() => { scrollToSection('pricing'); setMobileMenuOpen(false); }}>
-                                Start Saving
-                            </Button>
+                        <div className="pt-4 mt-2 border-t border-white/5 flex flex-col gap-3">
+                            <Button variant="outline" className="w-full justify-center border-white/10 text-slate-300 hover:bg-white/5 rounded-xl" onClick={() => navigate("/auth")}>Login</Button>
                         </div>
                     </motion.div>
                 )}
@@ -128,52 +164,94 @@ const LandingPage = () => {
             {/* Render Hero Section only after loading is complete to ensure refs are hydrated */}
             <HeroIntro scrollToSection={scrollToSection} />
             <FeaturesSection />
-            <StickyScrollShowcase />
+            <div id="card-themes">
+                <StickyScrollShowcase />
+            </div>
 
             {/* Benefits Bento Grid Section */}
             <BenefitsGrid />
 
             {/* Partners/Rewards Section */}
-            <section className="py-20 bg-gradient-to-b from-slate-900 to-slate-950">
-                <div className="container mx-auto px-4 text-center">
-                    <h2 className="text-3xl font-bold mb-4 text-white">The Rewards keep coming</h2>
-                    <p className="text-slate-400 mb-12">We have partnered with top brands to bring you exclusive deals.</p>
+            <section id="rewards" className="py-24 bg-slate-950 relative overflow-hidden">
+                {/* Background Glow */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-                    <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                        {['AMAZON', 'UBER', 'ZOMATO', 'SWIGGY'].map((partner) => (
-                            <div key={partner} className="flex items-center gap-2 text-2xl font-bold text-white bg-white/5 px-6 py-3 rounded-full border border-white/10">
-                                <div className="w-8 h-8 rounded-full bg-white/10" />
-                                {partner}
+                <div className="container mx-auto px-4 relative z-10">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-bold mb-6 text-white tracking-tight">Redeem Your Tokens</h2>
+                        <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                            Exchange your hard-earned tokens for real-world rewards. Shop your favorite brands directly from the app.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                        {/* Google Play */}
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-500/20 bg-slate-900">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-green-500/10 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors" />
+
+                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
+                                    <img src="/assets/payment/google_play.png" alt="Google Play" className="w-full h-full object-contain" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-lg font-bold text-white leading-tight">Google Play</h3>
+                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Flipkart */}
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-600/20 bg-slate-900">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-blue-600/20 transition-colors" />
+
+                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
+                                    <img src="/assets/payment/flipkart.png" alt="Flipkart" className="w-full h-full object-contain" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-lg font-bold text-white leading-tight">Flipkart</h3>
+                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Amazon */}
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-orange-500/20 bg-slate-900">
+                            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-slate-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-colors" />
+
+                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
+                                    <img src="/assets/payment/amazon.png" alt="Amazon" className="w-full h-full object-contain" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-lg font-bold text-white leading-tight">Amazon</h3>
+                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Paytm */}
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-cyan-500/20 bg-slate-900">
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-colors" />
+
+                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
+                                    <img src="/assets/payment/paytm_voucher.png" alt="Paytm" className="w-full h-full object-contain" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-lg font-bold text-white leading-tight">Paytm</h3>
+                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Key Features */}
-            <section id="features" className="py-24 bg-slate-950">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-4xl font-bold text-center mb-16">Key Features</h2>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <FeatureCard
-                            icon={<Shield className="w-12 h-12 text-green-500" />}
-                            title="Security"
-                            description="Encrypted data and 2-factor authentication for total peace of mind."
-                        />
-                        <FeatureCard
-                            icon={<Smartphone className="w-12 h-12 text-green-500" />}
-                            title="Mobile App"
-                            description="Monitor spends, get timely reminders and track on the go."
-                        />
-                        <FeatureCard
-                            icon={<CreditCard className="w-12 h-12 text-green-500" />}
-                            title="Convenience"
-                            description="Intuitive interface designed for modern financial tracking."
-                        />
-                    </div>
-                </div>
-            </section>
 
             {/* Usage Stats / Eligibility */}
             <section id="eligibility" className="py-20 bg-slate-900/50 overflow-hidden">
@@ -815,7 +893,7 @@ const StickyScrollShowcase = () => {
                             className="absolute top-[65%] left-0 right-0 px-4 flex flex-col justify-center items-center lg:top-0 lg:bottom-0 lg:left-[58%] lg:right-auto lg:w-auto lg:-translate-x-1/2 lg:pl-0 lg:py-0"
                         >
                             <div className="flex flex-col items-center text-center lg:items-center lg:text-center max-w-md mx-auto lg:mx-0 w-full">
-                                <h3 className={`text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.headingGradient} mb-4 drop-shadow-sm`}>
+                                <h3 className={`text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.headingGradient} mb-4 drop-shadow-sm py-2 leading-relaxed`}>
                                     {currentTheme.label}
                                 </h3>
                                 <p className="text-slate-400 text-lg leading-relaxed mb-6">
