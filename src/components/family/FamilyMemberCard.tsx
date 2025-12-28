@@ -57,12 +57,6 @@ export function FamilyMemberCard({ member, isCurrentUserAdmin, onUpdateRole, onR
                                     {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                                 </Badge>
                             </div>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                    <Wallet className="w-3 h-3" />
-                                    <span>₹{member.allowance} allowance</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
 

@@ -92,6 +92,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
           notes: dbItem.notes,
           recurring: dbItem.recurring,
           tags: dbItem.tags,
+          isLocked: dbItem.is_locked,
           createdAt: dbItem.created_at
         }));
         dispatch({ type: "SET_ITEMS", payload: mappedData });
@@ -187,6 +188,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         notes: data.notes,
         recurring: data.recurring,
         tags: data.tags,
+        isLocked: data.is_locked,
         createdAt: data.created_at
       };
       dispatch({ type: "DELETE", payload: { id: finalId } }); // Remove optimistic

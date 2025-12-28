@@ -6,15 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
 import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
+import { ImageCropperModal } from "@/components/family/ImageCropperModal";
 import { FamilyRequestsDialog } from "@/components/family/FamilyRequestsDialog";
 import { UserRequestsDialog } from "@/components/family/UserRequestsDialog";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,13 +31,20 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { AnimatePresence } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
 
 export default function FamilyPage() {
@@ -62,6 +74,24 @@ export default function FamilyPage() {
     const [transferring, setTransferring] = useState(false);
     const [showTransferDialog, setShowTransferDialog] = useState(false);
     const [transferTargetId, setTransferTargetId] = useState<string>("");
+
+    // Edit Name state
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newFamilyName, setNewFamilyName] = useState("");
+
+    // Family Budget State
+    const [familyBudget, setFamilyBudget] = useState<any | null>(null);
+    const [showCreateBudgetDialog, setShowCreateBudgetDialog] = useState(false);
+    const [showContributeDialog, setShowContributeDialog] = useState(false);
+    const [budgetAmount, setBudgetAmount] = useState("");
+    const [contributionAmount, setContributionAmount] = useState("");
+    const [personalBudgetTotal, setPersonalBudgetTotal] = useState(0);
+    // const [personalBudgetTotal, setPersonalBudgetTotal] = useState(0);
+    const [personalRemaining, setPersonalRemaining] = useState(0);
+
+    // Image Cropper State
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
 
     const fetchFamilyData = async (isBackground = false) => {
         if (!user) return;
@@ -116,10 +146,106 @@ export default function FamilyPage() {
                 );
 
                 setMembers(enrichedMembers as FamilyMember[]);
+
+                // 5. Fetch Family Budget
+                const currentDate = new Date();
+                const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+                const { data: budgetData } = await supabase
+                    .from('family_budgets')
+                    .select('*')
+                    .eq('family_id', memberData.family_id)
+                    .eq('month', currentMonth)
+                    .maybeSingle();
+
+
+                if (budgetData) {
+                    // Fetch contributions separately
+                    const { data: contributions } = await supabase
+                        .from('family_budget_contributions')
+                        .select('*')
+                        .eq('family_budget_id', budgetData.id)
+                        .order('created_at', { ascending: false });
+
+                    // Calculate total contributed
+                    const totalContributed = (contributions || []).reduce(
+                        (sum: number, c: any) => sum + Number(c.amount),
+                        0
+                    );
+
+                    // Fetch profiles for contributors
+                    const userIds = [...new Set((contributions || []).map((c: any) => c.user_id))];
+                    let userProfiles: any[] = [];
+
+                    if (userIds.length > 0) {
+                        const { data: profiles } = await supabase
+                            .from('user_settings')
+                            .select('user_id, user_name, profile_image')
+                            .in('user_id', userIds);
+                        userProfiles = profiles || [];
+                    }
+
+                    const transformedContributions = (contributions || []).map((c: any) => {
+                        const profile = userProfiles.find((p: any) => p.user_id === c.user_id);
+                        return {
+                            ...c,
+                            profile: {
+                                name: profile?.user_name || 'Unknown',
+                                avatar_url: profile?.profile_image
+                            }
+                        };
+                    });
+
+                    setFamilyBudget({
+                        ...budgetData,
+                        total_contributed: totalContributed,
+                        contributions: transformedContributions
+                    });
+                } else {
+                    setFamilyBudget(null);
+                }
+
+                // 6. Fetch Personal Budget Info (for creating/contributing)
+                const { data: personalBudget } = await supabase
+                    .from('budgets')
+                    .select('total')
+                    .eq('month', currentMonth)
+                    .maybeSingle();
+
+                if (personalBudget) {
+                    setPersonalBudgetTotal(Number(personalBudget.total));
+
+                    // Calculate remaining balance
+                    const startOfMonth = `${currentMonth}-01`;
+                    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+
+                    const { data: expenses } = await supabase
+                        .from('expenses')
+                        .select('amount, type')
+                        .gte('date', startOfMonth)
+                        .lte('date', endOfMonth);
+
+                    const totalExpenses = (expenses || []).reduce((acc, curr) => {
+                        if (curr.type === 'expense') return acc + Number(curr.amount);
+                        // Income doesn't increase budget limit usually, but if budget is strict limit, we compare against limit
+                        // If budget is "remaining funds", we might consider income. 
+                        // Requirement: "cannot be greater that bughet craeted from his personal one" implies Budget Limit.
+                        // "budget which is lees that the ther personal budget" -> Remaining Budget?
+                        // "contribute here the remaining balce decreses" -> implies checking against (Budget - Expenses).
+                        return acc;
+                    }, 0);
+
+                    setPersonalRemaining(Math.max(0, Number(personalBudget.total) - totalExpenses));
+                } else {
+                    setPersonalBudgetTotal(0);
+                    setPersonalRemaining(0);
+                }
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching family data:", error);
+            toast.error(`Error loading family data: ${error.message || error.details || "Unknown error"}`);
+
         } finally {
             if (!isBackground) setLoading(false);
         }
@@ -197,15 +323,165 @@ export default function FamilyPage() {
                     fetchFamilyData(true); // Background update
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'family_budgets',
+                    filter: `family_id=eq.${family.id}`
+                },
+                (payload) => {
+                    console.log('Family budget change received!', payload);
+                    fetchFamilyData(true); // Background update
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expenses',
+                    filter: `user_id=eq.${user?.id}`
+                },
+                (payload) => {
+                    console.log('Personal expense changed, updating budget!', payload);
+                    fetchFamilyData(true);
+                }
+            )
             .subscribe();
 
         return () => {
             console.log("Cleaning up realtime subscription");
             supabase.removeChannel(channel);
         };
-    }, [family?.id]);
+    }, [family?.id, user?.id]);
+
+    // Dedicated subscription for the active budget contributions
+    useEffect(() => {
+        if (!familyBudget?.id) return;
+
+        console.log("Setting up contribution listener for budget:", familyBudget.id);
+
+        const channel = supabase
+            .channel(`budget-contributions-${familyBudget.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'family_budget_contributions',
+                    filter: `family_budget_id=eq.${familyBudget.id}`
+                },
+                (payload) => {
+                    console.log('Contribution received for current budget!', payload);
+                    fetchFamilyData(true);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [familyBudget?.id]);
 
     // Handlers
+    const handleCreateBudget = async () => {
+        if (!budgetAmount || Number(budgetAmount) <= 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+
+        if (Number(budgetAmount) > personalBudgetTotal) {
+            toast.error(`Family budget cannot exceed your personal budget (${personalBudgetTotal})`);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const currentDate = new Date();
+            const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+            const { error } = await supabase
+                .from('family_budgets')
+                .insert({
+                    family_id: family?.id,
+                    month: currentMonth,
+                    total_amount: Number(budgetAmount),
+                    created_by: user?.id
+                });
+
+            if (error) throw error;
+
+            toast.success("Family budget created!");
+            setShowCreateBudgetDialog(false);
+            fetchFamilyData(true);
+        } catch (error: any) {
+            toast.error(error.message || "Failed to create budget");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleContribute = async () => {
+        if (!contributionAmount || Number(contributionAmount) <= 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+
+        if (Number(contributionAmount) > personalRemaining) {
+            toast.error(`Contribution cannot exceed your remaining personal budget (${personalRemaining})`);
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // 1. Create Personal Expense (Locked)
+            const { data: expenseData, error: expenseError } = await supabase
+                .from('expenses')
+                .insert({
+                    user_id: user?.id,
+                    type: 'expense',
+                    amount: Number(contributionAmount),
+                    category: 'Family Contribution',
+                    payment_method: 'Transfer', // Required field
+                    notes: `Contribution to ${family?.name} budget`,
+                    date: new Date().toISOString(),
+                    is_locked: true // Irreversible
+                })
+                .select()
+                .single();
+
+            if (expenseError) throw expenseError;
+
+            // 2. Create Family Contribution
+            const { error: contribError } = await supabase
+                .from('family_budget_contributions')
+                .insert({
+                    family_budget_id: familyBudget.id,
+                    user_id: user?.id,
+                    amount: Number(contributionAmount),
+                    transaction_id: expenseData.id
+                });
+
+            if (contribError) {
+                // Rollback expense if contribution fails (best effort)
+                await supabase.from('expenses').delete().eq('id', expenseData.id);
+                throw contribError;
+            }
+
+            toast.success("Contribution successful!");
+            setShowContributeDialog(false);
+            setContributionAmount("");
+            fetchFamilyData(true);
+        } catch (error: any) {
+            toast.error(error.message || "Failed to contribute");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleJoin = async () => {
         if (!joinCode.trim()) return;
         setJoining(true);
@@ -259,6 +535,25 @@ export default function FamilyPage() {
             toast.error(error.message || "Failed to join family");
         } finally {
             setJoining(false);
+        }
+    };
+
+    const handleUpdateName = async () => {
+        if (!family || !newFamilyName.trim()) return;
+
+        try {
+            const { error } = await supabase
+                .from('families')
+                .update({ name: newFamilyName.trim() })
+                .eq('id', family.id);
+
+            if (error) throw error;
+
+            toast.success("Family name updated");
+            setIsEditingName(false);
+            fetchFamilyData(true);
+        } catch (error: any) {
+            toast.error(error.message);
         }
     };
 
@@ -430,6 +725,85 @@ export default function FamilyPage() {
         }
     };
 
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Verify file type/size if needed
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Image size must be less than 5MB");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            setSelectedImage(reader.result as string);
+            setIsCropperOpen(true);
+        };
+        reader.readAsDataURL(file);
+
+        // Reset input value so same file can be selected again
+        event.target.value = '';
+    };
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        if (!family) return;
+
+        // convert blob to file
+        const file = new File([croppedBlob], "family_profile.jpg", { type: "image/jpeg" });
+        await handleUpdateFamilyImage(file);
+    };
+
+    const handleUpdateFamilyImage = async (file: File) => {
+        if (!family) return;
+
+        try {
+            toast.loading("Uploading profile picture...");
+
+            // Delete old image if exists
+            if (family.profile_image) {
+                const oldPath = family.profile_image.split('/').pop();
+                if (oldPath) {
+                    await supabase.storage
+                        .from('family_profiles')
+                        .remove([oldPath]);
+                }
+            }
+
+            // Upload new image
+            const fileExt = "jpg"; // We forced jpeg in cropper
+            const fileName = `${family.id}-${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('family_profiles')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('family_profiles')
+                .getPublicUrl(fileName);
+
+            // Update family record
+            const { error: updateError } = await supabase
+                .from('families')
+                .update({ profile_image: publicUrl })
+                .eq('id', family.id);
+
+            if (updateError) throw updateError;
+
+            toast.dismiss();
+            toast.success("Profile picture updated!");
+
+            // Refresh family data
+            await fetchFamilyData(true);
+        } catch (error: any) {
+            toast.dismiss();
+            toast.error(error.message || "Failed to upload image");
+        }
+    };
+
     // --- RENDER SECTION ---
 
     // 1. Global Loading State (Settings or Family Data)
@@ -535,7 +909,7 @@ export default function FamilyPage() {
                             <CardContent>
                                 <ul className="space-y-2 mb-6 text-sm text-muted-foreground">
                                     <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Invite members via Email or Layout</li>
-                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Set monthly allowances</li>
+
                                     <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-primary" /> Manage roles and permissions</li>
                                 </ul>
                                 <Button className="w-full" onClick={() => setShowCreateDialog(true)}>
@@ -604,95 +978,294 @@ export default function FamilyPage() {
             </header>
             <main className="container mx-auto px-4 py-6 max-w-5xl space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight mb-1">{family.name}</h1>
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            <span>{members.length} Members</span>
-                            <span>•</span>
-                            <span>Created {new Date(family.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-4">
+                        <div className="relative group">
+                            <Avatar className="w-16 h-16 border-2 border-primary/20">
+                                <AvatarImage src={family.profile_image || undefined} alt={family.name} />
+                                <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                                    {family.name[0]?.toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            {isAdmin && (
+                                <>
+                                    <input
+                                        type="file"
+                                        id="family-profile-upload"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileSelect}
+                                    />
+                                    <label
+                                        htmlFor="family-profile-upload"
+                                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
+                                    >
+                                        <Camera className="w-6 h-6 text-white" />
+                                    </label>
+                                </>
+                            )}
+                        </div>
+                        <div>
+                            {isEditingName ? (
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Input
+                                        value={newFamilyName}
+                                        onChange={(e) => setNewFamilyName(e.target.value)}
+                                        className="text-2xl font-bold h-10 w-full min-w-[200px]"
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleUpdateName();
+                                            if (e.key === 'Escape') setIsEditingName(false);
+                                        }}
+                                    />
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-50" onClick={handleUpdateName}>
+                                        <Check className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => setIsEditingName(false)}>
+                                        <X className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 mb-1 group/name">
+                                    <h1 className="text-3xl font-bold tracking-tight">{family.name}</h1>
+                                    {isAdmin && (
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                                            onClick={() => {
+                                                setNewFamilyName(family.name);
+                                                setIsEditingName(true);
+                                            }}
+                                        >
+                                            <Pencil className="w-3 h-3" />
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                <span>{members.length} Members</span>
+                                <span>•</span>
+                                <span>Created {new Date(family.created_at).toLocaleDateString()}</span>
+                            </div>
                         </div>
                     </div>
 
-                    {isAdmin && (
-                        <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => setShowRequestsDialog(true)} className="gap-2">
-                                <RefreshCw className="w-4 h-4" />
-                                Requests
-                            </Button>
-                            <Button onClick={() => setShowInviteDialog(true)} className="shrink-0 gap-2">
-                                <Share2 className="w-4 h-4" />
-                                Invite Member
-                            </Button>
-                        </div>
-                    )}
+                    <div className="flex gap-2">
+                        {isAdmin && (
+                            <>
+                                <Button
+                                    size="icon"
+                                    onClick={() => setShowRequestsDialog(true)}
+                                    className="bg-sky-500 hover:bg-sky-600 text-white border-0"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    onClick={() => setShowInviteDialog(true)}
+                                    className="bg-green-500 hover:bg-green-600 text-white border-0"
+                                >
+                                    <Share2 className="w-4 h-4" />
+                                </Button>
+                            </>
+                        )}
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => setShowLeaveDialog(true)}
+                            disabled={leaving}
+                        >
+                            {leaving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <LogOut className="w-4 h-4" />
+                            )}
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-3">
-                    {/* Main Content - Members List */}
+                    {/* Main Content Area - Left Side */}
                     <div className="md:col-span-2 space-y-6">
-                        <section className="space-y-3">
-                            <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
-                            <div className="grid gap-3">
-                                <AnimatePresence mode="popLayout">
-                                    {members.map(member => (
-                                        <FamilyMemberCard
-                                            key={member.user_id}
-                                            member={member}
-                                            isCurrentUserAdmin={isAdmin}
-                                            onUpdateRole={handleUpdateRole}
-                                            onRemove={handleRemoveMember}
-                                        />
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-                        </section>
-                    </div>
-
-                    {/* Sidebar - Stats / Info */}
-                    <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Stats</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Total Allowance</span>
-                                    <span className="font-medium">₹{members.reduce((acc, m) => acc + (Number(m.allowance) || 0), 0)}</span>
-                                </div>
-                                <div className="p-3 bg-primary/5 rounded-lg text-xs text-muted-foreground leading-relaxed">
-                                    Pro Tip: Monthly allowances reset automatically on the 1st of every month.
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-destructive/50">
-                            <CardHeader>
-                                <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+                                <CardTitle className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <PiggyBank className="w-5 h-5 text-primary" />
+                                        Monthly Budget
+                                    </div>
+                                    {familyBudget && (
+                                        <Badge variant="outline" className="font-mono">
+                                            {new Date(familyBudget.month + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+                                        </Badge>
+                                    )}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <Button
-                                    variant="destructive"
-                                    className="w-full gap-2"
-                                    onClick={() => setShowLeaveDialog(true)}
-                                    disabled={leaving}
-                                >
-                                    {leaving ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <LogOut className="w-4 h-4" />
-                                    )}
-                                    Leave Family
-                                </Button>
-                                {isAdmin && (
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        {members.filter(m => m.role === 'admin').length <= 1
-                                            ? "As the last admin, leaving will delete the family."
-                                            : "You can leave anytime. Another admin will manage the family."}
-                                    </p>
+                                {!familyBudget ? (
+                                    <div className="text-center py-8 space-y-4">
+                                        <div className="p-4 bg-secondary/50 rounded-full w-fit mx-auto">
+                                            <TrendingUp className="w-8 h-8 text-muted-foreground/50" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-lg">No budget set for this month</p>
+                                            <p className="text-muted-foreground">Pool funds together for shared family goals.</p>
+                                        </div>
+                                        {isAdmin && (
+                                            <Button onClick={() => setShowCreateBudgetDialog(true)} className="gap-2">
+                                                <Plus className="w-4 h-4" />
+                                                Create Budget
+                                            </Button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-sm text-muted-foreground">Raised Amount</span>
+                                                <div className="text-right">
+                                                    <span className="text-2xl font-bold text-green-600">₹{familyBudget.total_contributed || 0}</span>
+                                                    <span className="text-muted-foreground text-sm ml-1">/ ₹{familyBudget.total_amount}</span>
+                                                </div>
+                                            </div>
+                                            <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out"
+                                                    style={{ width: `${Math.min(100, ((familyBudget.total_contributed || 0) / familyBudget.total_amount) * 100)}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-xs text-muted-foreground">
+                                                <span>0%</span>
+                                                <span>50%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="font-medium text-sm">Your Contribution</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Available: ₹{personalRemaining.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                                <Button onClick={() => setShowContributeDialog(true)} className="gap-2">
+                                                    <Wallet className="w-4 h-4" />
+                                                    Contribute
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {familyBudget.contributions && familyBudget.contributions.length > 0 && (
+                                            <div className="space-y-4 pt-2">
+                                                <h4 className="text-sm font-semibold flex items-center gap-2">
+                                                    <Users className="w-4 h-4" />
+                                                    Recent Contributions
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {familyBudget.contributions.map((contribution: any) => (
+                                                        <div key={contribution.id} className="flex items-center justify-between p-3 bg-card border rounded-lg hover:bg-accent/5 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar className="w-8 h-8 border">
+                                                                    <AvatarImage src={contribution.profile?.avatar_url} />
+                                                                    <AvatarFallback>{contribution.profile?.name?.[0]}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div>
+                                                                    <p className="text-sm font-medium leading-none">{contribution.profile?.name}</p>
+                                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                                        {new Date(contribution.created_at).toLocaleDateString()}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-bold text-green-600">+₹{contribution.amount}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Right Sidebar - Family Members */}
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
+                        <div className="space-y-3">
+                            <AnimatePresence mode="popLayout">
+                                {members.map(member => (
+                                    <motion.div
+                                        key={member.user_id}
+                                        layout
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Card className="overflow-hidden">
+                                            <CardContent className="p-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="w-10 h-10 border-2 border-background">
+                                                        <AvatarImage src={member.profile?.avatar_url} />
+                                                        <AvatarFallback>
+                                                            {member.profile?.name ? member.profile.name.substring(0, 2).toUpperCase() : "U"}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-semibold text-sm truncate">
+                                                            {member.profile?.name || "Family Member"}
+                                                        </h3>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className={`gap-1 h-5 text-[10px] px-1.5 ${member.role === 'admin'
+                                                                    ? 'bg-purple-500/10 text-purple-500'
+                                                                    : member.role === 'viewer'
+                                                                        ? 'bg-gray-500/10 text-gray-500'
+                                                                        : 'bg-blue-500/10 text-blue-500'
+                                                                    }`}
+                                                            >
+                                                                {member.role === 'admin' && <Shield className="w-3 h-3" />}
+                                                                {member.role === 'member' && <User className="w-3 h-3" />}
+                                                                {member.role === 'viewer' && <Eye className="w-3 h-3" />}
+                                                                {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                    {isAdmin && member.role !== 'admin' && (
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                    <MoreVertical className="w-4 h-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'admin')}>
+                                                                    Transfer Admin Rights
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
+                                                                    Make Member
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
+                                                                    Make Viewer
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-red-500" onClick={() => handleRemoveMember(member.user_id)}>
+                                                                    Remove from Family
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+
                 </div>
 
                 <InviteMemberDialog
@@ -809,7 +1382,96 @@ export default function FamilyPage() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+
+                <Dialog open={showCreateBudgetDialog} onOpenChange={setShowCreateBudgetDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Create Monthly Budget</DialogTitle>
+                            <DialogDescription>
+                                Set a budget goal for your family this month.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="budget-amount">Budget Amount</Label>
+                                <Input
+                                    id="budget-amount"
+                                    type="number"
+                                    placeholder="e.g. 50000"
+                                    value={budgetAmount}
+                                    onChange={(e) => setBudgetAmount(e.target.value)}
+                                />
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground flex items-center gap-1">
+                                        <Shield className="w-3 h-3" /> Max Limit (Your Budget)
+                                    </span>
+                                    <span className={`font-medium ${Number(budgetAmount) > personalBudgetTotal ? 'text-red-500' : 'text-green-600'}`}>
+                                        ₹{personalBudgetTotal}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowCreateBudgetDialog(false)}>Cancel</Button>
+                            <Button onClick={handleCreateBudget} disabled={loading}>
+                                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                Create Budget
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={showContributeDialog} onOpenChange={setShowContributeDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Contribute to Family Budget</DialogTitle>
+                            <DialogDescription>
+                                Add funds from your personal wallet to the family pool.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                                <Lock className="w-4 h-4 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="font-medium">Non-refundable contribution</p>
+                                    <p className="text-xs opacity-90 mt-1">
+                                        Once contributed, this amount will be deducted from your personal budget and cannot be reverted or deleted.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="contrib-amount">Contribution Amount</Label>
+                                <Input
+                                    id="contrib-amount"
+                                    type="number"
+                                    placeholder="e.g. 1000"
+                                    value={contributionAmount}
+                                    onChange={(e) => setContributionAmount(e.target.value)}
+                                />
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">Available to contribute:</span>
+                                    <span className={`font-medium ${Number(contributionAmount) > personalRemaining ? 'text-red-500' : 'text-green-600'}`}>
+                                        ₹{personalRemaining}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowContributeDialog(false)}>Cancel</Button>
+                            <Button onClick={handleContribute} disabled={loading} className="bg-green-600 hover:bg-green-700">
+                                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                Confirm Contribution
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </main>
+            <ImageCropperModal
+                open={isCropperOpen}
+                onClose={() => setIsCropperOpen(false)}
+                imageSrc={selectedImage}
+                onCropComplete={handleCropComplete}
+            />
         </div>
     );
 

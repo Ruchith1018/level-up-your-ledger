@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart3, Calendar, Home, ShoppingBag, Settings, Bell, Menu, Sun, Moon, LogOut, MessageSquareWarning, UserPlus, Loader2, Users, Trophy } from "lucide-react";
+import { BarChart3, Calendar, Home, ShoppingBag, Settings, Bell, Menu, Sun, Moon, LogOut, MessageSquareWarning, UserPlus, Loader2, Users, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -171,47 +177,84 @@ export function AppSidebar() {
 
     return (
         <>
-            <div className="hidden md:flex h-screen w-64 flex-col fixed left-0 top-0 bg-card/50 backdrop-blur-xl z-50">
+            <div className="hidden md:flex h-screen md:w-20 lg:w-64 flex-col fixed left-0 top-0 border-r bg-card/50 backdrop-blur-xl z-50 transition-all duration-300">
                 {/* Header / Logo */}
-                <div className="h-[88px] px-6 flex items-center gap-3 border-b border-border">
+                <div className="h-[88px] md:px-0 lg:px-6 flex items-center md:justify-center lg:justify-start gap-3">
                     <img
                         src="/logo.jpg"
                         alt="BudGlio Logo"
-                        className="w-12 h-12 rounded-2xl object-cover shadow-sm"
+                        className="md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-2xl object-cover shadow-sm"
                     />
-                    <div className="flex flex-col justify-center">
+                    <div className="hidden lg:flex flex-col justify-center">
                         <span className="font-bold text-2xl text-green-600 leading-none tracking-tight">BudGlio</span>
                         <span className="text-xs text-muted-foreground font-medium mt-0.5">Gamified Finance Tracker</span>
                     </div>
                 </div>
 
-                {/* Navigation Items */}
-                <div className="flex-1 py-6 px-3 space-y-2">
-                    {navItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                {/* Profile Section */}
+                <div className="md:px-2 lg:px-6 py-4 flex flex-col items-center gap-3">
+                    <div className="md:w-10 md:h-10 lg:w-20 lg:h-20 rounded-full overflow-hidden border-2 border-primary/20 transition-all duration-300">
+                        {settings.profileImage ? (
+                            <img
+                                src={settings.profileImage}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold md:text-sm lg:text-2xl">
+                                {settings.userName?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                        )}
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 hidden lg:flex"
+                        onClick={() => navigate('/profile')}
+                    >
+                        <User className="w-4 h-4" />
+                        {settings.userName || 'User'}
+                    </Button>
+                </div>
 
-                        return (
-                            <Button
-                                key={item.path}
-                                id={item.id}
-                                variant={isActive ? "secondary" : "ghost"}
-                                className={cn(
-                                    "w-full justify-start gap-3 text-base h-12 font-medium relative",
-                                    isActive && "bg-primary/10 text-primary hover:bg-primary/20",
-                                    !isActive && "text-muted-foreground"
-                                )}
-                                onClick={() => navigate(item.path)}
-                            >
-                                <item.icon className="w-5 h-5" />
-                                <span>{item.label}</span>
-                                {item.label === "Notifications" && notificationCount > 0 && (
-                                    <span className="absolute right-3 flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce shadow-sm">
-                                        {notificationCount}
-                                    </span>
-                                )}
-                            </Button>
-                        );
-                    })}
+                {/* Navigation Items */}
+                <div className="flex-1 py-6 md:px-2 lg:px-3 space-y-2">
+                    <TooltipProvider delayDuration={0}>
+                        {navItems.map((item) => {
+                            const isActive = location.pathname === item.path;
+
+                            return (
+                                <Tooltip key={item.path}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            id={item.id}
+                                            variant={isActive ? "secondary" : "ghost"}
+                                            className={cn(
+                                                "w-full md:justify-center lg:justify-start gap-3 text-base h-12 font-medium relative transition-all duration-200",
+                                                isActive && "bg-primary/10 text-primary hover:bg-primary/20",
+                                                !isActive && "text-muted-foreground"
+                                            )}
+                                            onClick={() => navigate(item.path)}
+                                        >
+                                            <item.icon className="w-5 h-5" />
+                                            <span className="hidden lg:inline">{item.label}</span>
+                                            {item.label === "Notifications" && notificationCount > 0 && (
+                                                <span className={cn(
+                                                    "absolute flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-600 rounded-full animate-bounce shadow-sm",
+                                                    "md:top-1 md:right-1 lg:top-auto lg:right-3"
+                                                )}>
+                                                    {notificationCount}
+                                                </span>
+                                            )}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" className="lg:hidden flex items-center">
+                                        {item.label}
+                                    </TooltipContent>
+                                </Tooltip>
+                            );
+                        })}
+                    </TooltipProvider>
                 </div>
 
                 {/* More Menu (Bottom) */}
@@ -220,10 +263,10 @@ export function AppSidebar() {
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
-                                className="w-full justify-start gap-3 text-base h-12 font-medium text-muted-foreground hover:bg-secondary/50"
+                                className="w-full md:justify-center lg:justify-start gap-3 text-base h-12 font-medium text-muted-foreground hover:bg-secondary/50"
                             >
                                 <Menu className="w-6 h-6" />
-                                <span>More</span>
+                                <span className="hidden lg:inline">More</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-60 mb-2 ml-2 p-2" sideOffset={10}>

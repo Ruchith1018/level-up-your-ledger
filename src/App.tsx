@@ -41,6 +41,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import FamilyPage from "./pages/FamilyPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import PremiumPage from "./pages/PremiumPage";
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
                                                             <Route path="/family" element={<FamilyPage />} />
                                                             <Route path="/leaderboard" element={<LeaderboardPage />} />
                                                             <Route path="/premium" element={<PremiumPage />} />
+                                                            <Route path="/profile" element={<ProfilePage />} />
                                                         </Route>
                                                     </Route>
 

@@ -117,18 +117,25 @@ export function TransactionList() {
                         <div className="text-sm text-muted-foreground">
                           {dayjs(transaction.date).format("MMMM D, YYYY h:mm A")}
                         </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="h-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTransaction(transaction.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
+                        {!transaction.isLocked && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTransaction(transaction.id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        )}
+                        {transaction.isLocked && (
+                          <span className="text-xs text-muted-foreground italic flex items-center">
+                            🔒 Family Contribution
+                          </span>
+                        )}
                       </div>
                     </motion.div>
                   )}

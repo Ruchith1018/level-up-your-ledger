@@ -14,6 +14,7 @@ export interface Expense {
   };
   createdAt: string;
   tags?: string[];
+  isLocked?: boolean;
 }
 
 export interface Budget {
@@ -116,6 +117,7 @@ export interface Family {
   created_at: string;
   created_by: string;
   currency: string;
+  profile_image?: string;
   // Optional enriched field for invites
   invitedBy?: string;
 }
@@ -147,6 +149,32 @@ export interface FamilyRequest {
   profile?: {
     name?: string;
     email?: string;
+    avatar_url?: string;
+  };
+}
+
+export interface FamilyBudget {
+  id: string;
+  family_id: string;
+  month: string;
+  total_amount: number;
+  created_by: string;
+  created_at: string;
+  // Optional enriched fields
+  contributions?: FamilyBudgetContribution[];
+  total_contributed?: number;
+}
+
+export interface FamilyBudgetContribution {
+  id: string;
+  family_budget_id: string;
+  user_id: string;
+  amount: number;
+  transaction_id?: string;
+  created_at: string;
+  // Optional enriched fields
+  profile?: {
+    name?: string;
     avatar_url?: string;
   };
 }
