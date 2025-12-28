@@ -28,8 +28,36 @@ export const PaymentRegistrationDialog = ({ planType, price, open, onOpenChange,
     });
     const [loading, setLoading] = useState(false);
 
+    const [emailError, setEmailError] = useState("");
+    const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
+    const checkEmail = async (email: string) => {
+        if (!email || !email.includes('@')) return;
+
+        setIsCheckingEmail(true);
+        setEmailError("");
+
+        try {
+            const { data, error } = await supabase.functions.invoke('check-user-existence', {
+                body: { email }
+            });
+
+            if (error) throw error;
+
+            if (data?.exists) {
+                setEmailError("Account already exists with this email");
+                toast.error("Account already exists. Please login instead.");
+            }
+        } catch (err) {
+            console.error("Error checking email:", err);
+        } finally {
+            setIsCheckingEmail(false);
+        }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
+        if (e.target.id === 'email') setEmailError("");
     };
 
     const handlePayment = async (e: React.FormEvent) => {
@@ -139,7 +167,18 @@ export const PaymentRegistrationDialog = ({ planType, price, open, onOpenChange,
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="john@example.com" required value={formData.email} onChange={handleInputChange} />
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="john@example.com"
+                            required
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            onBlur={() => checkEmail(formData.email)}
+                            className={emailError ? "border-red-500" : ""}
+                        />
+                        {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+                        {isCheckingEmail && <p className="text-xs text-muted-foreground">Checking availability...</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="phone">Phone</Label>

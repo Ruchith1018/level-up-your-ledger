@@ -345,40 +345,90 @@ serve(async (req) => {
 
                 if (countError) throw countError;
 
-                // If this is the last admin, delete the entire family
+                // If this is the last admin
                 if (adminCount && (adminCount as any).count <= 1) {
-                    // Delete all family members first
-                    const { error: deleteMembersError } = await supabaseAdmin
+
+                    // Check if there are ANY other members
+                    const { count: totalMembers, error: memberCountError } = await supabaseAdmin
                         .from('family_members')
-                        .delete()
+                        .select('*', { count: 'exact', head: true })
                         .eq('family_id', familyId);
 
-                    if (deleteMembersError) throw deleteMembersError;
+                    if (memberCountError) throw memberCountError;
 
-                    // Delete all family requests
-                    const { error: deleteRequestsError } = await supabaseAdmin
-                        .from('family_requests')
-                        .delete()
-                        .eq('family_id', familyId);
+                    console.log(`[Leave] Family: ${familyId}, Total Members: ${totalMembers}`);
 
-                    if (deleteRequestsError) throw deleteRequestsError;
+                    // If other members exist, require a successor
+                    if (totalMembers && totalMembers > 1) {
+                        const { successor_id } = params;
 
-                    // Delete the family itself
-                    const { error: deleteFamilyError } = await supabaseAdmin
-                        .from('families')
-                        .delete()
-                        .eq('id', familyId);
+                        if (!successor_id) {
+                            throw new Error('As the last admin, you must appoint a successor before leaving.');
+                        }
 
-                    if (deleteFamilyError) throw deleteFamilyError;
+                        // Verify successor is a member of this family
+                        const { data: successor, error: succError } = await supabaseAdmin
+                            .from('family_members')
+                            .select('user_id')
+                            .eq('family_id', familyId)
+                            .eq('user_id', successor_id)
+                            .single();
 
-                    return new Response(
-                        JSON.stringify({
-                            success: true,
-                            message: 'You left the family. As the last admin, the family has been deleted.',
-                            familyDeleted: true
-                        }),
-                        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                    );
+                        if (succError || !successor) {
+                            throw new Error('Invalid successor selected.');
+                        }
+
+                        // Promote successor
+                        const { error: promoteError } = await supabaseAdmin
+                            .from('family_members')
+                            .update({ role: 'admin' })
+                            .eq('family_id', familyId)
+                            .eq('user_id', successor_id);
+
+                        if (promoteError) throw promoteError;
+
+                    } else {
+                        // NO other members exist. 
+                        // We will delete the member, and the database trigger `trg_auto_delete_family` 
+                        // will automatically delete the family and requests.
+                        console.log(`[Leave] Last member leaving family ${familyId}. Trigger should handle cleanup.`);
+
+                        const { error: deleteMemberError } = await supabaseAdmin
+                            .from('family_members')
+                            .delete()
+                            .eq('family_id', familyId)
+                            .eq('user_id', user.id);
+
+                        if (deleteMemberError) {
+                            console.error("[Leave] Error deleting member:", deleteMemberError);
+                            throw deleteMemberError;
+                        }
+
+                        // DOUBLE CHECK: Did the trigger work?
+                        const { data: checkData, error: checkError } = await supabaseAdmin
+                            .from('families')
+                            .select('id')
+                            .eq('id', familyId)
+                            .maybeSingle();
+
+                        if (checkData) {
+                            console.warn("[Leave] WARNING: Family still exists. Trigger might not have fired or failed.");
+                            // Fallback: Try explicit delete if trigger failed (redundancy)
+                            await supabaseAdmin.rpc('delete_family_atomic', { target_family_id: familyId });
+                        } else {
+                            console.log("[Leave] Verification successful: Family is gone (handled by trigger).");
+                        }
+
+                        return new Response(
+                            JSON.stringify({
+                                success: true,
+                                message: 'You left the family. As the last admin, the family has been deleted.',
+                                familyDeleted: true
+                            }),
+                            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                        );
+                    }
+
                 }
             }
 
@@ -395,6 +445,98 @@ serve(async (req) => {
                 JSON.stringify({ success: true, message: 'You have left the family successfully' }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
+        }
+
+        else if (action === 'cancel_request') {
+            const { request_id } = params;
+            if (!request_id) throw new Error('Missing request_id');
+
+            // 1. Get Request to verify ownership
+            const { data: request, error: reqError } = await supabaseAdmin
+                .from('family_requests')
+                .select('*')
+                .eq('id', request_id)
+                .single();
+
+            if (reqError || !request) throw new Error('Request not found');
+
+            // 2. Verify Ownership
+            if (request.user_id !== user.id) {
+                throw new Error('Unauthorized: You can only cancel your own requests');
+            }
+
+            // 3. Delete the request
+            const { error: deleteError } = await supabaseAdmin
+                .from('family_requests')
+                .delete()
+                .eq('id', request_id);
+
+            if (deleteError) throw deleteError;
+
+            return new Response(JSON.stringify({ success: true, message: 'Request cancelled successfully' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+        } else if (action === 'transfer_admin') {
+            const { target_user_id } = params;
+            if (!target_user_id) throw new Error('Missing target_user_id');
+
+            if (target_user_id === user.id) throw new Error('Cannot transfer admin rights to yourself');
+
+            // 1. Get Current User Membership (Verify Admin)
+            const { data: currentUserMember, error: currMemberError } = await supabaseAdmin
+                .from('family_members')
+                .select('family_id, role')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (currMemberError) throw currMemberError;
+            if (!currentUserMember || currentUserMember.role !== 'admin') {
+                throw new Error('Unauthorized: You must be an admin to transfer rights');
+            }
+
+            const familyId = currentUserMember.family_id;
+
+            // 2. Verify Target User is in the SAME family
+            const { data: targetMember, error: targetError } = await supabaseAdmin
+                .from('family_members')
+                .select('role')
+                .eq('family_id', familyId)
+                .eq('user_id', target_user_id)
+                .maybeSingle();
+
+            if (targetError || !targetMember) {
+                throw new Error('Target user is not a member of this family');
+            }
+
+            // 3. Perform Role Swap (Sequential updates)
+            // A. Demote current admin to member
+            const { error: demoteError } = await supabaseAdmin
+                .from('family_members')
+                .update({ role: 'member' })
+                .eq('family_id', familyId)
+                .eq('user_id', user.id);
+
+            if (demoteError) throw demoteError;
+
+            // B. Promote target to admin
+            const { error: promoteError } = await supabaseAdmin
+                .from('family_members')
+                .update({ role: 'admin' })
+                .eq('family_id', familyId)
+                .eq('user_id', target_user_id);
+
+            if (promoteError) {
+                // Critical: If promotion fails, try to revert demotion (best effort)
+                console.error("Critical: Promotion failed after demotion. Attempting revert.", promoteError);
+                await supabaseAdmin
+                    .from('family_members')
+                    .update({ role: 'admin' })
+                    .eq('family_id', familyId)
+                    .eq('user_id', user.id);
+                throw promoteError;
+            }
+
+            return new Response(JSON.stringify({ success: true, message: 'Admin rights transferred successfully' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
         }
 
         throw new Error('Invalid Action');

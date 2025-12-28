@@ -84,7 +84,11 @@ CREATE POLICY "Admins can update their family"
 DROP POLICY IF EXISTS "Members can view family members" ON public.family_members;
 CREATE POLICY "Members can view family members"
     ON public.family_members FOR SELECT
-    USING (family_id IN (SELECT get_my_family_ids()));
+    USING (
+        family_id IN (SELECT get_my_family_ids())
+        OR
+        user_id = auth.uid()
+    );
 
 DROP POLICY IF EXISTS "Admins can insert members" ON public.family_members;
 CREATE POLICY "Admins or Creators can insert members"

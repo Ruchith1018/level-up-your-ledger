@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -7,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
 import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
-import { FamilyRequestsList } from "@/components/family/FamilyRequestsList";
+import { FamilyRequestsDialog } from "@/components/family/FamilyRequestsDialog";
+import { UserRequestsDialog } from "@/components/family/UserRequestsDialog";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useNavigate } from "react-router-dom";
-import { PendingInvites } from "@/components/family/PendingInvites";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,6 +25,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { AnimatePresence } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
 
 export default function FamilyPage() {
     const { user } = useAuth();
@@ -43,15 +51,21 @@ export default function FamilyPage() {
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [showInviteDialog, setShowInviteDialog] = useState(false);
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [showRequestsDialog, setShowRequestsDialog] = useState(false);
+    const [showUserRequestsDialog, setShowUserRequestsDialog] = useState(false);
+    const [successorId, setSuccessorId] = useState<string>("");
 
     // Join state
     const [joinCode, setJoinCode] = useState("");
     const [joining, setJoining] = useState(false);
     const [leaving, setLeaving] = useState(false);
+    const [transferring, setTransferring] = useState(false);
+    const [showTransferDialog, setShowTransferDialog] = useState(false);
+    const [transferTargetId, setTransferTargetId] = useState<string>("");
 
-    const fetchFamilyData = async () => {
+    const fetchFamilyData = async (isBackground = false) => {
         if (!user) return;
-        setLoading(true);
+        if (!isBackground) setLoading(true);
         try {
             // 1. Check membership
             const { data: memberData, error: memberError } = await supabase
@@ -107,7 +121,7 @@ export default function FamilyPage() {
         } catch (error) {
             console.error("Error fetching family data:", error);
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
@@ -122,6 +136,74 @@ export default function FamilyPage() {
             setLoading(false);
         }
     }, [user, settings.hasPremiumPack, settingsLoading]);
+
+    // Realtime Subscription for detecting when I get added to a family (Entry)
+    useEffect(() => {
+        if (!user || family?.id) return; // Only listen if NOT in a family
+
+        const channel = supabase
+            .channel(`my-membership-status-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'family_members',
+                    filter: `user_id=eq.${user.id}`
+                },
+                (payload) => {
+                    console.log('My membership status changed!', payload);
+                    fetchFamilyData(true); // Background update
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user, family?.id]); // Re-run if family state changes
+
+    // Realtime Subscription for Family Updates (While in a family)
+    useEffect(() => {
+        if (!family?.id) return;
+
+        console.log("Setting up realtime subscription for family:", family.id);
+
+        const channel = supabase
+            .channel(`family-updates-${family.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'family_members',
+                    filter: `family_id=eq.${family.id}`
+                },
+                (payload) => {
+                    console.log('Family member change received!', payload);
+                    fetchFamilyData(true); // Background update
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'families',
+                    filter: `id=eq.${family.id}`
+                },
+                (payload) => {
+                    console.log('Family details change received!', payload);
+                    fetchFamilyData(true); // Background update
+                }
+            )
+            .subscribe();
+
+        return () => {
+            console.log("Cleaning up realtime subscription");
+            supabase.removeChannel(channel);
+        };
+    }, [family?.id]);
 
     // Handlers
     const handleJoin = async () => {
@@ -181,6 +263,12 @@ export default function FamilyPage() {
     };
 
     const handleUpdateRole = async (memberId: string, newRole: string) => {
+        if (newRole === 'admin') {
+            setTransferTargetId(memberId);
+            setShowTransferDialog(true);
+            return;
+        }
+
         // Optimistic update
         setMembers(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole as any } : m));
 
@@ -198,6 +286,74 @@ export default function FamilyPage() {
         } catch (error) {
             toast.error("Failed to update role");
             fetchFamilyData(); // Revert
+        }
+    };
+
+    const handleTransferAdmin = async () => {
+        if (!transferTargetId) return;
+
+        // 1. Optimistic Updates
+        // Capture previous state for rollback
+        const prevMembers = [...members];
+        const prevMembership = membership ? { ...membership } : null;
+
+        // Update UI immediately (Instant feel)
+        setMembers(prev => prev.map(m => {
+            if (m.user_id === user?.id) return { ...m, role: 'member' };
+            if (m.user_id === transferTargetId) return { ...m, role: 'admin' };
+            return m;
+        }));
+
+        // Update my own membership state (hides admin controls immediately)
+        setMembership(prev => prev ? { ...prev, role: 'member' } : null);
+
+        // Close Dialog & Reset
+        setShowTransferDialog(false);
+        setTransferTargetId("");
+
+        // We still set transferring true internally for the async op, 
+        // but since dialog is closed, user sees instant success.
+        setTransferring(true);
+
+        try {
+            // Refresh session to ensure token is valid
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+
+            if (refreshError || !refreshedSession?.access_token) {
+                toast.error("Session expired. Please re-login.");
+                // Revert
+                setMembers(prevMembers);
+                setMembership(prevMembership);
+                return;
+            }
+
+            const { data, error } = await supabase.functions.invoke('manage-family', {
+                headers: { Authorization: `Bearer ${refreshedSession.access_token}` },
+                body: {
+                    action: 'transfer_admin',
+                    target_user_id: transferTargetId,
+                    access_token: refreshedSession.access_token
+                }
+            });
+
+            if (error) throw error;
+            if (!data.success) throw new Error(data.error);
+
+            toast.success(data.message || "Admin rights transferred successfully");
+
+            // Background refresh to ensure consistency
+            await fetchFamilyData(true);
+
+        } catch (error: any) {
+            console.error("Transfer Admin Error:", error);
+            toast.error(error.message || "Failed to transfer admin rights");
+
+            // Revert state on error
+            setMembers(prevMembers);
+            setMembership(prevMembership);
+            // Re-open dialog? Maybe not, just let them try again.
+        } finally {
+            setTransferring(false);
         }
     };
 
@@ -345,11 +501,15 @@ export default function FamilyPage() {
         return (
             <div className="min-h-screen bg-background">
                 <header className="h-[88px] border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 flex items-center transition-all duration-200">
-                    <div className="container mx-auto px-4">
+                    <div className="container mx-auto px-4 flex justify-between items-center">
                         <div>
                             <h1 className="text-2xl font-bold">Family Tracking</h1>
                             <p className="text-sm text-muted-foreground">Manage your shared finances</p>
                         </div>
+                        <Button variant="outline" onClick={() => setShowUserRequestsDialog(true)} className="gap-2">
+                            <RefreshCw className="w-4 h-4" />
+                            Requests
+                        </Button>
                     </div>
                 </header>
                 <main className="container mx-auto px-4 py-8 max-w-4xl space-y-8 animate-in fade-in duration-500">
@@ -359,9 +519,6 @@ export default function FamilyPage() {
                             Create or join a family to start tracking expenses together.
                         </p>
                     </div>
-
-                    {/* Pending Invites Section */}
-                    <PendingInvites onInviteAccepted={fetchFamilyData} />
 
                     <div className="grid md:grid-cols-2 gap-8 mt-12">
                         {/* Create Family */}
@@ -422,6 +579,11 @@ export default function FamilyPage() {
                         onOpenChange={setShowCreateDialog}
                         onFamilyCreated={fetchFamilyData}
                     />
+                    <UserRequestsDialog
+                        open={showUserRequestsDialog}
+                        onOpenChange={setShowUserRequestsDialog}
+                        onUpdate={fetchFamilyData}
+                    />
                 </main>
             </div>
         );
@@ -452,10 +614,16 @@ export default function FamilyPage() {
                     </div>
 
                     {isAdmin && (
-                        <Button onClick={() => setShowInviteDialog(true)} className="shrink-0 gap-2">
-                            <Share2 className="w-4 h-4" />
-                            Invite Member
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setShowRequestsDialog(true)} className="gap-2">
+                                <RefreshCw className="w-4 h-4" />
+                                Requests
+                            </Button>
+                            <Button onClick={() => setShowInviteDialog(true)} className="shrink-0 gap-2">
+                                <Share2 className="w-4 h-4" />
+                                Invite Member
+                            </Button>
+                        </div>
                     )}
                 </div>
 
@@ -465,21 +633,18 @@ export default function FamilyPage() {
                         <section className="space-y-3">
                             <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
                             <div className="grid gap-3">
-                                {members.map(member => (
-                                    <FamilyMemberCard
-                                        key={member.user_id}
-                                        member={member}
-                                        isCurrentUserAdmin={isAdmin}
-                                        onUpdateRole={handleUpdateRole}
-                                        onRemove={handleRemoveMember}
-                                    />
-                                ))}
+                                <AnimatePresence mode="popLayout">
+                                    {members.map(member => (
+                                        <FamilyMemberCard
+                                            key={member.user_id}
+                                            member={member}
+                                            isCurrentUserAdmin={isAdmin}
+                                            onUpdateRole={handleUpdateRole}
+                                            onRemove={handleRemoveMember}
+                                        />
+                                    ))}
+                                </AnimatePresence>
                             </div>
-                        </section>
-
-                        {/* Pending Requests */}
-                        <section>
-                            <FamilyRequestsList familyId={family.id} isAdmin={isAdmin} />
                         </section>
                     </div>
 
@@ -494,7 +659,6 @@ export default function FamilyPage() {
                                     <span className="text-muted-foreground">Total Allowance</span>
                                     <span className="font-medium">₹{members.reduce((acc, m) => acc + (Number(m.allowance) || 0), 0)}</span>
                                 </div>
-                                {/* Add more stats later */}
                                 <div className="p-3 bg-primary/5 rounded-lg text-xs text-muted-foreground leading-relaxed">
                                     Pro Tip: Monthly allowances reset automatically on the 1st of every month.
                                 </div>
@@ -538,34 +702,108 @@ export default function FamilyPage() {
                     shareCode={family.share_code}
                 />
 
-                <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+                <FamilyRequestsDialog
+                    open={showRequestsDialog}
+                    onOpenChange={setShowRequestsDialog}
+                    familyId={family.id}
+                    isAdmin={isAdmin}
+                />
+
+                <AlertDialog open={showLeaveDialog} onOpenChange={(open) => {
+                    setShowLeaveDialog(open);
+                    if (!open) setSuccessorId("");
+                }}>
                     <AlertDialogContent className="rounded-2xl">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Leave Family?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                {isAdmin && members.filter(m => m.role === 'admin').length <= 1 ? (
-                                    <>
-                                        You are the last admin. <strong>Leaving will permanently delete this family</strong> and remove all members. This action cannot be undone.
-                                    </>
-                                ) : (
-                                    "Are you sure you want to leave this family? You'll need a new invitation to rejoin."
-                                )}
+                            <AlertDialogTitle>Leave Family</AlertDialogTitle>
+                            <AlertDialogDescription asChild>
+                                <div>
+                                    {isAdmin && members.filter(m => m.role === 'admin').length <= 1 ? (
+                                        members.length > 1 ? (
+                                            // Case: Last admin, but other members exist (BLOCK: Must Transfer First)
+                                            <div className="space-y-4 pt-2">
+                                                <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200 rounded-lg text-sm border border-red-200 dark:border-red-900">
+                                                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                                                    <div className="space-y-1">
+                                                        <p className="font-medium">Action Required: Transfer Ownership</p>
+                                                        <p>You are the only admin. You cannot leave the family while you hold the Admin role.</p>
+                                                        <p className="mt-2 font-medium">Please transfer admin rights to another member first.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // Case: Last admin, no other members (Delete family)
+                                            <div className="pt-2">
+                                                You are the last admin. <strong>Leaving will permanently delete this family</strong> and remove all members. This action cannot be undone.
+                                            </div>
+                                        )
+                                    ) : (
+                                        // Case: Normal leave
+                                        <div className="pt-2">
+                                            Are you sure you want to leave this family? You'll need a new invitation to rejoin.
+                                        </div>
+                                    )}
+                                </div>
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel disabled={leaving}>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel disabled={leaving}>
+                                {isAdmin && members.filter(m => m.role === 'admin').length <= 1 && members.length > 1
+                                    ? "Close"
+                                    : "Cancel"}
+                            </AlertDialogCancel>
+
+                            {/* Hide Leave Button if Blocking Condition is Met */}
+                            {!(isAdmin && members.filter(m => m.role === 'admin').length <= 1 && members.length > 1) && (
+                                <AlertDialogAction
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleLeaveFamily();
+                                    }}
+                                    disabled={leaving}
+                                    className="bg-destructive hover:bg-destructive/90 transition-all"
+                                >
+                                    {leaving ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Leaving...
+                                        </>
+                                    ) : (
+                                        "Leave Family"
+                                    )}
+                                </AlertDialogAction>
+                            )}
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+                    <AlertDialogContent className="rounded-2xl">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Transfer Admin Rights?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to transfer admin rights to <strong>{members.find(m => m.user_id === transferTargetId)?.profile?.name || "this member"}</strong>?
+                                <br /><br />
+                                <span className="block p-3 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 rounded-lg text-sm border border-amber-200 dark:border-amber-900">
+                                    <AlertTriangle className="w-4 h-4 inline mr-2 mb-0.5" />
+                                    You will be demoted to a regular <strong>Member</strong> and lose admin privileges immediately.
+                                </span>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={transferring}>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                                onClick={handleLeaveFamily}
-                                disabled={leaving}
-                                className="bg-destructive hover:bg-destructive/90"
+                                onClick={handleTransferAdmin}
+                                disabled={transferring}
+                                className="bg-purple-600 hover:bg-purple-700"
                             >
-                                {leaving ? (
+                                {transferring ? (
                                     <>
                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Leaving...
+                                        Transferring...
                                     </>
                                 ) : (
-                                    "Leave Family"
+                                    "Confirm Transfer"
                                 )}
                             </AlertDialogAction>
                         </AlertDialogFooter>
@@ -574,4 +812,5 @@ export default function FamilyPage() {
             </main>
         </div>
     );
+
 }

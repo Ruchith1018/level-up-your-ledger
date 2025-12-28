@@ -147,5 +147,6 @@ export interface FamilyRequest {
   profile?: {
     name?: string;
     email?: string;
+    avatar_url?: string;
   };
 }

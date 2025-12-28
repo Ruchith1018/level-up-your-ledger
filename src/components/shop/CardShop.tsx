@@ -615,7 +615,7 @@ function CustomCardBuilder() {
         showCardHolder: true
     });
 
-    const isPurchased = (settings.purchasedCardThemes || []).includes("custom");
+    const isPurchased = (settings.purchasedCardThemes || []).includes("custom") || settings.hasPremiumPack;
     const isActive = settings.cardTheme === "custom";
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

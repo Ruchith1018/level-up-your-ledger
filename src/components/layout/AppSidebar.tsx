@@ -171,7 +171,7 @@ export function AppSidebar() {
 
     return (
         <>
-            <div className="hidden md:flex h-screen w-64 flex-col fixed left-0 top-0 border-r bg-card/50 backdrop-blur-xl z-50">
+            <div className="hidden md:flex h-screen w-64 flex-col fixed left-0 top-0 bg-card/50 backdrop-blur-xl z-50">
                 {/* Header / Logo */}
                 <div className="h-[88px] px-6 flex items-center gap-3 border-b border-border">
                     <img
