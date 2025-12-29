@@ -104,6 +104,95 @@ export default function FamilyPage() {
     const [isCropperOpen, setIsCropperOpen] = useState(false);
     const [showChatDialog, setShowChatDialog] = useState(false);
 
+    const handleConcludeBudget = async (budget: any) => {
+        console.log(`Closing out budget: ${budget.month}`);
+
+        // 1. Fetch Spending Limits
+        const { data: limits } = await supabase
+            .from('family_spending_limits')
+            .select('user_id, limit_amount')
+            .eq('family_budget_id', budget.id);
+
+        // 2. Fetch Expenses
+        const { data: expenses } = await supabase
+            .from('expenses')
+            .select('user_id, amount')
+            .eq('family_budget_id', budget.id);
+
+        // 3. Calculate Surplus per User
+        const spentByUser = (expenses || []).reduce((acc: any, curr: any) => {
+            acc[curr.user_id] = (acc[curr.user_id] || 0) + Number(curr.amount);
+            return acc;
+        }, {});
+
+        const surplusInserts = (limits || []).map((limit: any) => {
+            const spent = spentByUser[limit.user_id] || 0;
+            const surplus = Math.max(0, Number(limit.limit_amount) - spent);
+            if (surplus > 0) {
+                return {
+                    user_id: limit.user_id,
+                    family_budget_id: budget.id,
+                    amount: surplus,
+                    month: budget.month
+                };
+            }
+            return null;
+        }).filter(Boolean);
+
+        // 4. Insert Surplus Records
+        if (surplusInserts.length > 0) {
+            const { error: surplusError } = await supabase
+                .from('family_budget_surplus')
+                .insert(surplusInserts);
+
+            if (surplusError) console.error("Error inserting surplus:", surplusError);
+        }
+
+        // 5. Mark Budget as Closed
+        const { error: closeError } = await supabase
+            .from('family_budgets')
+            .update({ status: 'closed' })
+            .eq('id', budget.id);
+
+        if (!closeError) {
+            toast.success(`Budget for ${budget.month} concluded. Unused funds moved to savings.`);
+            // Refresh data
+            fetchFamilyData();
+        }
+    };
+
+    const handleRevertConclusion = async (budget: any) => {
+        if (!confirm("Are you sure you want to revert this conclusion? This will remove the savings transfers and reopen the budget.")) return;
+
+        console.log(`Reverting conclusion for budget: ${budget.month}`);
+
+        // 1. Delete Surplus Records
+        const { error: deleteError } = await supabase
+            .from('family_budget_surplus')
+            .delete()
+            .eq('family_budget_id', budget.id);
+
+        if (deleteError) {
+            console.error("Error deleting surplus records:", deleteError);
+            toast.error("Failed to revert savings transfers");
+            return;
+        }
+
+        // 2. Revert Status to 'spending'
+        const { error: updateError } = await supabase
+            .from('family_budgets')
+            .update({ status: 'spending' })
+            .eq('id', budget.id);
+
+        if (updateError) {
+            console.error("Error updating budget status:", updateError);
+            toast.error("Failed to reopen budget");
+        } else {
+            toast.success("Budget reopened and savings transfers reverted.");
+            fetchFamilyData();
+        }
+    };
+
     const fetchFamilyData = async (isBackground = false) => {
         if (!user) return;
         if (!isBackground) setLoading(true);
@@ -158,9 +247,30 @@ export default function FamilyPage() {
 
                 setMembers(enrichedMembers as FamilyMember[]);
 
+
+
+
                 // 5. Fetch Family Budget
                 const currentDate = new Date();
                 const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+                // --- CHECK FOR PREVIOUS MONTH CLOSEOUT ---
+                // Only run this check if user is admin to avoid race conditions/multiple triggers
+                if (memberData.role === 'admin') {
+                    const { data: pastBudgets } = await supabase
+                        .from('family_budgets')
+                        .select('id, month')
+                        .eq('family_id', memberData.family_id)
+                        .eq('status', 'spending')
+                        .lt('month', currentMonth);
+
+                    if (pastBudgets && pastBudgets.length > 0) {
+                        for (const pastBudget of pastBudgets) {
+                            await handleConcludeBudget(pastBudget);
+                        }
+                    }
+                }
+                // -----------------------------------------
 
                 const { data: budgetData } = await supabase
                     .from('family_budgets')
@@ -1332,12 +1442,21 @@ export default function FamilyPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
-                                        {/* Status Header */}
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <Badge variant={familyBudget.status === 'spending' ? "default" : "secondary"} className="uppercase text-[10px] tracking-wider">
-                                                    {familyBudget.status === 'spending' ? 'Spending Mode' : 'Collecting'}
+                                                <Badge variant={familyBudget.status === 'spending' ? "default" : familyBudget.status === 'closed' ? "destructive" : "secondary"} className="uppercase text-[10px] tracking-wider">
+                                                    {familyBudget.status === 'spending' ? 'Spending Mode' : familyBudget.status === 'closed' ? 'Concluded' : 'Collecting'}
                                                 </Badge>
+                                                {familyBudget.status === 'spending' && isAdmin && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        className="h-6 text-[10px] px-2"
+                                                        onClick={() => handleConcludeBudget(familyBudget)}
+                                                    >
+                                                        Conclude Month
+                                                    </Button>
+                                                )}
                                             </div>
                                             {familyBudget.status === 'spending' && (
                                                 <span className="text-xs text-muted-foreground">
@@ -1346,7 +1465,33 @@ export default function FamilyPage() {
                                             )}
                                         </div>
 
-                                        {familyBudget.status === 'spending' ? (
+                                        {familyBudget.status === 'closed' ? (
+                                            <div className="py-8 text-center space-y-4 bg-muted/20 rounded-xl border border-dashed">
+                                                <PiggyBank className="w-12 h-12 mx-auto text-muted-foreground/30" />
+                                                <div className="space-y-1">
+                                                    <h3 className="font-medium text-lg">Budget Concluded</h3>
+                                                    <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                                                        This month's budget has been closed. Unused funds have been transferred to members' savings.
+                                                    </p>
+                                                </div>
+                                                <div className="text-sm">
+                                                    <span className="text-muted-foreground">Final Surplus: </span>
+                                                    <span className="font-bold text-green-600">
+                                                        ₹{(familyBudget.total_contributed || 0) - (familyBudget.total_spent || 0)}
+                                                    </span>
+                                                </div>
+                                                {isAdmin && (
+                                                    <Button
+                                                        variant="link"
+                                                        size="sm"
+                                                        className="text-muted-foreground hover:text-primary"
+                                                        onClick={() => handleRevertConclusion(familyBudget)}
+                                                    >
+                                                        Revert Conclusion
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ) : familyBudget.status === 'spending' ? (
                                             // SPENDING MODE UI
                                             <div className="space-y-4">
                                                 <div className="space-y-2">

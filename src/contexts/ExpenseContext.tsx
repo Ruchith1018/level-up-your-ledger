@@ -93,7 +93,6 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
           recurring: dbItem.recurring,
           tags: dbItem.tags,
           isLocked: dbItem.is_locked,
-          isLocked: dbItem.is_locked,
           createdAt: dbItem.created_at,
           familyBudgetID: dbItem.family_budget_id
         }));
@@ -130,7 +129,6 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         recurring: dbItem.recurring,
         tags: dbItem.tags,
         isLocked: dbItem.is_locked,
-        isLocked: dbItem.is_locked,
         createdAt: dbItem.created_at,
         familyBudgetID: dbItem.family_budget_id
       }));
@@ -165,7 +163,6 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
       notes: newExpense.notes,
       recurring: newExpense.recurring,
       tags: newExpense.tags,
-      tags: newExpense.tags,
       id: newExpense.id, // Ensure we use the generated ID
       family_budget_id: newExpense.familyBudgetID,
     };
@@ -195,7 +192,6 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         notes: data.notes,
         recurring: data.recurring,
         tags: data.tags,
-        isLocked: data.is_locked,
         isLocked: data.is_locked,
         createdAt: data.created_at,
         familyBudgetID: data.family_budget_id
@@ -270,7 +266,9 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         notes: dbItem.notes,
         recurring: dbItem.recurring,
         tags: dbItem.tags,
-        createdAt: dbItem.created_at
+        isLocked: dbItem.is_locked,
+        createdAt: dbItem.created_at,
+        familyBudgetID: dbItem.family_budget_id
       }));
       dispatch({ type: "SET_ITEMS", payload: mappedData });
     }

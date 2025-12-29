@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useExpenses } from "@/contexts/ExpenseContext";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -29,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SavingsPage() {
     const navigate = useNavigate();
+    const { user } = useAuth(); // Add useAuth destructuring
     const { state: budgetState } = useBudget();
     const { getTotalByType, state: expenseState } = useExpenses();
     const { settings } = useSettings();
@@ -43,20 +46,47 @@ export default function SavingsPage() {
     const [goalToDelete, setGoalToDelete] = useState<SavingsGoal | null>(null);
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('all');
 
+    const [familySurplus, setFamilySurplus] = useState<any[]>([]);
+
     useEffect(() => {
         refreshSavings();
-    }, []);
+        // Fetch Family Surplus
+        const fetchFamilySurplus = async () => {
+            if (!user) return;
+            const { data } = await supabase
+                .from('family_budget_surplus')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+            setFamilySurplus(data || []);
+        };
+        fetchFamilySurplus();
+    }, [user]);
 
-    const savingsHistory = budgetState.budgets
+    // 1. Personal Savings History
+    const personalSavingsHistory = budgetState.budgets
         .filter(b => b.surplusAction === 'saved')
         .map(b => {
             const expenses = getTotalByType("expense", b.month);
             const savedAmount = Math.max(0, b.total - expenses);
             return {
+                type: 'personal',
                 month: b.month,
-                amount: savedAmount
+                amount: savedAmount,
+                label: 'Monthly Surplus'
             };
-        })
+        });
+
+    // 2. Family Savings History
+    const familySavingsHistory = familySurplus.map(item => ({
+        type: 'family',
+        month: item.month,
+        amount: Number(item.amount),
+        label: 'Family Budget Surplus'
+    }));
+
+    // 3. Combined History
+    const savingsHistory = [...personalSavingsHistory, ...familySavingsHistory]
         .sort((a, b) => b.month.localeCompare(a.month));
 
     const totalAccumulatedSavings = savingsHistory.reduce((sum, item) => sum + item.amount, 0);
@@ -253,7 +283,7 @@ export default function SavingsPage() {
                                                         </div>
                                                         <div>
                                                             <p className="font-medium">{dayjs(item.month).format("MMMM YYYY")}</p>
-                                                            <p className="text-xs text-muted-foreground">Monthly Surplus</p>
+                                                            <p className="text-xs text-muted-foreground">{item.label}</p>
                                                         </div>
                                                     </div>
                                                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
