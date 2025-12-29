@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
 import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
 import { ImageCropperModal } from "@/components/family/ImageCropperModal";
+import { FamilyChatModal } from "@/components/family/FamilyChatModal";
 import { FamilyRequestsDialog } from "@/components/family/FamilyRequestsDialog";
 import { UserRequestsDialog } from "@/components/family/UserRequestsDialog";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -92,6 +93,7 @@ export default function FamilyPage() {
     // Image Cropper State
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isCropperOpen, setIsCropperOpen] = useState(false);
+    const [showChatDialog, setShowChatDialog] = useState(false);
 
     const fetchFamilyData = async (isBackground = false) => {
         if (!user) return;
@@ -431,6 +433,12 @@ export default function FamilyPage() {
 
         if (Number(contributionAmount) > personalRemaining) {
             toast.error(`Contribution cannot exceed your remaining personal budget (${personalRemaining})`);
+            return;
+        }
+
+        const remainingNeeded = (familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0);
+        if (Number(contributionAmount) > remainingNeeded) {
+            toast.error(`Contribution cannot exceed the remaining needed amount (₹${remainingNeeded})`);
             return;
         }
 
@@ -880,6 +888,10 @@ export default function FamilyPage() {
                             <h1 className="text-2xl font-bold">Family Tracking</h1>
                             <p className="text-sm text-muted-foreground">Manage your shared finances</p>
                         </div>
+                        <Button variant="outline" onClick={() => setShowChatDialog(true)} className="gap-2 mr-2">
+                            <MessageSquare className="w-4 h-4" />
+                            Chat
+                        </Button>
                         <Button variant="outline" onClick={() => setShowUserRequestsDialog(true)} className="gap-2">
                             <RefreshCw className="w-4 h-4" />
                             Requests
@@ -1051,6 +1063,13 @@ export default function FamilyPage() {
                     </div>
 
                     <div className="flex gap-2">
+                        <Button
+                            size="icon"
+                            onClick={() => setShowChatDialog(true)}
+                            className="bg-primary hover:bg-primary/90 text-white border-0"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                        </Button>
                         {isAdmin && (
                             <>
                                 <Button
@@ -1149,9 +1168,22 @@ export default function FamilyPage() {
                                                         Available: ₹{personalRemaining.toFixed(2)}
                                                     </p>
                                                 </div>
-                                                <Button onClick={() => setShowContributeDialog(true)} className="gap-2">
-                                                    <Wallet className="w-4 h-4" />
-                                                    Contribute
+                                                <Button
+                                                    onClick={() => setShowContributeDialog(true)}
+                                                    className={`gap-2 ${((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? 'bg-green-600 hover:bg-green-700 cursor-default' : ''}`}
+                                                    disabled={(familyBudget.total_contributed || 0) >= familyBudget.total_amount}
+                                                >
+                                                    {((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? (
+                                                        <>
+                                                            <Check className="w-4 h-4" />
+                                                            Target Reached!
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Wallet className="w-4 h-4" />
+                                                            Contribute
+                                                        </>
+                                                    )}
                                                 </Button>
                                             </div>
                                         </div>
@@ -1454,6 +1486,12 @@ export default function FamilyPage() {
                                         ₹{personalRemaining}
                                     </span>
                                 </div>
+                                <div className="flex justify-between text-xs mt-1">
+                                    <span className="text-muted-foreground">Remaining Needed:</span>
+                                    <span className="font-medium text-blue-600">
+                                        ₹{(familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>
@@ -1471,6 +1509,12 @@ export default function FamilyPage() {
                 onClose={() => setIsCropperOpen(false)}
                 imageSrc={selectedImage}
                 onCropComplete={handleCropComplete}
+            />
+            <FamilyChatModal
+                open={showChatDialog}
+                onOpenChange={setShowChatDialog}
+                familyId={family?.id}
+                members={members}
             />
         </div>
     );
