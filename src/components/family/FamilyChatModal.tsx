@@ -6,10 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Loader2, Reply, X } from 'lucide-react';
+import { Send, Loader2, Reply, X, Pencil, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { encryptMessage, decryptMessage } from '@/lib/encryption';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface FamilyChatModalProps {
     open: boolean;
@@ -35,6 +41,7 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
     const [sending, setSending] = useState(false);
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
     const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<any>(null);
 
@@ -60,12 +67,28 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                         };
                         setMessages(prev => [...prev, decryptedMsg]);
 
-                        // Remove user from typing list if they just sent a message
                         setTypingUsers(prev => {
                             const newSet = new Set(prev);
                             newSet.delete(newMsg.user_id);
                             return newSet;
                         });
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'family_chats',
+                        filter: `family_id=eq.${familyId}`
+                    },
+                    (payload) => {
+                        const updatedMsg = payload.new as ChatMessage;
+                        const decryptedMsg = {
+                            ...updatedMsg,
+                            message: decryptMessage(updatedMsg.message, familyId)
+                        };
+                        setMessages(prev => prev.map(msg => msg.id === updatedMsg.id ? decryptedMsg : msg));
                     }
                 )
                 .on(
@@ -156,20 +179,32 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
         setSending(true);
         try {
             const encryptedContent = encryptMessage(newMessage.trim(), familyId);
-            const { error } = await supabase
-                .from('family_chats')
-                .insert({
-                    family_id: familyId,
-                    user_id: user.id,
-                    message: encryptedContent,
-                    reply_to_id: replyingTo?.id
-                });
 
-            if (error) throw error;
+            if (editingMessage) {
+                const { error } = await supabase
+                    .from('family_chats')
+                    .update({ message: encryptedContent })
+                    .eq('id', editingMessage.id);
+
+                if (error) throw error;
+                setEditingMessage(null);
+            } else {
+                const { error } = await supabase
+                    .from('family_chats')
+                    .insert({
+                        family_id: familyId,
+                        user_id: user.id,
+                        message: encryptedContent,
+                        reply_to_id: replyingTo?.id
+                    });
+
+                if (error) throw error;
+                setReplyingTo(null);
+            }
+
             setNewMessage("");
-            setReplyingTo(null);
         } catch (error) {
-            console.error("Error sending message:", error);
+            console.error("Error sending/updating message:", error);
             toast.error("Failed to send message");
         } finally {
             setSending(false);
@@ -238,16 +273,26 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                                                 </div>
                                             )}
 
-                                            <div className="flex items-end gap-2 group-hover:gap-1 transition-all">
+                                            <div className="flex items-center gap-2 group-hover:gap-1 transition-all">
                                                 {!isMe && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity -ml-8 hover:bg-transparent hover:text-foreground"
-                                                        onClick={() => setReplyingTo(msg)}
-                                                    >
-                                                        <Reply className="h-4 w-4 stroke-[3px]" />
-                                                    </Button>
+                                                    <div className="order-last">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-6 w-6 hover:bg-transparent text-muted-foreground hover:text-foreground hover:[&_svg]:stroke-[3]"
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="start">
+                                                                <DropdownMenuItem onClick={() => setReplyingTo(msg)}>
+                                                                    Reply
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 )}
 
                                                 <div
@@ -261,14 +306,31 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                                                 </div>
 
                                                 {isMe && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity -mr-8 hover:bg-transparent hover:text-foreground"
-                                                        onClick={() => setReplyingTo(msg)}
-                                                    >
-                                                        <Reply className="h-4 w-4 stroke-[3px]" />
-                                                    </Button>
+                                                    <div className="order-first">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-6 w-6 hover:bg-transparent text-muted-foreground hover:text-foreground hover:[&_svg]:stroke-[3]"
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => setReplyingTo(msg)}>
+                                                                    Reply
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    setEditingMessage(msg);
+                                                                    setNewMessage(msg.message);
+                                                                    setReplyingTo(null);
+                                                                }}>
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -306,15 +368,26 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                 </ScrollArea>
 
                 <div className="border-t mt-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    {replyingTo && (
+                    {(replyingTo || editingMessage) && (
                         <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b text-xs">
                             <div className="flex flex-col truncate">
                                 <span className="font-semibold text-muted-foreground">
-                                    Replying to {members.find(m => m.user_id === replyingTo.user_id)?.profile?.name || 'Unknown'}
+                                    {editingMessage ? 'Editing Message' : `Replying to ${members.find(m => m.user_id === replyingTo?.user_id)?.profile?.name || 'Unknown'}`}
                                 </span>
-                                <span className="truncate opacity-70 max-w-[300px]">{replyingTo.message}</span>
+                                <span className="truncate opacity-70 max-w-[300px]">
+                                    {editingMessage ? editingMessage.message : replyingTo?.message}
+                                </span>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyingTo(null)}>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                    setReplyingTo(null);
+                                    setEditingMessage(null);
+                                    setNewMessage("");
+                                }}
+                            >
                                 <X className="h-3 w-3" />
                             </Button>
                         </div>
