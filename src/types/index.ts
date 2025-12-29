@@ -15,6 +15,7 @@ export interface Expense {
   createdAt: string;
   tags?: string[];
   isLocked?: boolean;
+  familyBudgetID?: string;
 }
 
 export interface Budget {

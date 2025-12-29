@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, MessageSquare } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
@@ -89,9 +89,18 @@ export default function FamilyPage() {
     const [personalBudgetTotal, setPersonalBudgetTotal] = useState(0);
     // const [personalBudgetTotal, setPersonalBudgetTotal] = useState(0);
     const [personalRemaining, setPersonalRemaining] = useState(0);
+    const [memberLimits, setMemberLimits] = useState<Record<string, string>>({});
+
+    // Spend Mode State
+    const [showStartSpendingDialog, setShowStartSpendingDialog] = useState(false);
+    const [spendingLimits, setSpendingLimits] = useState<Record<string, string>>({});
+    const [spendModeLoading, setSpendModeLoading] = useState(false);
 
     // Image Cropper State
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    // Collapsible Logic
+    const [isActivityExpanded, setIsActivityExpanded] = useState(true);
     const [isCropperOpen, setIsCropperOpen] = useState(false);
     const [showChatDialog, setShowChatDialog] = useState(false);
 
@@ -198,11 +207,97 @@ export default function FamilyPage() {
                         };
                     });
 
-                    setFamilyBudget({
-                        ...budgetData,
-                        total_contributed: totalContributed,
-                        contributions: transformedContributions
-                    });
+                    // Fetch limits for this budget
+                    const { data: limitsData } = await supabase
+                        .from('family_budget_limits')
+                        .select('user_id, limit_amount')
+                        .eq('family_budget_id', budgetData.id);
+
+                    const limitsMap = (limitsData || []).reduce((acc: any, curr: any) => {
+                        acc[curr.user_id] = Number(curr.limit_amount);
+                        return acc;
+                    }, {});
+
+
+
+                    // Fetch Spending Limits if in spending mode
+                    if (budgetData.status === 'spending') {
+                        const { data: spendLimitsData } = await supabase
+                            .from('family_spending_limits')
+                            .select('user_id, limit_amount')
+                            .eq('family_budget_id', budgetData.id);
+
+                        const spendLimitsMap = (spendLimitsData || []).reduce((acc: any, curr: any) => {
+                            acc[curr.user_id] = Number(curr.limit_amount);
+                            return acc;
+                        }, {});
+
+
+
+                        // We need to know who spent what. 
+                        // The expenses table has user_id (implicitly via auth? No, expenses table usually has user_id).
+                        // Let's check expenses schema. It usually has user_id.
+
+                        // 1. Fetch Expenses linked to this budget
+                        const { data: familyExpenses } = await supabase
+                            .from('expenses')
+                            .select('*')
+                            .eq('family_budget_id', budgetData.id)
+                            .order('created_at', { ascending: false });
+
+                        // 2. Fetch profiles for expense creators (if not already fetched)
+                        const expenseUserIds = (familyExpenses || []).map((ex: any) => ex.user_id);
+                        const uniqueExpenseUserIds = [...new Set(expenseUserIds)].filter(id => !userIds.includes(id));
+
+                        let additionalProfiles: any[] = [];
+                        if (uniqueExpenseUserIds.length > 0) {
+                            const { data: extraProfiles } = await supabase
+                                .from('user_settings')
+                                .select('user_id, user_name, profile_image')
+                                .in('user_id', uniqueExpenseUserIds);
+                            additionalProfiles = extraProfiles || [];
+                        }
+
+                        const allProfiles = [...userProfiles, ...additionalProfiles];
+
+                        // 3. Transform Expenses
+                        const transformedExpenses = (familyExpenses || []).map((ex: any) => {
+                            const profile = allProfiles.find((p: any) => p.user_id === ex.user_id);
+                            return {
+                                ...ex,
+                                is_expense: true, // Marker to distinguish from contributions
+                                profile: {
+                                    name: profile?.user_name || 'Unknown',
+                                    avatar_url: profile?.profile_image
+                                }
+                            };
+                        });
+
+                        const totalSpent = (familyExpenses || []).reduce((sum, ex) => sum + Number(ex.amount), 0);
+
+                        const spentByUser = (familyExpenses || []).reduce((acc: any, curr: any) => {
+                            acc[curr.user_id] = (acc[curr.user_id] || 0) + Number(curr.amount);
+                            return acc;
+                        }, {});
+
+                        setFamilyBudget({
+                            ...budgetData,
+                            total_contributed: totalContributed,
+                            contributions: transformedContributions,
+                            limits: limitsMap,
+                            spending_limits: spendLimitsMap,
+                            total_spent: totalSpent,
+                            spent_by_user: spentByUser,
+                            expenses: transformedExpenses // Add expenses to state
+                        });
+                    } else {
+                        setFamilyBudget({
+                            ...budgetData,
+                            total_contributed: totalContributed,
+                            contributions: transformedContributions,
+                            limits: limitsMap
+                        });
+                    }
                 } else {
                     setFamilyBudget(null);
                 }
@@ -399,21 +494,56 @@ export default function FamilyPage() {
             return;
         }
 
+        // Validate Limits (Sum of MEMBERS < Total)
+        // Admin limit is the remainder, so remainder must be >= 0
+        const memberAllocated = Object.values(memberLimits).reduce((sum, limit) => sum + (Number(limit) || 0), 0);
+
+        if (memberAllocated > Number(budgetAmount)) {
+            toast.error(`Sum of member limits (${memberAllocated}) cannot exceed total budget (${budgetAmount})`);
+            return;
+        }
+
         try {
             setLoading(true);
             const currentDate = new Date();
             const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
 
-            const { error } = await supabase
+            const { data: budgetData, error } = await supabase
                 .from('family_budgets')
                 .insert({
                     family_id: family?.id,
                     month: currentMonth,
                     total_amount: Number(budgetAmount),
                     created_by: user?.id
-                });
+                })
+                .select()
+                .single();
 
             if (error) throw error;
+
+            // Insert Limits
+            // 1. Members
+            const limitsToInsert = members
+                .filter(m => m.user_id !== user?.id)
+                .map(m => ({
+                    family_budget_id: budgetData.id,
+                    user_id: m.user_id,
+                    limit_amount: Number(memberLimits[m.user_id] || 0)
+                }));
+
+            // 2. Admin (Self) - Remainder
+            const adminLimit = Number(budgetAmount) - memberAllocated;
+            limitsToInsert.push({
+                family_budget_id: budgetData.id,
+                user_id: user?.id || '',
+                limit_amount: adminLimit
+            });
+
+            const { error: limitsError } = await supabase
+                .from('family_budget_limits')
+                .insert(limitsToInsert);
+
+            if (limitsError) throw limitsError;
 
             toast.success("Family budget created!");
             setShowCreateBudgetDialog(false);
@@ -439,6 +569,20 @@ export default function FamilyPage() {
         const remainingNeeded = (familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0);
         if (Number(contributionAmount) > remainingNeeded) {
             toast.error(`Contribution cannot exceed the remaining needed amount (₹${remainingNeeded})`);
+            return;
+        }
+
+        // Check assigned limit
+        const myLimit = familyBudget?.limits?.[user?.id || ''] || 0;
+        // Calculate my total contribution to this budget so far
+        const myContributedSoFar = (familyBudget?.contributions || [])
+            .filter((c: any) => c.user_id === user?.id)
+            .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+
+        const remainingLimit = myLimit - myContributedSoFar;
+
+        if (Number(contributionAmount) > remainingLimit) {
+            toast.error(`Contribution cannot exceed your assigned limit (Remaining Limit: ₹${remainingLimit})`);
             return;
         }
 
@@ -487,6 +631,55 @@ export default function FamilyPage() {
             toast.error(error.message || "Failed to contribute");
         } finally {
             setLoading(false);
+        }
+    };
+
+
+    const handleStartSpending = async () => {
+        // Validate that allocated spending limits don't exceed what we have?
+        // Actually, user can set limits > contributed if they want (optimistic), but logically Sum(Limits) <= Total Contributed is safer.
+        // However, user Requirement: "admin set the limit how much can a memeber in family can spend"
+
+        // Check if limits are valid numbers
+        const invalid = Object.values(spendingLimits).some(val => isNaN(Number(val)) || Number(val) < 0);
+        if (invalid) {
+            toast.error("Please enter valid limits for all members");
+            return;
+        }
+
+        try {
+            setSpendModeLoading(true);
+
+            // 1. Update Budget Status
+            const { error: statusError } = await supabase
+                .from('family_budgets')
+                .update({ status: 'spending' })
+                .eq('id', familyBudget?.id);
+
+            if (statusError) throw statusError;
+
+            // 2. Insert Spending Limits
+            const limitsToInsert = Object.entries(spendingLimits).map(([userId, limit]) => ({
+                family_budget_id: familyBudget?.id,
+                user_id: userId,
+                limit_amount: Number(limit)
+            }));
+
+            if (limitsToInsert.length > 0) {
+                const { error: limitsError } = await supabase
+                    .from('family_spending_limits')
+                    .insert(limitsToInsert);
+
+                if (limitsError) throw limitsError;
+            }
+
+            toast.success("Spend Mode Enabled!");
+            setShowStartSpendingDialog(false);
+            fetchFamilyData(true); // Refresh to get new status
+        } catch (error: any) {
+            toast.error(error.message || "Failed to start spending mode");
+        } finally {
+            setSpendModeLoading(false);
         }
     };
 
@@ -1139,80 +1332,257 @@ export default function FamilyPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-baseline">
-                                                <span className="text-sm text-muted-foreground">Raised Amount</span>
-                                                <div className="text-right">
-                                                    <span className="text-2xl font-bold text-green-600">₹{familyBudget.total_contributed || 0}</span>
-                                                    <span className="text-muted-foreground text-sm ml-1">/ ₹{familyBudget.total_amount}</span>
-                                                </div>
+                                        {/* Status Header */}
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={familyBudget.status === 'spending' ? "default" : "secondary"} className="uppercase text-[10px] tracking-wider">
+                                                    {familyBudget.status === 'spending' ? 'Spending Mode' : 'Collecting'}
+                                                </Badge>
                                             </div>
-                                            <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out"
-                                                    style={{ width: `${Math.min(100, ((familyBudget.total_contributed || 0) / familyBudget.total_amount) * 100)}%` }}
-                                                />
-                                            </div>
-                                            <div className="flex justify-between text-xs text-muted-foreground">
-                                                <span>0%</span>
-                                                <span>50%</span>
-                                                <span>100%</span>
-                                            </div>
+                                            {familyBudget.status === 'spending' && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    Month ends {new Date(familyBudget.month + '-01').toLocaleDateString('default', { month: 'long' })} 31st
+                                                </span>
+                                            )}
                                         </div>
 
-                                        <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="font-medium text-sm">Your Contribution</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        Available: ₹{personalRemaining.toFixed(2)}
-                                                    </p>
-                                                </div>
-                                                <Button
-                                                    onClick={() => setShowContributeDialog(true)}
-                                                    className={`gap-2 ${((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? 'bg-green-600 hover:bg-green-700 cursor-default' : ''}`}
-                                                    disabled={(familyBudget.total_contributed || 0) >= familyBudget.total_amount}
-                                                >
-                                                    {((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? (
-                                                        <>
-                                                            <Check className="w-4 h-4" />
-                                                            Target Reached!
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Wallet className="w-4 h-4" />
-                                                            Contribute
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {familyBudget.contributions && familyBudget.contributions.length > 0 && (
-                                            <div className="space-y-4 pt-2">
-                                                <h4 className="text-sm font-semibold flex items-center gap-2">
-                                                    <Users className="w-4 h-4" />
-                                                    Recent Contributions
-                                                </h4>
+                                        {familyBudget.status === 'spending' ? (
+                                            // SPENDING MODE UI
+                                            <div className="space-y-4">
                                                 <div className="space-y-2">
-                                                    {familyBudget.contributions.map((contribution: any) => (
-                                                        <div key={contribution.id} className="flex items-center justify-between p-3 bg-card border rounded-lg hover:bg-accent/5 transition-colors">
-                                                            <div className="flex items-center gap-3">
-                                                                <Avatar className="w-8 h-8 border">
-                                                                    <AvatarImage src={contribution.profile?.avatar_url} />
-                                                                    <AvatarFallback>{contribution.profile?.name?.[0]}</AvatarFallback>
-                                                                </Avatar>
-                                                                <div>
-                                                                    <p className="text-sm font-medium leading-none">{contribution.profile?.name}</p>
-                                                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                                                        {new Date(contribution.created_at).toLocaleDateString()}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <span className="font-bold text-green-600">+₹{contribution.amount}</span>
+                                                    <div className="flex justify-between items-baseline">
+                                                        <span className="text-sm text-muted-foreground">Budget Remaining</span>
+                                                        <div className="text-right">
+                                                            <span className="text-2xl font-bold text-primary">
+                                                                ₹{(familyBudget.total_contributed || 0) - (familyBudget.total_spent || 0)}
+                                                            </span>
+                                                            <span className="text-muted-foreground text-sm ml-1">/ ₹{familyBudget.total_contributed || 0}</span>
                                                         </div>
-                                                    ))}
+                                                    </div>
+                                                    <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                                                            style={{ width: `${Math.min(100, ((familyBudget.total_spent || 0) / (familyBudget.total_contributed || 1)) * 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>₹0 Spent</span>
+                                                        <span>₹{familyBudget.total_spent || 0} Spent</span>
+                                                    </div>
                                                 </div>
+
+                                                <div className="bg-secondary/30 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-3">
+                                                            <p className="font-medium text-sm flex items-center gap-2">
+                                                                <Wallet className="w-4 h-4 text-primary" />
+                                                                Your Spending Limit
+                                                            </p>
+                                                            <div className="space-y-1.5">
+                                                                {(() => {
+                                                                    const myLimit = Number(familyBudget.spending_limits?.[user?.id || ''] || 0);
+                                                                    const mySpent = Number(familyBudget.spent_by_user?.[user?.id || ''] || 0);
+                                                                    const myRemaining = Math.max(0, myLimit - mySpent);
+
+                                                                    return (
+                                                                        <div className="space-y-1">
+                                                                            <div className="text-2xl font-mono font-bold">₹{myRemaining}</div>
+                                                                            <div className="text-xs text-muted-foreground flex gap-2">
+                                                                                <span>Limit: ₹{myLimit}</span>
+                                                                                <span>•</span>
+                                                                                <span>Spent: ₹{mySpent}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // COLLECTING MODE UI (Existing)
+                                            <div className="space-y-4">
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between items-baseline">
+                                                        <span className="text-sm text-muted-foreground">Raised Amount</span>
+                                                        <div className="text-right">
+                                                            <span className="text-2xl font-bold text-green-600">₹{familyBudget.total_contributed || 0}</span>
+                                                            <span className="text-muted-foreground text-sm ml-1">/ ₹{familyBudget.total_amount}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out"
+                                                            style={{ width: `${Math.min(100, ((familyBudget.total_contributed || 0) / familyBudget.total_amount) * 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>0%</span>
+                                                        <span>50%</span>
+                                                        <span>100%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-secondary/30 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-3">
+                                                            <p className="font-medium text-sm flex items-center gap-2">
+                                                                <Wallet className="w-4 h-4 text-primary" />
+                                                                Your Contribution
+                                                            </p>
+
+                                                            <div className="space-y-1.5">
+                                                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                                    <span className="w-16">Available:</span>
+                                                                    <span className="font-medium font-mono">₹{personalRemaining.toFixed(2)}</span>
+                                                                </div>
+
+                                                                {familyBudget.limits?.[user?.id || ''] !== undefined && (() => {
+                                                                    const limit = familyBudget.limits[user?.id || ''];
+                                                                    const contributed = (familyBudget.contributions || [])
+                                                                        .filter((c: any) => c.user_id === user?.id)
+                                                                        .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+                                                                    const remaining = Math.max(0, limit - contributed);
+
+                                                                    return (
+                                                                        <div className="text-xs text-blue-600 flex items-center gap-2">
+                                                                            <span className="w-16">Limit:</span>
+                                                                            <span className="font-medium font-mono">₹{limit}</span>
+                                                                            <span className="text-[10px] text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded border shadow-sm">
+                                                                                Rem: ₹{remaining}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                        </div>
+
+                                                        <Button
+                                                            onClick={() => setShowContributeDialog(true)}
+                                                            className={`h-10 px-6 ${((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? 'bg-green-600 hover:bg-green-700 cursor-default' : ''}`}
+                                                            disabled={
+                                                                (familyBudget.total_contributed || 0) >= familyBudget.total_amount ||
+                                                                (() => {
+                                                                    const myLimit = familyBudget.limits?.[user?.id || ''] || 0;
+                                                                    if (!myLimit) return false;
+                                                                    const myContributed = (familyBudget.contributions || [])
+                                                                        .filter((c: any) => c.user_id === user?.id)
+                                                                        .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+                                                                    return myLimit > 0 && myContributed >= myLimit;
+                                                                })()
+                                                            }
+                                                        >
+                                                            {((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4 mr-2" />
+                                                                    Target Reached
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Plus className="w-4 h-4 mr-2" />
+                                                                    Contribute
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Admin Action: Enable Spend Mode */}
+                                                {isAdmin && (familyBudget.total_contributed || 0) >= familyBudget.total_amount && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="pt-2"
+                                                    >
+                                                        <Button
+                                                            onClick={() => setShowStartSpendingDialog(true)}
+                                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg animate-pulse"
+                                                            size="lg"
+                                                        >
+                                                            <Wallet className="w-5 h-5 mr-2" />
+                                                            Enable Spend Mode
+                                                        </Button>
+                                                        <p className="text-xs text-center text-muted-foreground mt-2">
+                                                            Goal reached! Switch mode to start spending family funds.
+                                                        </p>
+                                                    </motion.div>
+                                                )}
+
+
+
+                                            </div>
+                                        )}
+
+                                        {/* Recent Activity Section (Shared) */}
+                                        {(familyBudget.contributions?.length > 0 || familyBudget.expenses?.length > 0) && (
+                                            <div className="space-y-4 pt-4 border-t mt-4">
+                                                <button
+                                                    onClick={() => setIsActivityExpanded(!isActivityExpanded)}
+                                                    className="w-full flex items-center justify-between group hover:text-primary transition-colors"
+                                                >
+                                                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                                                        <Users className="w-4 h-4" />
+                                                        Recent Activity
+                                                    </h4>
+                                                    {isActivityExpanded ? (
+                                                        <ChevronUp className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                                                    ) : (
+                                                        <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                                                    )}
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {isActivityExpanded && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar"
+                                                        >
+                                                            {/* Combine and Sort Activities */}
+                                                            {[...(familyBudget.contributions || []), ...(familyBudget.expenses || [])]
+                                                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                                                .map((activity: any) => (
+                                                                    <div key={activity.id} className="flex items-center justify-between p-3 bg-card border rounded-lg hover:bg-accent/5 transition-colors">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <Avatar className="w-8 h-8 border">
+                                                                                <AvatarImage src={activity.profile?.avatar_url} />
+                                                                                <AvatarFallback>{activity.profile?.name?.[0]}</AvatarFallback>
+                                                                            </Avatar>
+                                                                            <div>
+                                                                                <p className="text-sm font-medium leading-none flex items-center gap-1">
+                                                                                    {activity.profile?.name}
+                                                                                    <span className="text-muted-foreground font-normal text-xs">
+                                                                                        {activity.is_expense ? 'spent' : 'contributed'}
+                                                                                    </span>
+                                                                                </p>
+                                                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                                                    {new Date(activity.created_at).toLocaleDateString()}
+                                                                                    {activity.is_expense && activity.category && (
+                                                                                        <span className="ml-1 px-1.5 py-0.5 bg-secondary rounded text-[10px]">
+                                                                                            {activity.category}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <span className={`font-bold block ${activity.is_expense ? 'text-red-500' : 'text-green-600'}`}>
+                                                                                {activity.is_expense ? '-' : '+'}₹{activity.amount}
+                                                                            </span>
+                                                                            {activity.is_expense && activity.merchant && (
+                                                                                <span className="text-[10px] text-muted-foreground block truncate max-w-[80px]">
+                                                                                    {activity.merchant}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         )}
                                     </div>
@@ -1415,6 +1785,61 @@ export default function FamilyPage() {
                     </AlertDialogContent>
                 </AlertDialog>
 
+                <Dialog open={showStartSpendingDialog} onOpenChange={setShowStartSpendingDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Enable Spend Mode</DialogTitle>
+                            <DialogDescription>
+                                The budget goal has been reached! Allocate spending limits for each family member.
+                                <br />
+                                <span className="text-amber-600 font-medium text-xs">
+                                    Note: This action is irreversible for this month.
+                                </span>
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+                            <div className="space-y-2">
+                                <Label>Remaining to Allocate</Label>
+                                <div className="text-2xl font-bold font-mono">
+                                    ₹{Math.max(0, (familyBudget?.total_contributed || 0) - Object.values(spendingLimits).reduce((sum, val) => sum + Number(val || 0), 0))}
+                                </div>
+                            </div>
+
+                            {members.map(member => (
+                                <div key={member.user_id} className="flex items-center gap-3 space-y-1">
+                                    <Avatar className="w-8 h-8">
+                                        <AvatarImage src={member.profile?.avatar_url} />
+                                        <AvatarFallback>{member.profile?.name?.[0]}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <Label htmlFor={`limit-${member.user_id}`} className="text-xs">
+                                            {member.profile?.name} {member.user_id === user?.id && "(You)"}
+                                        </Label>
+                                        <Input
+                                            id={`limit-${member.user_id}`}
+                                            type="number"
+                                            placeholder="Spending Limit"
+                                            value={spendingLimits[member.user_id] || ''}
+                                            onChange={(e) => setSpendingLimits(prev => ({
+                                                ...prev,
+                                                [member.user_id]: e.target.value
+                                            }))}
+                                            className="h-8"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowStartSpendingDialog(false)}>Cancel</Button>
+                            <Button onClick={handleStartSpending} disabled={spendModeLoading}>
+                                {spendModeLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                Enable Spending
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 <Dialog open={showCreateBudgetDialog} onOpenChange={setShowCreateBudgetDialog}>
                     <DialogContent>
                         <DialogHeader>
@@ -1440,6 +1865,54 @@ export default function FamilyPage() {
                                     <span className={`font-medium ${Number(budgetAmount) > personalBudgetTotal ? 'text-red-500' : 'text-green-600'}`}>
                                         ₹{personalBudgetTotal}
                                     </span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pt-2 border-t">
+                                <Label>Member Limits</Label>
+                                <p className="text-xs text-muted-foreground mb-2">Assign contribution limits for each member.</p>
+                                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                                    {members
+                                        .filter(m => m.user_id !== user?.id) // Exclude Admin
+                                        .map(member => (
+                                            <div key={member.user_id} className="flex items-center gap-3">
+                                                <Avatar className="w-8 h-8">
+                                                    <AvatarImage src={member.profile?.avatar_url} />
+                                                    <AvatarFallback>{member.profile?.name?.[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">{member.profile?.name}</p>
+                                                    <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    placeholder="Limit"
+                                                    className="w-24 h-8"
+                                                    value={memberLimits[member.user_id] || ''}
+                                                    onChange={(e) => setMemberLimits(prev => ({
+                                                        ...prev,
+                                                        [member.user_id]: e.target.value
+                                                    }))}
+                                                />
+                                            </div>
+                                        ))}
+                                </div>
+                                <div className="space-y-2 text-xs bg-secondary/50 p-2 rounded">
+                                    <div className="flex justify-between">
+                                        <span>Allocated to Members:</span>
+                                        <span className="font-medium">
+                                            ₹{Object.values(memberLimits).reduce((sum, val) => sum + (Number(val) || 0), 0)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-border pt-1">
+                                        <span className="text-blue-600 font-medium">Auto-assigned to You (Admin):</span>
+                                        <span className={`font-bold ${(Number(budgetAmount) - Object.values(memberLimits).reduce((sum, val) => sum + (Number(val) || 0), 0)) < 0
+                                            ? "text-red-500"
+                                            : "text-blue-600"
+                                            }`}>
+                                            ₹{Math.max(0, Number(budgetAmount) - Object.values(memberLimits).reduce((sum, val) => sum + (Number(val) || 0), 0))}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1480,17 +1953,62 @@ export default function FamilyPage() {
                                     value={contributionAmount}
                                     onChange={(e) => setContributionAmount(e.target.value)}
                                 />
-                                <div className="flex justify-between text-xs">
-                                    <span className="text-muted-foreground">Available to contribute:</span>
-                                    <span className={`font-medium ${Number(contributionAmount) > personalRemaining ? 'text-red-500' : 'text-green-600'}`}>
-                                        ₹{personalRemaining}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-xs mt-1">
-                                    <span className="text-muted-foreground">Remaining Needed:</span>
-                                    <span className="font-medium text-blue-600">
-                                        ₹{(familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0)}
-                                    </span>
+                                <div className="space-y-1 mt-1">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>Personal Available:</span>
+                                        <span>₹{personalRemaining}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>Budget Remaining Needed:</span>
+                                        <span>₹{(familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0)}</span>
+                                    </div>
+                                    {/* Show Assigned Limit Status */}
+                                    {(() => {
+                                        const myLimit = familyBudget?.limits?.[user?.id || ''] || 0;
+                                        if (myLimit > 0) {
+                                            const myContributed = (familyBudget?.contributions || [])
+                                                .filter((c: any) => c.user_id === user?.id)
+                                                .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+                                            return (
+                                                <div className="flex justify-between text-xs text-muted-foreground">
+                                                    <span>Assigned Limit Remaining:</span>
+                                                    <span>₹{Math.max(0, myLimit - myContributed)}</span>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    <div className="flex justify-between text-xs font-medium pt-1 border-t mt-1">
+                                        <span className="text-blue-600">Max You Can Contribute:</span>
+                                        <span className="text-blue-600 cursor-pointer hover:underline" onClick={() => {
+                                            const remainingNeeded = (familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0);
+                                            let max = Math.min(personalRemaining, remainingNeeded);
+
+                                            const myLimit = familyBudget?.limits?.[user?.id || ''] || 0;
+                                            if (myLimit > 0) {
+                                                const myContributed = (familyBudget?.contributions || [])
+                                                    .filter((c: any) => c.user_id === user?.id)
+                                                    .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+                                                max = Math.min(max, Math.max(0, myLimit - myContributed));
+                                            }
+                                            setContributionAmount(max.toString());
+                                        }}>
+                                            ₹{(() => {
+                                                const remainingNeeded = (familyBudget?.total_amount || 0) - (familyBudget?.total_contributed || 0);
+                                                let max = Math.min(personalRemaining, remainingNeeded);
+
+                                                const myLimit = familyBudget?.limits?.[user?.id || ''] || 0;
+                                                if (myLimit > 0) {
+                                                    const myContributed = (familyBudget?.contributions || [])
+                                                        .filter((c: any) => c.user_id === user?.id)
+                                                        .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+                                                    max = Math.min(max, Math.max(0, myLimit - myContributed));
+                                                }
+                                                return max;
+                                            })()}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1503,7 +2021,7 @@ export default function FamilyPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-            </main>
+            </main >
             <ImageCropperModal
                 open={isCropperOpen}
                 onClose={() => setIsCropperOpen(false)}
@@ -1516,7 +2034,7 @@ export default function FamilyPage() {
                 familyId={family?.id}
                 members={members}
             />
-        </div>
+        </div >
     );
 
 }

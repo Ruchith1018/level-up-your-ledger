@@ -17,6 +17,7 @@ export interface TransactionData {
     merchant?: string;
     notes?: string;
     date?: string;
+    familyBudgetID?: string;
 }
 
 export function useTransaction() {
@@ -38,6 +39,7 @@ export function useTransaction() {
             date: data.date || new Date().toISOString(),
             notes: data.notes || "",
             createdAt: new Date().toISOString(),
+            familyBudgetID: data.familyBudgetID,
         };
 
         addExpense(newTransaction);

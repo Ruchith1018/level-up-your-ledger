@@ -93,7 +93,9 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
           recurring: dbItem.recurring,
           tags: dbItem.tags,
           isLocked: dbItem.is_locked,
-          createdAt: dbItem.created_at
+          isLocked: dbItem.is_locked,
+          createdAt: dbItem.created_at,
+          familyBudgetID: dbItem.family_budget_id
         }));
         dispatch({ type: "SET_ITEMS", payload: mappedData });
       }
@@ -128,7 +130,9 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         recurring: dbItem.recurring,
         tags: dbItem.tags,
         isLocked: dbItem.is_locked,
-        createdAt: dbItem.created_at
+        isLocked: dbItem.is_locked,
+        createdAt: dbItem.created_at,
+        familyBudgetID: dbItem.family_budget_id
       }));
       dispatch({ type: "SET_ITEMS", payload: mappedData });
     }
@@ -161,7 +165,9 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
       notes: newExpense.notes,
       recurring: newExpense.recurring,
       tags: newExpense.tags,
+      tags: newExpense.tags,
       id: newExpense.id, // Ensure we use the generated ID
+      family_budget_id: newExpense.familyBudgetID,
     };
 
     const { data, error } = await supabase
@@ -190,7 +196,9 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         recurring: data.recurring,
         tags: data.tags,
         isLocked: data.is_locked,
-        createdAt: data.created_at
+        isLocked: data.is_locked,
+        createdAt: data.created_at,
+        familyBudgetID: data.family_budget_id
       };
       dispatch({ type: "DELETE", payload: { id: finalId } }); // Remove optimistic
       dispatch({ type: "ADD", payload: savedExpense }); // Add real
@@ -275,7 +283,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getExpensesByCategory = (month: string): Record<string, number> => {
-    const expenses = getExpensesByMonth(month).filter((e) => e.type === "expense");
+    const expenses = getExpensesByMonth(month).filter((e) => e.type === "expense" && !e.familyBudgetID);
     return expenses.reduce(
       (acc, e) => {
         acc[e.category] = (acc[e.category] || 0) + e.amount;
@@ -287,7 +295,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
 
   const getTotalByType = (type: "expense" | "income", month: string): number => {
     return getExpensesByMonth(month)
-      .filter((e) => e.type === type)
+      .filter((e) => e.type === type && !e.familyBudgetID)
       .reduce((sum, e) => sum + e.amount, 0);
   };
 

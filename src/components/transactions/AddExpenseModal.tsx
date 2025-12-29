@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +19,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useTransaction } from "@/hooks/useTransaction";
+import { useFamilyBudget } from "@/hooks/useFamilyBudget";
 
 export function AddExpenseModal() {
   const { settings } = useSettings();
   const { addTransaction } = useTransaction();
+  const { familyBudget, refreshFamilyBudget } = useFamilyBudget();
   const [open, setOpen] = useState(false);
+
+  // Refresh family budget data when modal opens
+  useEffect(() => {
+    if (open) {
+      refreshFamilyBudget();
+    }
+  }, [open]);
 
   const [formData, setFormData] = useState({
     amount: "",
@@ -45,13 +54,37 @@ export function AddExpenseModal() {
       return;
     }
 
+    const amount = parseFloat(formData.amount);
+
+    // Family Budget Validation
+    let familyBudgetID: string | undefined;
+    if (formData.paymentMethod === "Family Budget") {
+      if (!familyBudget || familyBudget.status !== 'spending') {
+        toast.error("Family budget is not in spending mode");
+        return;
+      }
+
+      if (amount > (familyBudget.user_remaining_limit || 0)) {
+        toast.error(`Amount exceeds your remaining limit of ₹${familyBudget.user_remaining_limit}`);
+        return;
+      }
+
+      if (amount > familyBudget.remaining_budget) {
+        toast.error(`Amount exceeds total family budget remaining ₹${familyBudget.remaining_budget}`);
+        return;
+      }
+
+      familyBudgetID = familyBudget.id;
+    }
+
     addTransaction({
       type: formData.type,
-      amount: parseFloat(formData.amount),
+      amount: amount,
       category: formData.category,
       merchant: formData.merchant,
       paymentMethod: formData.paymentMethod,
       notes: formData.notes,
+      familyBudgetID: familyBudgetID
     });
 
     // Reset form
@@ -66,6 +99,8 @@ export function AddExpenseModal() {
 
     setOpen(false);
   };
+
+  const showFamilyOption = familyBudget && familyBudget.status === 'spending';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,6 +148,12 @@ export function AddExpenseModal() {
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               required
             />
+            {formData.paymentMethod === "Family Budget" && familyBudget && (
+              <div className="text-xs text-muted-foreground flex gap-3 mt-1">
+                <span className="text-green-600 font-medium">Available Limit: ₹{familyBudget.user_remaining_limit}</span>
+                <span>Family Rem: ₹{familyBudget.remaining_budget}</span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -162,11 +203,21 @@ export function AddExpenseModal() {
                     <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                   </>
                 ) : (
-                  settings.paymentMethods.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
-                    </SelectItem>
-                  ))
+                  <>
+                    {showFamilyOption && (
+                      <SelectItem value="Family Budget" className="text-purple-600 font-medium focus:text-purple-700 bg-purple-50 focus:bg-purple-100">
+                        <div className="flex items-center gap-2">
+                          <Wallet className="w-3.5 h-3.5" />
+                          Family Budget
+                        </div>
+                      </SelectItem>
+                    )}
+                    {settings.paymentMethods.map((method) => (
+                      <SelectItem key={method} value={method}>
+                        {method}
+                      </SelectItem>
+                    ))}
+                  </>
                 )}
               </SelectContent>
             </Select>
