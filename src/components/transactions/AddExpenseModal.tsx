@@ -100,7 +100,7 @@ export function AddExpenseModal() {
     setOpen(false);
   };
 
-  const showFamilyOption = familyBudget && familyBudget.status === 'spending';
+  const showFamilyOption = familyBudget && familyBudget.status === 'spending' && familyBudget.user_role !== 'viewer';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

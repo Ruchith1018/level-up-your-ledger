@@ -11,6 +11,8 @@ import { motion } from "framer-motion";
 import { BudgetForm } from "./BudgetForm";
 import { CARD_THEMES, ALL_THEMES } from "@/constants/cardThemes";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 
 export function BudgetOverview() {
   const navigate = useNavigate();
@@ -20,6 +22,19 @@ export function BudgetOverview() {
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
   const currentMonth = dayjs().format("YYYY-MM");
+  const [familySurplus, setFamilySurplus] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchFamilySurplus = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('family_budget_surplus')
+        .select('*')
+        .eq('user_id', user.id);
+      setFamilySurplus(data || []);
+    };
+    fetchFamilySurplus();
+  }, [user]);
 
   /* 
     If id is 'custom', we construct a transient theme object 
@@ -72,7 +87,7 @@ export function BudgetOverview() {
       const expenses = getTotalByType("expense", b.month);
       const savedAmount = Math.max(0, b.total - expenses);
       return sum + savedAmount;
-    }, 0);
+    }, 0) + familySurplus.reduce((sum, item) => sum + Number(item.amount), 0);
 
   if (!currentBudget) {
     // ... (no change to no-budget view)

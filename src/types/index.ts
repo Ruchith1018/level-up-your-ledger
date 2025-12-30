@@ -126,7 +126,7 @@ export interface Family {
 export interface FamilyMember {
   family_id: string;
   user_id: string;
-  role: 'admin' | 'member' | 'viewer';
+  role: 'admin' | 'leader' | 'member' | 'viewer';
   joined_at: string;
   allowance: number;
   visibility_level: 'full' | 'limited' | 'none';

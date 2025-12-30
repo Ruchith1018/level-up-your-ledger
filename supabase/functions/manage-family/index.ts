@@ -45,8 +45,20 @@ serve(async (req) => {
         }
 
         if (action === 'invite') {
-            // Admin invites a user by Referral ID
+            // Admin/Leader invites a user by Referral ID
             const { family_id, referral_id } = params
+
+            // 0. Verify Requester Permissions (Admin or Leader)
+            const { data: requesterMembership, error: reqMemberError } = await supabaseAdmin
+                .from('family_members')
+                .select('role')
+                .eq('family_id', family_id)
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (reqMemberError || !requesterMembership || !['admin', 'leader'].includes(requesterMembership.role)) {
+                throw new Error('Unauthorized: Only Admins and Leaders can invite members');
+            }
 
             // 1. Find user by unique referral_id
             const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
@@ -285,11 +297,11 @@ serve(async (req) => {
                 .eq('user_id', user.id)
                 .maybeSingle();
 
-            if (memberError || membership?.role !== 'admin') {
+            if (memberError || !membership || !['admin', 'leader'].includes(membership.role)) {
                 if (request.request_type === 'invite' && request.user_id === user.id) {
                     // Allowed: User accepting invite
                 } else {
-                    throw new Error('Unauthorized: You are not an admin');
+                    throw new Error('Unauthorized: You must be an Admin or Leader');
                 }
             } else {
                 if (request.request_type === 'invite') throw new Error('Only the invited user can accept an invite');
@@ -536,6 +548,51 @@ serve(async (req) => {
             }
 
             return new Response(JSON.stringify({ success: true, message: 'Admin rights transferred successfully' }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+        }
+
+        else if (action === 'revert_budget') {
+            const { family_budget_id } = params;
+            if (!family_budget_id) throw new Error('Missing family_budget_id');
+
+            // 1. Get Budget to find Family ID
+            const { data: budget, error: budgetError } = await supabaseAdmin
+                .from('family_budgets')
+                .select('family_id, month')
+                .eq('id', family_budget_id)
+                .single();
+
+            if (budgetError || !budget) throw new Error('Budget not found');
+
+            // 2. Verify Permissions (Admin or Leader of that family)
+            const { data: membership, error: memberError } = await supabaseAdmin
+                .from('family_members')
+                .select('role')
+                .eq('family_id', budget.family_id)
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (memberError || !membership || !['admin', 'leader'].includes(membership.role)) {
+                throw new Error('Unauthorized: Only Admins and Leaders can revert a budget');
+            }
+
+            // 3. Delete Surplus Records (This bypasses RLS, so it works for ALL users)
+            const { error: deleteError } = await supabaseAdmin
+                .from('family_budget_surplus')
+                .delete()
+                .eq('family_budget_id', family_budget_id);
+
+            if (deleteError) throw deleteError;
+
+            // 4. Update Budget Status
+            const { error: updateError } = await supabaseAdmin
+                .from('family_budgets')
+                .update({ status: 'spending' })
+                .eq('id', family_budget_id);
+
+            if (updateError) throw updateError;
+
+            return new Response(JSON.stringify({ success: true, message: `Budget for ${budget.month} reopened` }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         }
 

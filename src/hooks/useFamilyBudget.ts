@@ -16,6 +16,8 @@ export interface FamilyBudgetData {
     remaining_budget: number;
     user_remaining_limit?: number;
     user_limit?: number;
+    user_role?: 'admin' | 'member' | 'viewer' | 'leader';
+    expenses?: any[];
 }
 
 export function useFamilyBudget() {
@@ -34,10 +36,10 @@ export function useFamilyBudget() {
             setLoading(true);
             const currentMonth = dayjs().format('YYYY-MM');
 
-            // 1. Get User's Family
+            // 1. Get User's Family and Role
             const { data: memberData, error: memberError } = await supabase
                 .from('family_members')
-                .select('family_id')
+                .select('family_id, role')
                 .eq('user_id', user.id)
                 .single();
 
@@ -77,7 +79,9 @@ export function useFamilyBudget() {
             let spentByUser: Record<string, number> = {};
             let totalSpent = 0;
 
-            if (budgetData.status === 'spending') {
+            let detailedExpenses: any[] = [];
+
+            if (budgetData.status === 'spending' || budgetData.status === 'closed') {
                 // 3. Get Spending Limits
                 const { data: limitsData } = await supabase
                     .from('family_spending_limits')
@@ -94,10 +98,16 @@ export function useFamilyBudget() {
                 // 4. Get Expenses linked to this budget
                 const { data: expensesData } = await supabase
                     .from('expenses')
-                    .select('user_id, amount')
-                    .eq('family_budget_id', budgetData.id);
+                    .select(`
+                        *,
+                        profile:profiles(name, avatar_url)
+                    `)
+                    .eq('family_budget_id', budgetData.id)
+                    .order('created_at', { ascending: false });
 
                 if (expensesData) {
+                    detailedExpenses = expensesData.map(e => ({ ...e, is_expense: true }));
+
                     spentByUser = expensesData.reduce((acc: any, item: any) => {
                         acc[item.user_id] = (acc[item.user_id] || 0) + Number(item.amount);
                         return acc;
@@ -119,7 +129,9 @@ export function useFamilyBudget() {
                 spent_by_user: spentByUser,
                 remaining_budget: totalContributed - totalSpent,
                 user_limit: spendingLimits[user.id] || 0,
-                user_remaining_limit: Math.max(0, (spendingLimits[user.id] || 0) - (spentByUser[user.id] || 0))
+                user_remaining_limit: Math.max(0, (spendingLimits[user.id] || 0) - (spentByUser[user.id] || 0)),
+                user_role: memberData.role as any,
+                expenses: detailedExpenses
             };
 
             setFamilyBudget(data);

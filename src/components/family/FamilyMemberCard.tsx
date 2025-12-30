@@ -15,14 +15,9 @@ interface FamilyMemberCardProps {
 }
 
 export function FamilyMemberCard({ member, isCurrentUserAdmin, onUpdateRole, onRemove }: FamilyMemberCardProps) {
-    const roleIcon = {
-        admin: <Shield className="w-3 h-3" />,
-        member: <User className="w-3 h-3" />,
-        viewer: <Eye className="w-3 h-3" />
-    };
-
     const roleColor = {
         admin: "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20",
+        leader: "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20",
         member: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
         viewer: "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20"
     };
@@ -47,13 +42,12 @@ export function FamilyMemberCard({ member, isCurrentUserAdmin, onUpdateRole, onR
                             <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
 
-                        <div>
+                        <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-sm">
+                                <h3 className="font-semibold text-sm truncate">
                                     {member.profile?.name || "Family Member"}
                                 </h3>
-                                <Badge variant="secondary" className={`gap-1 h-5 text-[10px] px-1.5 ${roleColor[member.role]}`}>
-                                    {roleIcon[member.role]}
+                                <Badge variant="secondary" className={`h-5 text-[10px] px-1.5 shrink-0 ${roleColor[member.role]}`}>
                                     {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                                 </Badge>
                             </div>
@@ -70,6 +64,9 @@ export function FamilyMemberCard({ member, isCurrentUserAdmin, onUpdateRole, onR
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => onUpdateRole?.(member.user_id, 'admin')}>
                                     Transfer Admin Rights
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onUpdateRole?.(member.user_id, 'leader')}>
+                                    Make Leader
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onUpdateRole?.(member.user_id, 'member')}>
                                     Make Member

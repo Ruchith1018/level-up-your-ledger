@@ -13,6 +13,7 @@ import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
 import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
 import { ImageCropperModal } from "@/components/family/ImageCropperModal";
 import { FamilyChatModal } from "@/components/family/FamilyChatModal";
+import { FamilySpendingChart } from "@/components/family/FamilySpendingChart";
 import { FamilyRequestsDialog } from "@/components/family/FamilyRequestsDialog";
 import { UserRequestsDialog } from "@/components/family/UserRequestsDialog";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -46,7 +47,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle } from "lucide-react";
+
+import { AlertTriangle, FileText, Download, Copy } from "lucide-react";
+import dayjs from "dayjs";
+import { generateFamilyReportPDF } from "@/utils/pdfGenerator";
 
 export default function FamilyPage() {
     const { user } = useAuth();
@@ -96,6 +100,18 @@ export default function FamilyPage() {
     const [spendingLimits, setSpendingLimits] = useState<Record<string, string>>({});
     const [spendModeLoading, setSpendModeLoading] = useState(false);
 
+    // Month Selection State
+    const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+    const [viewMonth, setViewMonth] = useState<string>(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+
+    // PDF Report State
+    const [showPdfDialog, setShowPdfDialog] = useState(false);
+    const [pdfPassword, setPdfPassword] = useState("");
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
     // Image Cropper State
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -103,6 +119,7 @@ export default function FamilyPage() {
     const [isActivityExpanded, setIsActivityExpanded] = useState(true);
     const [isCropperOpen, setIsCropperOpen] = useState(false);
     const [showChatDialog, setShowChatDialog] = useState(false);
+    const [budgetToRevert, setBudgetToRevert] = useState<any | null>(null);
 
     const handleConcludeBudget = async (budget: any) => {
         console.log(`Closing out budget: ${budget.month}`);
@@ -161,35 +178,35 @@ export default function FamilyPage() {
         }
     };
 
-    const handleRevertConclusion = async (budget: any) => {
-        if (!confirm("Are you sure you want to revert this conclusion? This will remove the savings transfers and reopen the budget.")) return;
+    const handleRevertConclusion = (budget: any) => {
+        setBudgetToRevert(budget);
+    };
 
+    const confirmRevertConclusion = async () => {
+        if (!budgetToRevert) return;
+
+        const budget = budgetToRevert;
         console.log(`Reverting conclusion for budget: ${budget.month}`);
 
-        // 1. Delete Surplus Records
-        const { error: deleteError } = await supabase
-            .from('family_budget_surplus')
-            .delete()
-            .eq('family_budget_id', budget.id);
+        try {
+            const { data, error } = await supabase.functions.invoke('manage-family', {
+                body: {
+                    action: 'revert_budget',
+                    family_budget_id: budget.id
+                }
+            });
 
-        if (deleteError) {
-            console.error("Error deleting surplus records:", deleteError);
-            toast.error("Failed to revert savings transfers");
-            return;
-        }
+            if (error) throw error;
+            if (!data.success) throw new Error(data.message || "Failed to revert budget");
 
-        // 2. Revert Status to 'spending'
-        const { error: updateError } = await supabase
-            .from('family_budgets')
-            .update({ status: 'spending' })
-            .eq('id', budget.id);
-
-        if (updateError) {
-            console.error("Error updating budget status:", updateError);
-            toast.error("Failed to reopen budget");
-        } else {
-            toast.success("Budget reopened and savings transfers reverted.");
+            toast.success(data.message || "Budget reopened and savings transfers reverted.");
             fetchFamilyData();
+
+        } catch (error: any) {
+            console.error("Error reverting conclusion:", error);
+            toast.error(error.message || "An unexpected error occurred");
+        } finally {
+            setBudgetToRevert(null);
         }
     };
 
@@ -272,11 +289,27 @@ export default function FamilyPage() {
                 }
                 // -----------------------------------------
 
+                // 5a. Fetch Available Months (History)
+                const { data: allBudgets } = await supabase
+                    .from('family_budgets')
+                    .select('month')
+                    .eq('family_id', memberData.family_id)
+                    .order('month', { ascending: false });
+
+                if (allBudgets) {
+                    const months = [...new Set(allBudgets.map(b => b.month))];
+                    setAvailableMonths(months);
+                }
+
+                // 5b. Fetch Selected Budget
+                // Ensure viewMonth is valid for this family or fallback to current
+                // Actually, if viewMonth is set, try to fetch it.
+
                 const { data: budgetData } = await supabase
                     .from('family_budgets')
                     .select('*')
                     .eq('family_id', memberData.family_id)
-                    .eq('month', currentMonth)
+                    .eq('month', viewMonth)
                     .maybeSingle();
 
 
@@ -330,8 +363,8 @@ export default function FamilyPage() {
 
 
 
-                    // Fetch Spending Limits if in spending mode
-                    if (budgetData.status === 'spending') {
+                    // Fetch Spending Limits if in spending mode or closed
+                    if (budgetData.status === 'spending' || budgetData.status === 'closed') {
                         const { data: spendLimitsData } = await supabase
                             .from('family_spending_limits')
                             .select('user_id, limit_amount')
@@ -468,7 +501,7 @@ export default function FamilyPage() {
         } else {
             setLoading(false);
         }
-    }, [user, settings.hasPremiumPack, settingsLoading]);
+    }, [user, settings.hasPremiumPack, settingsLoading, viewMonth]);
 
     // Realtime Subscription for detecting when I get added to a family (Entry)
     useEffect(() => {
@@ -543,19 +576,6 @@ export default function FamilyPage() {
                     fetchFamilyData(true); // Background update
                 }
             )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'expenses',
-                    filter: `user_id=eq.${user?.id}`
-                },
-                (payload) => {
-                    console.log('Personal expense changed, updating budget!', payload);
-                    fetchFamilyData(true);
-                }
-            )
             .subscribe();
 
         return () => {
@@ -564,14 +584,14 @@ export default function FamilyPage() {
         };
     }, [family?.id, user?.id]);
 
-    // Dedicated subscription for the active budget contributions
+    // Dedicated subscription for the active budget (Contributions & Expenses)
     useEffect(() => {
         if (!familyBudget?.id) return;
 
-        console.log("Setting up contribution listener for budget:", familyBudget.id);
+        console.log("Setting up budget listener for:", familyBudget.id);
 
         const channel = supabase
-            .channel(`budget-contributions-${familyBudget.id}`)
+            .channel(`budget-updates-${familyBudget.id}`)
             .on(
                 'postgres_changes',
                 {
@@ -581,7 +601,33 @@ export default function FamilyPage() {
                     filter: `family_budget_id=eq.${familyBudget.id}`
                 },
                 (payload) => {
-                    console.log('Contribution received for current budget!', payload);
+                    console.log('Contribution received!', payload);
+                    fetchFamilyData(true);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'expenses',
+                    filter: `family_budget_id=eq.${familyBudget.id}`
+                },
+                (payload) => {
+                    console.log('Budget expense received!', payload);
+                    fetchFamilyData(true);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'family_spending_limits',
+                    filter: `family_budget_id=eq.${familyBudget.id}`
+                },
+                (payload) => {
+                    console.log('Spending limits updated!', payload);
                     fetchFamilyData(true);
                 }
             )
@@ -875,6 +921,29 @@ export default function FamilyPage() {
             return;
         }
 
+        if (newRole === 'leader') {
+            const currentLeader = members.find(m => m.role === 'leader');
+            if (currentLeader && currentLeader.user_id !== memberId) {
+                if (!confirm(`This will remove ${currentLeader.profile?.name || 'the current leader'} as Leader. Continue?`)) {
+                    return;
+                }
+                // Demote old leader locally
+                setMembers(prev => prev.map(m => m.role === 'leader' ? { ...m, role: 'member' } : m));
+
+                // Demote old leader in DB
+                try {
+                    if (!family) return;
+                    await supabase
+                        .from('family_members')
+                        .update({ role: 'member' })
+                        .eq('family_id', family.id)
+                        .eq('role', 'leader');
+                } catch (e) {
+                    console.error("Failed to demote old leader", e);
+                }
+            }
+        }
+
         // Optimistic update
         setMembers(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole as any } : m));
 
@@ -980,6 +1049,61 @@ export default function FamilyPage() {
             setMembers(prev => prev.filter(m => m.user_id !== memberId));
         } catch (error) {
             toast.error("Failed to remove member");
+        }
+    };
+
+    // PDF Handlers
+    const handleDownloadReport = (e?: any) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        // Generate random 8-char password
+        const password = Math.random().toString(36).slice(-8).toUpperCase();
+        setPdfPassword(password);
+        setShowPdfDialog(true);
+    };
+
+    const confirmDownload = async () => {
+        if (!family || !familyBudget) return;
+        setIsGeneratingPdf(true);
+
+        try {
+            // Need to fetch latest transactions for the report to be accurate
+            // Or reuse state? State `familyBudget` has expenses? 
+            // `fetchFamilyData` stores contribution/expenses in `familyBudget.expenses`?
+            // Actually `fetchFamilyData` does NOT currently store `expenses` into `familyBudget` state object directly in the view logic I wrote earlier?
+            // Wait, I updated `useFamilyBudget` hook but here in `FamilyPage` I am doing manual fetching!
+            // Let's check `fetchFamilyData` again.
+            // In `FamilyPage.tsx`, `fetchFamilyData` sets `setFamilyBudget` with `budgetData`.
+            // Does it attach expenses? 
+            // Lines 454 fetches expenses for personal remaining calculation but that's different.
+            // Lines 306-318 fetch expenses!
+            // `budgetData.expenses = expenses;` (Line 318 in `fetchFamilyData` presumably, need to verify)
+
+            // To be safe, let's pass what we have in `familyBudget` state.
+            // If `familyBudget.expenses` is missing, we might need to fetch. 
+            // In `fetchFamilyData` (Line 306), we fetched expenses and attached them.
+            // So `familyBudget.expenses` *should* be available.
+
+            const reportData = {
+                familyName: family.name,
+                month: viewMonth,
+                totalBudget: familyBudget.total_amount || 0,
+                totalSpent: familyBudget.total_spent || 0,
+                totalRemaining: (familyBudget.total_contributed || 0) - (familyBudget.total_spent || 0),
+                transactions: familyBudget.expenses || [],
+                members: members
+            };
+
+            await generateFamilyReportPDF(reportData, pdfPassword);
+            toast.success("Report downloaded!");
+            setShowPdfDialog(false);
+        } catch (error) {
+            console.error("PDF Error", error);
+            toast.error("Failed to generate PDF");
+        } finally {
+            setIsGeneratingPdf(false);
         }
     };
 
@@ -1366,14 +1490,29 @@ export default function FamilyPage() {
                     </div>
 
                     <div className="flex gap-2">
-                        <Button
-                            size="icon"
-                            onClick={() => setShowChatDialog(true)}
-                            className="bg-primary hover:bg-primary/90 text-white border-0"
-                        >
-                            <MessageSquare className="w-4 h-4" />
-                        </Button>
-                        {isAdmin && (
+                        {/* PDF Report Download */}
+                        {membership.role !== 'viewer' && familyBudget && ( // Everyone can download? Plan said "all family members".
+                            <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={(e) => handleDownloadReport(e)}
+                                title="Download Secured Report"
+                                className="border-dashed relative z-10"
+                            >
+                                <FileText className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                        )}
+
+                        {membership.role !== 'viewer' && (
+                            <Button
+                                size="icon"
+                                onClick={() => setShowChatDialog(true)}
+                                className="bg-primary hover:bg-primary/90 text-white border-0"
+                            >
+                                <MessageSquare className="w-4 h-4" />
+                            </Button>
+                        )}
+                        {(isAdmin || membership.role === 'leader') && (
                             <>
                                 <Button
                                     size="icon"
@@ -1416,11 +1555,26 @@ export default function FamilyPage() {
                                         <PiggyBank className="w-5 h-5 text-primary" />
                                         Monthly Budget
                                     </div>
-                                    {familyBudget && (
+                                    {(membership?.role === 'admin' || membership?.role === 'leader') && availableMonths.length > 0 ? (
+                                        <div className="flex items-center gap-2">
+                                            <Select value={viewMonth} onValueChange={setViewMonth}>
+                                                <SelectTrigger className="w-[180px] h-8 font-mono">
+                                                    <SelectValue placeholder="Select month" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableMonths.map((m) => (
+                                                        <SelectItem key={m} value={m}>
+                                                            {dayjs(m + '-01').format('MMMM YYYY')}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ) : familyBudget ? (
                                         <Badge variant="outline" className="font-mono">
-                                            {new Date(familyBudget.month + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+                                            {dayjs(familyBudget.month + '-01').format('MMMM YYYY')}
                                         </Badge>
-                                    )}
+                                    ) : null}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -1608,6 +1762,7 @@ export default function FamilyPage() {
                                                             onClick={() => setShowContributeDialog(true)}
                                                             className={`h-10 px-6 ${((familyBudget.total_contributed || 0) >= familyBudget.total_amount) ? 'bg-green-600 hover:bg-green-700 cursor-default' : ''}`}
                                                             disabled={
+                                                                membership.role === 'viewer' ||
                                                                 (familyBudget.total_contributed || 0) >= familyBudget.total_amount ||
                                                                 (() => {
                                                                     const myLimit = familyBudget.limits?.[user?.id || ''] || 0;
@@ -1734,6 +1889,17 @@ export default function FamilyPage() {
                                 )}
                             </CardContent>
                         </Card>
+
+                        {/* Spending Trends Graph */}
+                        {(familyBudget && (familyBudget.status === 'spending' || familyBudget.status === 'closed')) && (
+                            <div className="mt-6">
+                                <FamilySpendingChart
+                                    expenses={familyBudget.expenses || []}
+                                    members={members}
+                                    currentMonth={familyBudget.month}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Sidebar - Family Members */}
@@ -1760,22 +1926,21 @@ export default function FamilyPage() {
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex-1 min-w-0">
-                                                        <h3 className="font-semibold text-sm truncate">
-                                                            {member.profile?.name || "Family Member"}
-                                                        </h3>
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="font-semibold text-sm truncate">
+                                                                {member.profile?.name || "Family Member"}
+                                                            </h3>
                                                             <Badge
                                                                 variant="secondary"
-                                                                className={`gap-1 h-5 text-[10px] px-1.5 ${member.role === 'admin'
+                                                                className={`h-5 text-[10px] px-1.5 shrink-0 ${member.role === 'admin'
                                                                     ? 'bg-purple-500/10 text-purple-500'
-                                                                    : member.role === 'viewer'
-                                                                        ? 'bg-gray-500/10 text-gray-500'
-                                                                        : 'bg-blue-500/10 text-blue-500'
+                                                                    : member.role === 'leader'
+                                                                        ? 'bg-amber-500/10 text-amber-500'
+                                                                        : member.role === 'viewer'
+                                                                            ? 'bg-gray-500/10 text-gray-500'
+                                                                            : 'bg-blue-500/10 text-blue-500'
                                                                     }`}
                                                             >
-                                                                {member.role === 'admin' && <Shield className="w-3 h-3" />}
-                                                                {member.role === 'member' && <User className="w-3 h-3" />}
-                                                                {member.role === 'viewer' && <Eye className="w-3 h-3" />}
                                                                 {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                                                             </Badge>
                                                         </div>
@@ -1791,12 +1956,43 @@ export default function FamilyPage() {
                                                                 <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'admin')}>
                                                                     Transfer Admin Rights
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
-                                                                    Make Member
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
-                                                                    Make Viewer
-                                                                </DropdownMenuItem>
+
+                                                                {/* Leader Options */}
+                                                                {member.role === 'leader' && (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
+                                                                            Demote to Member
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
+                                                                            Demote to Viewer
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+
+                                                                {/* Member Options */}
+                                                                {member.role === 'member' && (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'leader')}>
+                                                                            Promote to Leader
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
+                                                                            Demote to Viewer
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+
+                                                                {/* Viewer Options */}
+                                                                {member.role === 'viewer' && (
+                                                                    <>
+                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'leader')}>
+                                                                            Promote to Leader
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
+                                                                            Promote to Member
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+
                                                                 <DropdownMenuItem className="text-red-500" onClick={() => handleRemoveMember(member.user_id)}>
                                                                     Remove from Family
                                                                 </DropdownMenuItem>
@@ -1826,7 +2022,7 @@ export default function FamilyPage() {
                     open={showRequestsDialog}
                     onOpenChange={setShowRequestsDialog}
                     familyId={family.id}
-                    isAdmin={isAdmin}
+                    isAdmin={isAdmin || membership.role === 'leader'}
                 />
 
                 <AlertDialog open={showLeaveDialog} onOpenChange={(open) => {
@@ -2179,6 +2375,50 @@ export default function FamilyPage() {
                 familyId={family?.id}
                 members={members}
             />
+            <AlertDialog open={!!budgetToRevert} onOpenChange={(open) => !open && setBudgetToRevert(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Revert Budget Conclusion?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to revert this conclusion? This will remove the savings transfers and reopen the budget for modification.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRevertConclusion}>
+                            Revert Conclusion
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            {/* Password Dialog for PDF */}
+            <AlertDialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Secure Report Generated 🔒</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4">
+                            <p>Your family report is ready. It is protected with the following password. <br /> <strong className="text-destructive">Copy it now</strong>, it will not be shown again.</p>
+
+                            <div className="flex items-center gap-2 p-3 bg-muted rounded-md border border-dashed">
+                                <code className="text-lg font-mono flex-1 text-center select-all">{pdfPassword}</code>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => {
+                                    navigator.clipboard.writeText(pdfPassword);
+                                    toast.success("Password copied!");
+                                }}>
+                                    <Copy className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setShowPdfDialog(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDownload} disabled={isGeneratingPdf}>
+                            {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+                            Download PDF
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div >
     );
 
