@@ -4,11 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FamilyMember } from "@/types";
 import dayjs from "dayjs";
 import { useSettings } from "@/contexts/SettingsContext"; // For currency preference
+import { FamilyBudgetData } from "@/hooks/useFamilyBudget";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, ChevronLeft, BarChart3, List } from "lucide-react";
 
 interface FamilySpendingChartProps {
     expenses: any[];
     members: FamilyMember[];
     currentMonth: string; // YYYY-MM
+    familyBudget?: FamilyBudgetData | null;
 }
 
 const CHART_COLORS = [
@@ -21,9 +27,10 @@ const CHART_COLORS = [
     "#f43f5e", // Rose
 ];
 
-export function FamilySpendingChart({ expenses, members, currentMonth }: FamilySpendingChartProps) {
+export function FamilySpendingChart({ expenses, members, currentMonth, familyBudget }: FamilySpendingChartProps) {
     const { settings } = useSettings();
     const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
+    const [showDetails, setShowDetails] = useState(false);
 
     // Process data
     const chartData = useMemo(() => {
@@ -103,86 +110,176 @@ export function FamilySpendingChart({ expenses, members, currentMonth }: FamilyS
                         {currencySymbol}{totalSpent.toLocaleString()}
                     </div>
                 </div>
-                <div className="flex items-center space-x-1 bg-secondary/50 rounded-lg p-1">
-                    {/* Placeholder for tabs if we want to enable Week/Month/Year later */}
-                    <button
-                        onClick={() => setViewMode('week')}
-                        className={`text-xs px-3 py-1 rounded-md transition-colors ${viewMode === 'week' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                <div className="flex items-center space-x-2">
+                    {/* Toggle Stats Button */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 text-muted-foreground"
+                        onClick={() => setShowDetails(!showDetails)}
                     >
-                        Week
-                    </button>
-                    <button
-                        onClick={() => setViewMode('month')}
-                        className={`text-xs px-3 py-1 rounded-md transition-colors ${viewMode === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        Month
-                    </button>
+                        {showDetails ? <BarChart3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                        {showDetails ? "Hide Stats" : "Show Stats"}
+                    </Button>
+
+                    <div className="flex items-center space-x-1 bg-secondary/50 rounded-lg p-1">
+                        {/* Placeholder for tabs if we want to enable Week/Month/Year later */}
+                        <button
+                            onClick={() => setViewMode('week')}
+                            className={`text-xs px-3 py-1 rounded-md transition-colors ${viewMode === 'week' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Week
+                        </button>
+                        <button
+                            onClick={() => setViewMode('month')}
+                            className={`text-xs px-3 py-1 rounded-md transition-colors ${viewMode === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Month
+                        </button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData.data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <defs>
-                                {Array.from(chartData.users.entries()).map(([userId, info], index) => (
-                                    <linearGradient key={userId} id={`color-${userId}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={info.color} stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor={info.color} stopOpacity={0} />
-                                    </linearGradient>
-                                ))}
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                            <XAxis
-                                dataKey="name"
-                                tickLine={false}
-                                axisLine={false}
-                                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                                minTickGap={30}
-                            />
-                            <YAxis
-                                tickLine={false}
-                                axisLine={false}
-                                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                                tickFormatter={(value) => `${currencySymbol}${value}`}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
-                                itemStyle={{ color: "hsl(var(--foreground))" }}
-                                formatter={(value: number, name: string, props: any) => {
-                                    // Find user name from dataKey (userId) is tricky unless we map it back or use name
-                                    // Recharts passes the dataKey as 'name' here usually.
-                                    const userId = props.dataKey;
-                                    const userName = chartData.users.get(userId)?.name || "Unknown";
-                                    return [`${currencySymbol}${value}`, userName];
-                                }}
-                                labelStyle={{ color: "hsl(var(--muted-foreground))", marginBottom: "0.5rem" }}
-                            />
-                            {Array.from(chartData.users.entries()).map(([userId, info]) => (
-                                <Area
-                                    key={userId}
-                                    type="monotone"
-                                    dataKey={userId}
-                                    stroke={info.color}
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill={`url(#color-${userId})`}
-                                />
-                            ))}
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Legend */}
-                <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-4 border-t">
-                    {Array.from(chartData.users.entries()).map(([userId, info]) => (
-                        <div key={userId} className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: info.color }}
-                            />
-                            <span>{info.name}</span>
+                <div className="flex flex-col lg:flex-row gap-6 transition-all duration-500 ease-in-out">
+                    {/* CHART SECTION */}
+                    <div className={`flex-1 min-w-0 transition-all duration-500 ${showDetails ? 'lg:w-[60%]' : 'w-full'}`}>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData.data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        {Array.from(chartData.users.entries()).map(([userId, info], index) => (
+                                            <linearGradient key={userId} id={`color-${userId}`} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={info.color} stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor={info.color} stopOpacity={0} />
+                                            </linearGradient>
+                                        ))}
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                    <XAxis
+                                        dataKey="name"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                                        minTickGap={30}
+                                    />
+                                    <YAxis
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                                        tickFormatter={(value) => `${currencySymbol}${value}`}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
+                                        itemStyle={{ color: "hsl(var(--foreground))" }}
+                                        formatter={(value: number, name: string, props: any) => {
+                                            // Find user name from dataKey (userId) is tricky unless we map it back or use name
+                                            // Recharts passes the dataKey as 'name' here usually.
+                                            const userId = props.dataKey;
+                                            const userName = chartData.users.get(userId)?.name || "Unknown";
+                                            return [`${currencySymbol}${value}`, userName];
+                                        }}
+                                        labelStyle={{ color: "hsl(var(--muted-foreground))", marginBottom: "0.5rem" }}
+                                    />
+                                    {Array.from(chartData.users.entries()).map(([userId, info]) => (
+                                        <Area
+                                            key={userId}
+                                            type="monotone"
+                                            dataKey={userId}
+                                            stroke={info.color}
+                                            strokeWidth={2}
+                                            fillOpacity={1}
+                                            fill={`url(#color-${userId})`}
+                                        />
+                                    ))}
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
-                    ))}
+
+                        {/* Legend */}
+                        <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-4 border-t">
+                            {Array.from(chartData.users.entries()).map(([userId, info]) => (
+                                <div key={userId} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <span
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: info.color }}
+                                    />
+                                    <span>{info.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* STATS PANEL */}
+                    {showDetails && familyBudget && (
+                        <div className="w-full lg:w-[40%] border-t lg:border-t-0 lg:border-l pl-0 lg:pl-6 pt-6 lg:pt-0 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <h3 className="font-semibold mb-4 text-sm flex items-center gap-2">
+                                <List className="w-4 h-4 text-primary" />
+                                Budget Breakdown
+                            </h3>
+                            <div className="rounded-md border overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-muted/50">
+                                        <TableRow>
+                                            <TableHead className="w-[100px]">Member</TableHead>
+                                            <TableHead className="text-right">Limit</TableHead>
+                                            <TableHead className="text-right">Spent</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {members.map((member) => {
+                                            const limit = familyBudget.spending_limits?.[member.user_id] || 0;
+                                            // Calculate spent for this user from expenses list directly or use props
+                                            const spent = (expenses || [])
+                                                .filter(e => e.user_id === member.user_id)
+                                                .reduce((sum, e) => sum + Number(e.amount), 0);
+
+                                            // Get color
+                                            const userColor = chartData.users.get(member.user_id)?.color;
+
+                                            return (
+                                                <TableRow key={member.user_id}>
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full" style={{ background: userColor || '#ccc' }} />
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs truncate max-w-[80px]" title={member.profile?.name}>{member.profile?.name?.split(' ')[0]}</span>
+                                                                <span className="text-[10px] text-muted-foreground uppercase">{member.role}</span>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right text-xs">
+                                                        {limit > 0 ? `${currencySymbol}${limit}` : '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right text-xs">
+                                                        <span className={spent > limit && limit > 0 ? "text-destructive font-bold" : ""}>
+                                                            {currencySymbol}{spent}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-secondary/30 rounded-lg text-xs space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Total Contributed:</span>
+                                    <span className="font-mono">{currencySymbol}{familyBudget.total_contributed || 0}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Total Spent:</span>
+                                    <span className="font-mono text-destructive">{currencySymbol}{familyBudget.total_spent || 0}</span>
+                                </div>
+                                <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                                    <span>Remaining:</span>
+                                    <span className={(familyBudget.remaining_budget || 0) < 0 ? "text-destructive" : "text-green-600"}>
+                                        {currencySymbol}{familyBudget.remaining_budget || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>

@@ -431,6 +431,7 @@ export default function FamilyPage() {
                             spending_limits: spendLimitsMap,
                             total_spent: totalSpent,
                             spent_by_user: spentByUser,
+                            remaining_budget: totalContributed - totalSpent,
                             expenses: transformedExpenses // Add expenses to state
                         });
                     } else {
@@ -438,7 +439,8 @@ export default function FamilyPage() {
                             ...budgetData,
                             total_contributed: totalContributed,
                             contributions: transformedContributions,
-                            limits: limitsMap
+                            limits: limitsMap,
+                            remaining_budget: totalContributed // Total spent is 0 in collecting
                         });
                     }
                 } else {
@@ -1897,6 +1899,7 @@ export default function FamilyPage() {
                                     expenses={familyBudget.expenses || []}
                                     members={members}
                                     currentMonth={familyBudget.month}
+                                    familyBudget={familyBudget}
                                 />
                             </div>
                         )}
