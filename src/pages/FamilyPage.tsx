@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, TrendingDown, Globe, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
@@ -16,6 +16,7 @@ import { FamilyChatModal } from "@/components/family/FamilyChatModal";
 import { FamilySpendingChart } from "@/components/family/FamilySpendingChart";
 import { FamilyRequestsDialog } from "@/components/family/FamilyRequestsDialog";
 import { UserRequestsDialog } from "@/components/family/UserRequestsDialog";
+import { FamilyStatsDialog } from "@/components/family/FamilyStatsDialog";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -99,6 +100,8 @@ export default function FamilyPage() {
     const [showStartSpendingDialog, setShowStartSpendingDialog] = useState(false);
     const [spendingLimits, setSpendingLimits] = useState<Record<string, string>>({});
     const [spendModeLoading, setSpendModeLoading] = useState(false);
+    const [lifetimeStats, setLifetimeStats] = useState<{ contributed: number, spent: number }>({ contributed: 0, spent: 0 });
+    const [showStatsDialog, setShowStatsDialog] = useState(false);
 
     // Month Selection State
     const [availableMonths, setAvailableMonths] = useState<string[]>([]);
@@ -299,6 +302,37 @@ export default function FamilyPage() {
                 if (allBudgets) {
                     const months = [...new Set(allBudgets.map(b => b.month))];
                     setAvailableMonths(months);
+
+                    // Fetch Lifetime Stats
+
+
+                    // Let's refetch IDs properly for lifetime stats
+                    const { data: allBudgetIds } = await supabase
+                        .from('family_budgets')
+                        .select('id')
+                        .eq('family_id', memberData.family_id);
+
+                    if (allBudgetIds && allBudgetIds.length > 0) {
+                        const ids = allBudgetIds.map(b => b.id);
+
+                        // Lifetime Contributions
+                        const { data: totalCont } = await supabase
+                            .from('family_budget_contributions')
+                            .select('amount')
+                            .in('family_budget_id', ids);
+
+                        const lifetimeContributed = (totalCont || []).reduce((sum, c: any) => sum + Number(c.amount), 0);
+
+                        // Lifetime Spent
+                        const { data: totalExp } = await supabase
+                            .from('expenses')
+                            .select('amount')
+                            .in('family_budget_id', ids);
+
+                        const lifetimeSpent = (totalExp || []).reduce((sum, c: any) => sum + Number(c.amount), 0);
+
+                        setLifetimeStats({ contributed: lifetimeContributed, spent: lifetimeSpent });
+                    }
                 }
 
                 // 5b. Fetch Selected Budget
@@ -1812,8 +1846,6 @@ export default function FamilyPage() {
                                                     </motion.div>
                                                 )}
 
-
-
                                             </div>
                                         )}
 
@@ -1905,112 +1937,158 @@ export default function FamilyPage() {
                         )}
                     </div>
 
-                    {/* Right Sidebar - Family Members */}
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
-                        <div className="space-y-3">
-                            <AnimatePresence mode="popLayout">
-                                {members.map(member => (
-                                    <motion.div
-                                        key={member.user_id}
-                                        layout
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <Card className="overflow-hidden">
-                                            <CardContent className="p-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="w-10 h-10 border-2 border-background">
-                                                        <AvatarImage src={member.profile?.avatar_url} />
-                                                        <AvatarFallback>
-                                                            {member.profile?.name ? member.profile.name.substring(0, 2).toUpperCase() : "U"}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <h3 className="font-semibold text-sm truncate">
-                                                                {member.profile?.name || "Family Member"}
-                                                            </h3>
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className={`h-5 text-[10px] px-1.5 shrink-0 ${member.role === 'admin'
-                                                                    ? 'bg-purple-500/10 text-purple-500'
-                                                                    : member.role === 'leader'
-                                                                        ? 'bg-amber-500/10 text-amber-500'
-                                                                        : member.role === 'viewer'
-                                                                            ? 'bg-gray-500/10 text-gray-500'
-                                                                            : 'bg-blue-500/10 text-blue-500'
-                                                                    }`}
-                                                            >
-                                                                {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                                                            </Badge>
+                    {/* Right Sidebar - Lifetime Stats & Family Members */}
+                    <div className="space-y-6">
+                        {/* Lifetime Stats Card */}
+                        <div onClick={() => setShowStatsDialog(true)} className="cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                            <Card className="border-none shadow-md bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 hover:shadow-lg transition-shadow">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                                        <Globe className="w-4 h-4" />
+                                        Lifetime Stats
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+                                                Raised
+                                            </span>
+                                            <span className="font-bold text-green-600">₹{lifetimeStats.contributed}</span>
+                                        </div>
+                                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                            <div className="h-full bg-green-500 rounded-full w-full opacity-60" />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                                                <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                                                Spent
+                                            </span>
+                                            <span className="font-bold text-red-500">₹{lifetimeStats.spent}</span>
+                                        </div>
+                                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-red-500 rounded-full transition-all duration-500"
+                                                style={{ width: `${Math.min(100, (lifetimeStats.spent / (lifetimeStats.contributed || 1)) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <div className="text-xs text-muted-foreground text-right pt-0.5">
+                                            {((lifetimeStats.spent / (lifetimeStats.contributed || 1)) * 100).toFixed(1)}% Usage
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
+                            <div className="space-y-3">
+                                <AnimatePresence mode="popLayout">
+                                    {members.map(member => (
+                                        <motion.div
+                                            key={member.user_id}
+                                            layout
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <Card className="overflow-hidden">
+                                                <CardContent className="p-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="w-10 h-10 border-2 border-background">
+                                                            <AvatarImage src={member.profile?.avatar_url} />
+                                                            <AvatarFallback>
+                                                                {member.profile?.name ? member.profile.name.substring(0, 2).toUpperCase() : "U"}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-semibold text-sm truncate">
+                                                                    {member.profile?.name || "Family Member"}
+                                                                </h3>
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className={`h-5 text-[10px] px-1.5 shrink-0 ${member.role === 'admin'
+                                                                        ? 'bg-purple-500/10 text-purple-500'
+                                                                        : member.role === 'leader'
+                                                                            ? 'bg-amber-500/10 text-amber-500'
+                                                                            : member.role === 'viewer'
+                                                                                ? 'bg-gray-500/10 text-gray-500'
+                                                                                : 'bg-blue-500/10 text-blue-500'
+                                                                        }`}
+                                                                >
+                                                                    {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                                                                </Badge>
+                                                            </div>
                                                         </div>
+                                                        {isAdmin && member.role !== 'admin' && (
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                        <MoreVertical className="w-4 h-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'admin')}>
+                                                                        Transfer Admin Rights
+                                                                    </DropdownMenuItem>
+
+                                                                    {/* Leader Options */}
+                                                                    {member.role === 'leader' && (
+                                                                        <>
+                                                                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
+                                                                                Demote to Member
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
+                                                                                Demote to Viewer
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
+
+                                                                    {/* Member Options */}
+                                                                    {member.role === 'member' && (
+                                                                        <>
+                                                                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'leader')}>
+                                                                                Promote to Leader
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
+                                                                                Demote to Viewer
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
+
+                                                                    {/* Viewer Options */}
+                                                                    {member.role === 'viewer' && (
+                                                                        <>
+                                                                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'leader')}>
+                                                                                Promote to Leader
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
+                                                                                Promote to Member
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
+
+                                                                    <DropdownMenuItem className="text-red-500" onClick={() => handleRemoveMember(member.user_id)}>
+                                                                        Remove from Family
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        )}
                                                     </div>
-                                                    {isAdmin && member.role !== 'admin' && (
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <MoreVertical className="w-4 h-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'admin')}>
-                                                                    Transfer Admin Rights
-                                                                </DropdownMenuItem>
-
-                                                                {/* Leader Options */}
-                                                                {member.role === 'leader' && (
-                                                                    <>
-                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
-                                                                            Demote to Member
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
-                                                                            Demote to Viewer
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-
-                                                                {/* Member Options */}
-                                                                {member.role === 'member' && (
-                                                                    <>
-                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'leader')}>
-                                                                            Promote to Leader
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'viewer')}>
-                                                                            Demote to Viewer
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-
-                                                                {/* Viewer Options */}
-                                                                {member.role === 'viewer' && (
-                                                                    <>
-                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'leader')}>
-                                                                            Promote to Leader
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={() => handleUpdateRole(member.user_id, 'member')}>
-                                                                            Promote to Member
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-
-                                                                <DropdownMenuItem className="text-red-500" onClick={() => handleRemoveMember(member.user_id)}>
-                                                                    Remove from Family
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    )}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </div>
-
 
                 </div>
 
@@ -2026,6 +2104,14 @@ export default function FamilyPage() {
                     onOpenChange={setShowRequestsDialog}
                     familyId={family.id}
                     isAdmin={isAdmin || membership.role === 'leader'}
+                />
+
+                <FamilyStatsDialog
+                    open={showStatsDialog}
+                    onOpenChange={setShowStatsDialog}
+                    familyId={family.id}
+                    availableMonths={availableMonths}
+                    currentMonth={viewMonth}
                 />
 
                 <AlertDialog open={showLeaveDialog} onOpenChange={(open) => {
@@ -2365,6 +2451,7 @@ export default function FamilyPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
             </main >
             <ImageCropperModal
                 open={isCropperOpen}
