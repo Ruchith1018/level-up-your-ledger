@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, TrendingDown, Globe, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, Plus, LogIn, Loader2, Share2, Lock, LogOut, RefreshCw, Shield, User, Eye, MoreVertical, Camera, UserPlus, Pencil, Check, X, Wallet, PiggyBank, TrendingUp, TrendingDown, Globe, MessageSquare, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { CreateFamilyDialog } from "@/components/family/CreateFamilyDialog";
 import { InviteMemberDialog } from "@/components/family/InviteMemberDialog";
@@ -1889,26 +1889,28 @@ export default function FamilyPage() {
                                                                                 <p className="text-sm font-medium leading-none flex items-center gap-1">
                                                                                     {activity.profile?.name}
                                                                                     <span className="text-muted-foreground font-normal text-xs">
-                                                                                        {activity.is_expense ? 'spent' : 'contributed'}
+                                                                                        {activity.is_expense
+                                                                                            ? (activity.amount < 0 ? 'was refunded' : 'spent')
+                                                                                            : 'contributed'}
                                                                                     </span>
                                                                                 </p>
                                                                                 <p className="text-xs text-muted-foreground mt-0.5">
                                                                                     {new Date(activity.created_at).toLocaleDateString()}
                                                                                     {activity.is_expense && activity.category && (
                                                                                         <span className="ml-1 px-1.5 py-0.5 bg-secondary rounded text-[10px]">
-                                                                                            {activity.category}
+                                                                                            {activity.amount < 0 && activity.category === 'Savings' ? 'Savings Refund' : activity.category}
                                                                                         </span>
                                                                                     )}
                                                                                 </p>
                                                                             </div>
                                                                         </div>
                                                                         <div className="text-right">
-                                                                            <span className={`font-bold block ${activity.is_expense ? 'text-red-500' : 'text-green-600'}`}>
-                                                                                {activity.is_expense ? '-' : '+'}₹{activity.amount}
+                                                                            <span className={`font-bold block ${activity.is_expense && activity.amount > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                                                                {activity.is_expense && activity.amount > 0 ? '-' : '+'}₹{Math.abs(activity.amount)}
                                                                             </span>
-                                                                            {activity.is_expense && activity.merchant && (
+                                                                            {activity.is_expense && (
                                                                                 <span className="text-[10px] text-muted-foreground block truncate max-w-[80px]">
-                                                                                    {activity.merchant}
+                                                                                    {activity.category === 'Savings Refund' ? 'Refund' : activity.merchant || activity.payment_method}
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -1983,6 +1985,28 @@ export default function FamilyPage() {
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* Family Savings Card */}
+                        {(familyBudget && (familyBudget.status === 'spending' || familyBudget.status === 'closed')) && (
+                            <div onClick={() => navigate(`/family/${family.id}/savings`)} className="cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                                <Card className="border-none shadow-md bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-slate-900 hover:shadow-lg transition-shadow">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-medium flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                                            <PiggyBank className="w-4 h-4" />
+                                            Family Savings
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs text-muted-foreground">Manage contributions and goals</p>
+                                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-full bg-indigo-200/50 dark:bg-indigo-900/50">
+                                                <ChevronRight className="w-4 h-4 text-indigo-700 dark:text-indigo-300" />
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
 
                         <div className="space-y-4">
                             <h2 className="text-lg font-semibold tracking-tight">Family Members</h2>
@@ -2451,7 +2475,6 @@ export default function FamilyPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
             </main >
             <ImageCropperModal
                 open={isCropperOpen}

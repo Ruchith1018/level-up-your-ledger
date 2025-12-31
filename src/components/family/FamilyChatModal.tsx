@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Loader2, Reply, X, Pencil, MoreVertical } from 'lucide-react';
+import { Send, Loader2, Reply, X, Pencil, MoreVertical, Trash2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { encryptMessage, decryptMessage } from '@/lib/encryption';
@@ -31,10 +31,12 @@ interface ChatMessage {
     message: string;
     created_at: string;
     reply_to_id?: string;
+    is_deleted?: boolean;
 }
 
 export function FamilyChatModal({ open, onOpenChange, familyId, members }: FamilyChatModalProps) {
     const { user } = useAuth();
+    const isAdmin = members.find(m => m.user_id === user?.id)?.role === 'admin';
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(false);
@@ -211,6 +213,40 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
         }
     };
 
+    const handleDeleteMessage = async (messageId: string) => {
+        if (!familyId) return;
+        try {
+            const { error } = await supabase
+                .from('family_chats')
+                .update({
+                    is_deleted: true
+                })
+                .eq('id', messageId);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error("Error deleting message:", error);
+            toast.error("Failed to delete message");
+        }
+    };
+
+    const handleUndoDelete = async (messageId: string) => {
+        if (!familyId) return;
+        try {
+            const { error } = await supabase
+                .from('family_chats')
+                .update({
+                    is_deleted: false
+                })
+                .eq('id', messageId);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error("Error undoing delete:", error);
+            toast.error("Failed to restore message");
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col p-0 gap-0">
@@ -287,9 +323,28 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="start">
-                                                                <DropdownMenuItem onClick={() => setReplyingTo(msg)}>
-                                                                    Reply
-                                                                </DropdownMenuItem>
+                                                                {!msg.is_deleted && (
+                                                                    <DropdownMenuItem onClick={() => setReplyingTo(msg)}>
+                                                                        Reply
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {isAdmin && !msg.is_deleted && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleDeleteMessage(msg.id)}
+                                                                        className="text-destructive focus:text-destructive"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4 mr-2" />
+                                                                        Delete
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {isAdmin && msg.is_deleted && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleUndoDelete(msg.id)}
+                                                                    >
+                                                                        <Undo2 className="w-4 h-4 mr-2" />
+                                                                        Undo Delete
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
@@ -300,9 +355,15 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                                                     className={`px-3 py-2 rounded-lg text-sm shadow-sm ${isMe
                                                         ? 'bg-primary text-primary-foreground rounded-tr-none'
                                                         : 'bg-muted rounded-tl-none'
-                                                        }`}
+                                                        } ${msg.is_deleted ? 'opacity-70 italic' : ''}`}
                                                 >
-                                                    {msg.message}
+                                                    {msg.is_deleted ? (
+                                                        <span className="flex items-center gap-1.5 min-h-[20px]">
+                                                            admin deleted this msg
+                                                        </span>
+                                                    ) : (
+                                                        msg.message
+                                                    )}
                                                 </div>
 
                                                 {isMe && (
@@ -318,16 +379,37 @@ export function FamilyChatModal({ open, onOpenChange, familyId, members }: Famil
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => setReplyingTo(msg)}>
-                                                                    Reply
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => {
-                                                                    setEditingMessage(msg);
-                                                                    setNewMessage(msg.message);
-                                                                    setReplyingTo(null);
-                                                                }}>
-                                                                    Edit
-                                                                </DropdownMenuItem>
+                                                                {!msg.is_deleted && (
+                                                                    <DropdownMenuItem onClick={() => setReplyingTo(msg)}>
+                                                                        Reply
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {!msg.is_deleted && (
+                                                                    <DropdownMenuItem onClick={() => {
+                                                                        setEditingMessage(msg);
+                                                                        setNewMessage(msg.message);
+                                                                        setReplyingTo(null);
+                                                                    }}>
+                                                                        Edit
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {isAdmin && !msg.is_deleted && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleDeleteMessage(msg.id)}
+                                                                        className="text-destructive focus:text-destructive"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4 mr-2" />
+                                                                        Delete
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {isAdmin && msg.is_deleted && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleUndoDelete(msg.id)}
+                                                                    >
+                                                                        <Undo2 className="w-4 h-4 mr-2" />
+                                                                        Undo Delete
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>

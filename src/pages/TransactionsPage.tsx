@@ -189,7 +189,7 @@ export default function TransactionsPage() {
                                                                 className={`font-semibold whitespace-nowrap ${transaction.type === "income" ? "text-secondary" : "text-destructive"
                                                                     }`}
                                                             >
-                                                                {transaction.type === "income" ? "+" : "-"}{currencySymbol}{transaction.amount.toFixed(2)}
+                                                                {transaction.type === "income" ? "+" : "-"}{currencySymbol}{Math.abs(transaction.amount).toFixed(2)}
                                                             </div>
                                                         </div>
                                                     </div>
