@@ -19,6 +19,7 @@ interface LeaderboardEntry {
     xp: number;
     totalXP: number;
     tasksCompleted: number;
+    badgesCount: number;
     history?: any[];
 }
 
