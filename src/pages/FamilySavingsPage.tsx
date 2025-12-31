@@ -8,7 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Plus, PiggyBank, AlertTriangle, Check, X, Wallet } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, ArrowLeft, Plus, PiggyBank, AlertTriangle, Check, X, Wallet, TrendingUp, History, Users } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -273,27 +275,44 @@ export default function FamilySavingsPage() {
         }
     };
 
+    // --- Calculated Stats ---
+    const activeRequests = requests.filter(r => r.status === 'active');
+    const pastRequests = requests.filter(r => r.status !== 'active');
+
+    const totalPooled = activeRequests.reduce((acc, curr) => {
+        const accepted = curr.family_savings_members?.filter(m => m.status === 'accepted').length || 0;
+        return acc + (accepted * curr.amount_per_member);
+    }, 0);
+
+    const activeGoalsCount = activeRequests.length;
+    const totalGoalValue = activeRequests.reduce((acc, curr) => {
+        return acc + (curr.amount_per_member * (curr.family_savings_members?.length || 0));
+    }, 0);
+
+
     return (
-        <div className="container max-w-4xl py-6 space-y-8 pb-24">
+        <div className="container max-w-5xl py-8 space-y-8 pb-32">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                    <ArrowLeft className="w-5 h-5" />
-                </Button>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Family Savings</h1>
-                    <p className="text-muted-foreground">Manage family savings goals and member contributions.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Family Savings</h1>
+                        <p className="text-muted-foreground">Pool funds together for shared goals.</p>
+                    </div>
                 </div>
                 {isAdmin && (
-                    <Button onClick={() => setShowCreateDialog(true)} className="ml-auto gap-2">
+                    <Button onClick={() => setShowCreateDialog(true)} className="gap-2 shadow-sm">
                         <Plus className="w-4 h-4" />
-                        New Request
+                        New Goal
                     </Button>
                 )}
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] space-y-6">
+                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-300px)] space-y-6">
                     <div className="relative">
                         <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
                         <img
@@ -302,149 +321,113 @@ export default function FamilySavingsPage() {
                             className="w-24 h-24 animate-[spin_2s_linear_infinite] relative z-10 object-contain"
                         />
                     </div>
-                    <p className="text-muted-foreground animate-pulse font-medium">Loading savings data...</p>
+                    <p className="text-muted-foreground animate-pulse font-medium">Fetching savings data...</p>
                 </div>
-            ) : requests.length === 0 ? (
-                <Card className="border-dashed">
-                    <CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                        <PiggyBank className="w-12 h-12 mb-4 opacity-50" />
-                        <h3 className="text-lg font-medium">No Savings Requests</h3>
-                        <p className="mb-4">Admins can create requests to pool funds from family members.</p>
-                        {isAdmin && (
-                            <Button onClick={() => setShowCreateDialog(true)} variant="outline">
-                                Create First Request
-                            </Button>
-                        )}
-                    </CardContent>
-                </Card>
             ) : (
-                <div className="space-y-6">
-                    {requests.map(request => {
-                        const myStatus = request.family_savings_members?.find(m => m.user_id === user?.id)?.status;
-                        const acceptedCount = request.family_savings_members?.filter(m => m.status === 'accepted').length || 0;
-                        const totalMembers = request.family_savings_members?.length || 0;
-                        const showDetails = userRole === 'admin' || userRole === 'leader';
+                <>
+                    {/* Summary Stats - Clean & Minimal */}
+                    <div className="grid grid-cols-3 gap-8 px-2 py-4">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-xs">Total Pooled</p>
+                            <div className="text-3xl font-bold tracking-tight text-green-600">₹{totalPooled.toLocaleString()}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-xs">Active Goals</p>
+                            <div className="text-3xl font-bold tracking-tight text-primary">{activeGoalsCount}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-xs">Target Value</p>
+                            <div className="text-3xl font-bold tracking-tight text-foreground">₹{totalGoalValue.toLocaleString()}</div>
+                        </div>
+                    </div>
 
-                        return (
-                            <Card key={request.id} className="overflow-hidden">
-                                <CardHeader className="bg-muted/30 pb-4">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <CardTitle className="text-xl flex items-center gap-2">
-                                                {request.title}
-                                                <Badge variant={request.status === 'active' ? 'default' : 'secondary'}>
-                                                    {request.status.toUpperCase()}
-                                                </Badge>
-                                            </CardTitle>
-                                            <CardDescription className="mt-1">
-                                                Requesting <span className="font-semibold text-foreground">₹{request.amount_per_member}</span> from each member
-                                            </CardDescription>
-                                        </div>
-                                        <div className="text-right flex flex-col items-end gap-1">
-                                            <div className="text-sm text-muted-foreground">Pooled so far</div>
-                                            <div className="text-2xl font-bold text-green-600">
-                                                ₹{acceptedCount * request.amount_per_member}
-                                            </div>
-                                            {isAdmin && request.status === 'active' && acceptedCount > 0 && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    className="h-7 text-xs gap-1 mt-1"
-                                                    onClick={() => {
-                                                        setSelectedRequest(request);
-                                                        setShowRefundDialog(true);
-                                                    }}
-                                                >
-                                                    <PiggyBank className="w-3 h-3" />
-                                                    Close & Refund
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-6">
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        {/* Left: My Action */}
-                                        <div className="flex-1 space-y-4">
-                                            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Your Status</h4>
-                                            {myStatus === 'pending' ? (
-                                                <div className="p-4 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900">
-                                                    <div className="flex items-start gap-3">
-                                                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                                                        <div>
-                                                            <p className="font-medium text-amber-900 dark:text-amber-100">Action Required</p>
-                                                            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                                                Accepting will deduct ₹{request.amount_per_member} from your spending limit.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-3 mt-4">
-                                                        <Button
-                                                            size="sm"
-                                                            className="flex-1 bg-green-600 hover:bg-green-700"
-                                                            onClick={() => handleResponse(request, 'accepted')}
-                                                            disabled={responding}
-                                                        >
-                                                            <Check className="w-4 h-4 mr-2" /> Accept
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                            onClick={() => handleResponse(request, 'rejected')}
-                                                            disabled={responding}
-                                                        >
-                                                            <X className="w-4 h-4 mr-2" /> Reject
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : myStatus === 'accepted' ? (
-                                                <div className="flex items-center gap-2 text-green-600 font-medium p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-100">
-                                                    <Check className="w-5 h-5" /> Contribution Accepted
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-red-500 font-medium p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100">
-                                                    <X className="w-5 h-5" /> Request Rejected
-                                                </div>
-                                            )}
-                                        </div>
+                    <Tabs defaultValue="active" className="w-full">
+                        <div className="flex items-center justify-between mb-6 border-b pb-1">
+                            <TabsList className="bg-transparent p-0 h-auto space-x-6">
+                                <TabsTrigger
+                                    value="active"
+                                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 font-semibold text-muted-foreground data-[state=active]:text-foreground transition-all"
+                                >
+                                    Active Goals
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="history"
+                                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 font-semibold text-muted-foreground data-[state=active]:text-foreground transition-all"
+                                >
+                                    History
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
 
-                                        {/* Right: Progress */}
-                                        <div className="flex-1 space-y-4">
-                                            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Family Progress</h4>
-                                            <div
-                                                className={`space-y-2 p-2 -m-2 rounded-lg transition-colors ${showDetails ? "hover:bg-muted cursor-pointer" : ""}`}
-                                                onClick={() => {
-                                                    if (showDetails) {
-                                                        setSelectedProgressRequest(request);
-                                                        setShowProgressDialog(true);
-                                                    }
-                                                }}
-                                            >
-                                                <div className="flex justify-between text-sm">
-                                                    <span>{acceptedCount} of {totalMembers} accepted</span>
-                                                    <span>{Math.round((acceptedCount / (totalMembers || 1)) * 100)}%</span>
-                                                </div>
-                                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-green-500 transition-all duration-500"
-                                                        style={{ width: `${(acceptedCount / (totalMembers || 1)) * 100}%` }}
-                                                    />
-                                                </div>
-                                                {showDetails && (
-                                                    <p className="text-xs text-center text-muted-foreground mt-1">Tap to see contributors</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                        <TabsContent value="active" className="space-y-4">
+                            {activeRequests.length === 0 ? (
+                                <div className="text-center py-20 bg-muted/30 rounded-2xl border border-dashed">
+                                    <PiggyBank className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+                                    <h3 className="text-xl font-semibold text-foreground">No active goals</h3>
+                                    <p className="text-muted-foreground mt-2 mb-6 max-w-sm mx-auto">Create a savings goal to start pooling funds with your family.</p>
+                                    {isAdmin && (
+                                        <Button onClick={() => setShowCreateDialog(true)}>
+                                            Create Goal
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                    {activeRequests.map(request => (
+                                        <RequestsCard
+                                            key={request.id}
+                                            request={request}
+                                            user={user}
+                                            userRole={userRole}
+                                            isAdmin={isAdmin}
+                                            onRespond={handleResponse}
+                                            onRefund={(req) => {
+                                                setSelectedRequest(req);
+                                                setShowRefundDialog(true);
+                                            }}
+                                            onShowProgress={(req) => {
+                                                setSelectedProgressRequest(req);
+                                                setShowProgressDialog(true);
+                                            }}
+                                            responding={responding}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </TabsContent>
 
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
+                        <TabsContent value="history" className="space-y-4">
+                            {pastRequests.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <p>No past savings history.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                                    {pastRequests.map(request => (
+                                        <RequestsCard
+                                            key={request.id}
+                                            request={request}
+                                            user={user}
+                                            userRole={userRole}
+                                            isAdmin={isAdmin}
+                                            onRespond={handleResponse}
+                                            onRefund={() => { }}
+                                            onShowProgress={(req) => {
+                                                setSelectedProgressRequest(req);
+                                                setShowProgressDialog(true);
+                                            }}
+                                            responding={responding}
+                                            isHistory
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </>
             )}
 
+            {/* Dialogs */}
             <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
                 <DialogContent>
                     <DialogHeader>
@@ -456,11 +439,11 @@ export default function FamilySavingsPage() {
                         {selectedProgressRequest?.family_savings_members?.map(memberRecord => {
                             const memberProfile = familyMembers.find(m => m.user_id === memberRecord.user_id)?.profiles;
                             return (
-                                <div key={memberRecord.id} className="flex items-center justify-between p-2 rounded-md border bg-card">
+                                <div key={memberRecord.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/20">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="w-8 h-8">
                                             <AvatarImage src={memberProfile?.avatar_url} />
-                                            <AvatarFallback>{memberProfile?.name?.[0] || 'U'}</AvatarFallback>
+                                            <AvatarFallback className="text-xs">{memberProfile?.name?.[0] || 'U'}</AvatarFallback>
                                         </Avatar>
                                         <span className="font-medium text-sm">{memberProfile?.name || 'Unknown User'}</span>
                                     </div>
@@ -482,16 +465,16 @@ export default function FamilySavingsPage() {
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Create Savings Request</DialogTitle>
+                        <DialogTitle>Create Savings Goal</DialogTitle>
                         <DialogDescription>
-                            Request a contribution from all family members. This will be deducted from their spending limits.
+                            Request a contribution from all family members.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label>Title</Label>
+                            <Label>Goal Title</Label>
                             <Input
-                                placeholder="e.g. Emergency Fund, Vacation"
+                                placeholder="e.g. Summer Vacation"
                                 value={newRequestTitle}
                                 onChange={e => setNewRequestTitle(e.target.value)}
                             />
@@ -514,7 +497,7 @@ export default function FamilySavingsPage() {
                         <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
                         <Button onClick={handleCreateRequest} disabled={creating || !newRequestAmount || !newRequestTitle}>
                             {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wallet className="w-4 h-4 mr-2" />}
-                            Create Request
+                            Create Goal
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -523,14 +506,14 @@ export default function FamilySavingsPage() {
             <Dialog open={showRefundDialog} onOpenChange={setShowRefundDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Close & Refund Savings</DialogTitle>
+                        <DialogTitle>Close & Refund</DialogTitle>
                         <DialogDescription>
-                            Specify how much of the pooled amount was actually used. The remaining amount will be refunded equally to all contributors.
+                            Distribute remaining funds back to contributors.
                         </DialogDescription>
                     </DialogHeader>
                     {selectedRequest && (
                         <div className="space-y-4 py-4">
-                            <div className="p-4 bg-muted rounded-lg space-y-2">
+                            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span>Total Collected:</span>
                                     <span className="font-bold">₹{(selectedRequest.family_savings_members?.filter(m => m.status === 'accepted').length || 0) * selectedRequest.amount_per_member}</span>
@@ -538,7 +521,7 @@ export default function FamilySavingsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Amount Used</Label>
+                                <Label>Amount Used (Expenses)</Label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-2.5 text-muted-foreground">₹</span>
                                     <Input
@@ -550,7 +533,7 @@ export default function FamilySavingsPage() {
                                     />
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Enter 0 to refund everything. Enter the total collected amount to refund nothing.
+                                    Remaining balance will be refunded equally to contributors.
                                 </p>
                             </div>
                         </div>
@@ -559,7 +542,7 @@ export default function FamilySavingsPage() {
                         <Button variant="outline" onClick={() => setShowRefundDialog(false)}>Cancel</Button>
                         <Button onClick={handleRefund} disabled={refunding || !refundAmountUsed}>
                             {refunding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                            Process Refund & Close
+                            Process Refund
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -567,3 +550,110 @@ export default function FamilySavingsPage() {
         </div>
     );
 }
+
+// --- Sub-Components ---
+
+function RequestsCard({
+    request,
+    user,
+    userRole,
+    isAdmin,
+    onRespond,
+    onRefund,
+    onShowProgress,
+    responding,
+    isHistory = false
+}: any) {
+    const myStatus = request.family_savings_members?.find((m: any) => m.user_id === user?.id)?.status;
+    const acceptedCount = request.family_savings_members?.filter((m: any) => m.status === 'accepted').length || 0;
+    const totalMembers = request.family_savings_members?.length || 0;
+    const progress = totalMembers > 0 ? (acceptedCount / totalMembers) * 100 : 0;
+    const totalPooled = acceptedCount * request.amount_per_member;
+
+    return (
+        <div className={`relative group rounded-2xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${request.status === 'active' ? 'border-l-[6px] border-l-primary' : 'border-l-[6px] border-l-muted'}`}>
+            <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 className="text-xl font-bold tracking-tight">{request.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Goal: <span className="font-medium text-foreground">₹{(request.amount_per_member * totalMembers).toLocaleString()}</span>
+                        </p>
+                    </div>
+                    {isHistory && (
+                        <Badge variant="secondary" className="uppercase text-[10px] tracking-wider font-semibold">
+                            {request.status}
+                        </Badge>
+                    )}
+                </div>
+
+                {/* Progress Section */}
+                <div className="mb-6 space-y-2" onClick={() => onShowProgress(request)}>
+                    <div className="flex items-end justify-between">
+                        <div>
+                            <p className="text-3xl font-bold text-green-600">₹{totalPooled.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mt-1">Collected</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                        </div>
+                    </div>
+                    <Progress value={progress} className="h-3 rounded-lg bg-secondary" indicatorClassName="bg-green-600 transition-all duration-1000" />
+                    <div className="flex justify-between items-center text-xs text-muted-foreground pt-1">
+                        <span>{acceptedCount} contributors</span>
+                        <span className="group-hover:text-primary transition-colors cursor-pointer">View Details &rarr;</span>
+                    </div>
+                </div>
+
+                {/* Action Footer */}
+                {!isHistory && (
+                    <div className="mt-6 pt-4 border-t border-border/50 flex flex-col gap-3">
+                        {/* Status Line */}
+                        {myStatus === 'pending' ? (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-amber-600 flex items-center gap-1.5">
+                                    <AlertTriangle className="w-4 h-4" /> Pending Action
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button size="sm" variant="ghost" className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 px-3" onClick={() => onRespond(request, 'rejected')} disabled={responding}>
+                                        Decline
+                                    </Button>
+                                    <Button size="sm" className="h-8 bg-green-600 hover:bg-green-700 px-4 rounded-full" onClick={() => onRespond(request, 'accepted')} disabled={responding}>
+                                        Contribute ₹{request.amount_per_member}
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : myStatus === 'accepted' ? (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-green-600 flex items-center gap-1.5">
+                                    <Check className="w-4 h-4" /> You Contributed
+                                </span>
+                                {isAdmin && (
+                                    <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={() => onRefund(request)}>
+                                        Settings
+                                    </Button>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-red-500 flex items-center gap-1.5">
+                                    <X className="w-4 h-4" /> Declined
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Admin Controls */}
+                        {isAdmin && myStatus !== 'pending' && myStatus !== 'accepted' && (
+                            <div className="flex justify-end">
+                                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onRefund(request)}>
+                                    Manage Goal
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+

@@ -109,6 +109,7 @@ export interface AppSettings {
     marvel: boolean;
     anime: boolean;
   };
+  appFont?: string;
 }
 
 export interface Family {

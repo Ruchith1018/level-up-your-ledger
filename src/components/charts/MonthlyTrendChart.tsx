@@ -28,7 +28,7 @@ export function MonthlyTrendChart() {
       (e) => dayjs(e.date).format("YYYY-MM") === month && e.type === "expense"
     );
     const monthIncome = state.items.filter(
-      (e) => dayjs(e.date).format("YYYY-MM") === month && e.type === "income"
+      (e) => dayjs(e.date).format("YYYY-MM") === month && e.type === "income" && e.amount > 0 && e.category !== "Savings Refund" && e.category !== "Savings"
     );
 
     const totalExpense = monthExpenses.reduce((sum, e) => sum + e.amount, 0);

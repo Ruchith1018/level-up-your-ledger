@@ -35,10 +35,24 @@ export function CategoryPieChart() {
 
   const categoryData = getExpensesByCategory(selectedMonth);
 
-  const data = Object.entries(categoryData).map(([name, value]) => ({
+  const totalRawExpense = Object.values(categoryData).reduce((sum, val) => sum + val, 0);
+
+  let data = Object.entries(categoryData).map(([name, value]) => ({
     name,
     value,
-  }));
+  })).sort((a, b) => b.value - a.value);
+
+  // Group small values to avoid chart artifacts
+  if (totalRawExpense > 0) {
+    const threshold = totalRawExpense * 0.01;
+    const bigItems = data.filter(d => d.value >= threshold);
+    const smallItems = data.filter(d => d.value < threshold);
+
+    if (smallItems.length > 0) {
+      const otherTotal = smallItems.reduce((sum, item) => sum + item.value, 0);
+      data = [...bigItems, { name: "Other", value: otherTotal }];
+    }
+  }
 
   const totalExpense = data.reduce((sum, item) => sum + item.value, 0);
 

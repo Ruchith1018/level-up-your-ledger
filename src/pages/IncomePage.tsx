@@ -42,7 +42,7 @@ export default function IncomePage() {
     }, [expenseState.items]);
 
     const incomeTransactions = expenseState.items
-        .filter(item => item.type === 'income' && dayjs(item.date).format("YYYY-MM") === selectedMonth)
+        .filter(item => item.type === 'income' && item.amount > 0 && dayjs(item.date).format("YYYY-MM") === selectedMonth && item.category !== "Savings Refund" && item.category !== "Savings")
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const totalIncome = incomeTransactions.reduce((sum, item) => sum + item.amount, 0);

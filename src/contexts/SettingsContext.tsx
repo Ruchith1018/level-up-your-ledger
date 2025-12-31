@@ -54,7 +54,8 @@ const defaultSettings: AppSettings = {
     classic: false,
     marvel: false,
     anime: false
-  }
+  },
+  appFont: "Poppins"
 };
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -105,7 +106,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           customCardImage: data.custom_card_image,
           customCardOverlay: data.custom_card_overlay || defaultSettings.customCardOverlay,
           hasPremiumPack: data.has_premium_pack || false,
-          premiumPackClaims: data.premium_pack_claims || defaultSettings.premiumPackClaims
+          premiumPackClaims: data.premium_pack_claims || defaultSettings.premiumPackClaims,
+          appFont: data.app_font || "Poppins"
         });
       }
       setIsLoading(false);
@@ -150,7 +152,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               purchasedThemes: newData.purchased_themes || [],
               purchasedCardThemes: newData.purchased_card_themes || [],
               hasPremiumPack: newData.has_premium_pack || false,
-              premiumPackClaims: newData.premium_pack_claims || defaultSettings.premiumPackClaims
+              premiumPackClaims: newData.premium_pack_claims || defaultSettings.premiumPackClaims,
+              appFont: newData.app_font || "Poppins"
             }));
           }
         }
@@ -193,6 +196,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   }, [settings.theme, settings.premiumTheme]);
 
+  // Apply Font
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (settings.appFont) {
+      root.style.setProperty("--font-app", settings.appFont);
+    } else {
+      root.style.setProperty("--font-app", "Poppins");
+    }
+  }, [settings.appFont]);
+
   const updateSettings = async (newSettings: Partial<AppSettings>) => {
     if (!user) return;
 
@@ -220,6 +233,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (newSettings.customCardOverlay !== undefined) payload.custom_card_overlay = newSettings.customCardOverlay;
     if (newSettings.hasPremiumPack !== undefined) payload.has_premium_pack = newSettings.hasPremiumPack;
     if (newSettings.premiumPackClaims !== undefined) payload.premium_pack_claims = newSettings.premiumPackClaims;
+    if (newSettings.appFont !== undefined) payload.app_font = newSettings.appFont;
 
     const { error } = await supabase
       .from("user_settings")

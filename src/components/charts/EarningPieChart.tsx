@@ -35,17 +35,31 @@ export function EarningPieChart() {
     const availableMonths = useAvailableMonths();
 
     const monthExpenses = getExpensesByMonth(selectedMonth);
-    const incomeItems = monthExpenses.filter((e) => e.type === "income");
+    const incomeItems = monthExpenses.filter((e) => e.type === "income" && e.amount > 0 && e.category !== "Savings Refund" && e.category !== "Savings");
 
     const categoryData = incomeItems.reduce((acc, item) => {
         acc[item.category] = (acc[item.category] || 0) + item.amount;
         return acc;
     }, {} as Record<string, number>);
 
-    const data = Object.entries(categoryData).map(([name, value]) => ({
+    const totalRawIncome = Object.values(categoryData).reduce((sum, val) => sum + val, 0);
+
+    let data = Object.entries(categoryData).map(([name, value]) => ({
         name,
         value,
-    }));
+    })).sort((a, b) => b.value - a.value);
+
+    // Group small values (less than 1%) into "Other" to avoid rendering artifacts with cornerRadius
+    if (totalRawIncome > 0) {
+        const threshold = totalRawIncome * 0.01;
+        const bigItems = data.filter(d => d.value >= threshold);
+        const smallItems = data.filter(d => d.value < threshold);
+
+        if (smallItems.length > 0) {
+            const otherTotal = smallItems.reduce((sum, item) => sum + item.value, 0);
+            data = [...bigItems, { name: "Other", value: otherTotal }];
+        }
+    }
 
     const totalIncome = data.reduce((sum, item) => sum + item.value, 0);
 

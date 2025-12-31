@@ -519,6 +519,41 @@ export default function Settings() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                      <div className="space-y-0.5">
+                        <Label>App Font</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Choose the global font family
+                        </p>
+                      </div>
+                      <Select
+                        value={settings.appFont || "Inter"}
+                        onValueChange={(value) =>
+                          updateSettings({ appFont: value })
+                        }
+                      >
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                          <SelectValue placeholder="Select font" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Inter" style={{ fontFamily: '"Inter", sans-serif' }}>Inter</SelectItem>
+                          <SelectItem value="Poppins" style={{ fontFamily: '"Poppins", sans-serif' }}>Poppins (Default)</SelectItem>
+                          <SelectItem value="Roboto" style={{ fontFamily: '"Roboto", sans-serif' }}>Roboto</SelectItem>
+                          <SelectItem value="Open Sans" style={{ fontFamily: '"Open Sans", sans-serif' }}>Open Sans</SelectItem>
+                          <SelectItem value="Montserrat" style={{ fontFamily: '"Montserrat", sans-serif' }}>Montserrat</SelectItem>
+                          <SelectItem value="Lato" style={{ fontFamily: '"Lato", sans-serif' }}>Lato</SelectItem>
+                          <SelectItem value="Nunito" style={{ fontFamily: '"Nunito", sans-serif' }}>Nunito</SelectItem>
+                          <SelectItem value="Raleway" style={{ fontFamily: '"Raleway", sans-serif' }}>Raleway</SelectItem>
+                          <SelectItem value="Outfit" style={{ fontFamily: '"Outfit", sans-serif' }}>Outfit</SelectItem>
+                          <SelectItem value="DM Sans" style={{ fontFamily: '"DM Sans", sans-serif' }}>DM Sans</SelectItem>
+                          <SelectItem value="Space Grotesk" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Space Grotesk</SelectItem>
+                          <SelectItem value="Playfair Display" style={{ fontFamily: '"Playfair Display", serif' }}>Playfair Display</SelectItem>
+                          <SelectItem value="Quicksand" style={{ fontFamily: '"Quicksand", sans-serif' }}>Quicksand</SelectItem>
+                          <SelectItem value="Merriweather" style={{ fontFamily: '"Merriweather", serif' }}>Merriweather</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -29,7 +29,7 @@ export function EarningHeatmap() {
             const day = i + 1;
             const dateStr = `${selectedMonth}-${day.toString().padStart(2, "0")}`;
             const dayEarnings = state.items.filter(
-                (e) => dayjs(e.date).format("YYYY-MM-DD") === dateStr && e.type === "income"
+                (e) => dayjs(e.date).format("YYYY-MM-DD") === dateStr && e.type === "income" && e.amount > 0 && e.category !== "Savings Refund" && e.category !== "Savings"
             );
             return dayEarnings.reduce((sum, e) => sum + e.amount, 0);
         }),
@@ -40,7 +40,7 @@ export function EarningHeatmap() {
         const day = i + 1;
         const dateStr = `${selectedMonth}-${day.toString().padStart(2, "0")}`;
         const dayEarnings = state.items.filter(
-            (e) => dayjs(e.date).format("YYYY-MM-DD") === dateStr && e.type === "income"
+            (e) => dayjs(e.date).format("YYYY-MM-DD") === dateStr && e.type === "income" && e.amount > 0 && e.category !== "Savings Refund" && e.category !== "Savings"
         );
         const total = dayEarnings.reduce((sum, e) => sum + e.amount, 0);
         const intensity = total / maxEarning;
