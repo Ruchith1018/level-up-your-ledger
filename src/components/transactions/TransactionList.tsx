@@ -48,6 +48,11 @@ export function TransactionList() {
         <div className="space-y-2">
           {recentTransactions.map((transaction, index) => {
             const isExpanded = expandedId === transaction.id;
+            const isSavingsTransaction = transaction.category === "Savings" || transaction.category === "Savings Refund";
+            const currentMonth = dayjs().format("YYYY-MM");
+            const transactionMonth = dayjs(transaction.date).format("YYYY-MM");
+            const isPreviousMonth = transactionMonth !== currentMonth;
+            const isTransactionLocked = transaction.isLocked || isSavingsTransaction || isPreviousMonth;
 
             return (
               <motion.div
@@ -117,7 +122,7 @@ export function TransactionList() {
                         <div className="text-sm text-muted-foreground">
                           {dayjs(transaction.date).format("MMMM D, YYYY h:mm A")}
                         </div>
-                        {!transaction.isLocked && (
+                        {!isTransactionLocked && (
                           <Button
                             variant="destructive"
                             size="sm"
@@ -131,9 +136,9 @@ export function TransactionList() {
                             Delete
                           </Button>
                         )}
-                        {transaction.isLocked && (
+                        {isTransactionLocked && (
                           <span className="text-xs text-muted-foreground italic flex items-center">
-                            🔒 Family Contribution
+                            {isSavingsTransaction ? "🔒 Savings Transaction" : isPreviousMonth ? "🔒 Previous Month" : "🔒 Family Contribution"}
                           </span>
                         )}
                       </div>

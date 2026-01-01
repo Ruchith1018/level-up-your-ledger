@@ -5,11 +5,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, Medal, CheckCircle2, Crown, Timer, Users, Swords, Gem, Ticket, Flame, Clock } from "lucide-react";
+import { Trophy, Medal, CheckCircle2, Crown, Timer, Users, Swords, Gem, Ticket, Flame, Clock, HelpCircle, Gift } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { useLeaderboardRewards, LeaderboardReward } from "@/hooks/useLeaderboardRewards";
 
 interface LeaderboardEntry {
     userId: string;
@@ -30,6 +40,10 @@ export default function LeaderboardPage() {
     const [visibleCount, setVisibleCount] = useState(50); // Increased default visible count
     const [activeTab, setActiveTab] = useState("level");
     const [timeFilter, setTimeFilter] = useState("all_time");
+    const [showRewardsInfo, setShowRewardsInfo] = useState(false);
+    const [showClaimDialog, setShowClaimDialog] = useState(false);
+    const [unclaimedRewards, setUnclaimedRewards] = useState<LeaderboardReward[]>([]);
+    const { getUnclaimedRewards, claimReward, checkAndProcessPendingPeriods } = useLeaderboardRewards();
 
     // Mock Timer Logic
     const getTimeRemaining = (filter: string) => {
@@ -75,6 +89,193 @@ export default function LeaderboardPage() {
             </div>
         )
     }
+
+    const RewardsInfoDialog = ({ timeFilter }: { timeFilter: string }) => {
+        const rewards = {
+            day: [{ rank: 1, coins: 500 }, { rank: 2, coins: 250 }, { rank: 3, coins: 100 }],
+            week: [{ rank: 1, coins: 3000 }, { rank: 2, coins: 2000 }, { rank: 3, coins: 1000 }],
+            month: [{ rank: 1, coins: 10000 }, { rank: 2, coins: 7000 }, { rank: 3, coins: 5000 }],
+            year: [{ rank: 1, coins: 50000 }, { rank: 2, coins: 30000 }, { rank: 3, coins: 25000 }],
+            all_time: [{ rank: 1, coins: 0 }, { rank: 2, coins: 0 }, { rank: 3, coins: 0 }]
+        };
+
+        const currentRewards = rewards[timeFilter as keyof typeof rewards] || rewards.all_time;
+        const periodName = timeFilter === "day" ? "Daily" : timeFilter === "week" ? "Weekly" : timeFilter === "month" ? "Monthly" : timeFilter === "year" ? "Yearly" : "All Time";
+
+        if (timeFilter === "all_time") {
+            return (
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <img src="/assets/token.png" alt="Token" className="w-5 h-5" />
+                            Leaderboard Rewards
+                        </DialogTitle>
+                        <DialogDescription>
+                            Select a time period (Daily/Weekly/Monthly/Yearly) to see rewards for top positions!
+                        </DialogDescription>
+                    </DialogHeader>
+                </DialogContent>
+            );
+        }
+
+        return (
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <img src="/assets/token.png" alt="Token" className="w-5 h-5" />
+                        {periodName} Rewards
+                    </DialogTitle>
+                    <DialogDescription>
+                        Coin rewards for top 3 positions
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 mt-4">
+                    {currentRewards.map((reward) => {
+                        const badgeColor = reward.rank === 1 ? "bg-yellow-500" : reward.rank === 2 ? "bg-slate-400" : "bg-amber-700";
+                        const badgeIcon = reward.rank === 1 ? "🥇" : reward.rank === 2 ? "🥈" : "🥉";
+
+                        return (
+                            <div
+                                key={reward.rank}
+                                className="flex items-center justify-between p-4 rounded-lg border bg-card/50"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${badgeColor}`}>
+                                        {reward.rank}
+                                    </div>
+                                    <div>
+                                        <div className="font-medium">{badgeIcon} Rank {reward.rank}</div>
+                                        <div className="text-xs text-muted-foreground">{periodName}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 font-bold text-lg text-yellow-600">
+                                    <img src="/assets/token.png" alt="Token" className="w-5 h-5" />
+                                    {reward.coins}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </DialogContent>
+        );
+    };
+
+    const ClaimRewardsDialog = ({ rewards, onClaim }: { rewards: LeaderboardReward[], onClaim: (id: string) => Promise<void> }) => {
+        const groupedRewards = {
+            daily: rewards.filter(r => r.period_type === 'daily'),
+            weekly: rewards.filter(r => r.period_type === 'weekly'),
+            monthly: rewards.filter(r => r.period_type === 'monthly'),
+            yearly: rewards.filter(r => r.period_type === 'yearly')
+        };
+
+        const RewardCard = ({ reward }: { reward: LeaderboardReward }) => {
+            const badgeColor = reward.rank === 1 ? "bg-yellow-500" : reward.rank === 2 ? "bg-slate-400" : "bg-amber-700";
+            const badgeIcon = reward.rank === 1 ? "🥇" : reward.rank === 2 ? "🥈" : "🥉";
+
+            return (
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card/50">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${badgeColor}`}>
+                            {reward.rank}
+                        </div>
+                        <div>
+                            <div className="font-medium">{badgeIcon} Rank {reward.rank} - {reward.category.toUpperCase()}</div>
+                            <div className="text-xs text-muted-foreground">
+                                {new Date(reward.period_date).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 font-bold text-lg text-yellow-600">
+                            <img src="/assets/token.png" alt="Token" className="w-5 h-5" />
+                            {reward.tokens_awarded}
+                        </div>
+                        <Button size="sm" onClick={() => onClaim(reward.id)}>
+                            Claim
+                        </Button>
+                    </div>
+                </div>
+            );
+        };
+
+        return (
+            <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Gift className="w-5 h-5 text-primary" />
+                        Claim Your Rewards
+                    </DialogTitle>
+                    <DialogDescription>
+                        You have {rewards.length} unclaimed reward{rewards.length !== 1 ? 's' : ''}
+                    </DialogDescription>
+                </DialogHeader>
+                <Tabs defaultValue="daily" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="daily" className="relative">
+                            Daily
+                            {groupedRewards.daily.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] rounded-full flex items-center justify-center">
+                                    {groupedRewards.daily.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="weekly" className="relative">
+                            Weekly
+                            {groupedRewards.weekly.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] rounded-full flex items-center justify-center">
+                                    {groupedRewards.weekly.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="monthly" className="relative">
+                            Monthly
+                            {groupedRewards.monthly.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] rounded-full flex items-center justify-center">
+                                    {groupedRewards.monthly.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="yearly" className="relative">
+                            Yearly
+                            {groupedRewards.yearly.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-[10px] rounded-full flex items-center justify-center">
+                                    {groupedRewards.yearly.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="daily" className="space-y-3 mt-4">
+                        {groupedRewards.daily.length > 0 ? (
+                            groupedRewards.daily.map(reward => <RewardCard key={reward.id} reward={reward} />)
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">No daily rewards available</p>
+                        )}
+                    </TabsContent>
+                    <TabsContent value="weekly" className="space-y-3 mt-4">
+                        {groupedRewards.weekly.length > 0 ? (
+                            groupedRewards.weekly.map(reward => <RewardCard key={reward.id} reward={reward} />)
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">No weekly rewards available</p>
+                        )}
+                    </TabsContent>
+                    <TabsContent value="monthly" className="space-y-3 mt-4">
+                        {groupedRewards.monthly.length > 0 ? (
+                            groupedRewards.monthly.map(reward => <RewardCard key={reward.id} reward={reward} />)
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">No monthly rewards available</p>
+                        )}
+                    </TabsContent>
+                    <TabsContent value="yearly" className="space-y-3 mt-4">
+                        {groupedRewards.yearly.length > 0 ? (
+                            groupedRewards.yearly.map(reward => <RewardCard key={reward.id} reward={reward} />)
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">No yearly rewards available</p>
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </DialogContent>
+        );
+    };
 
     const fetchData = async (showLoading = true) => {
         if (showLoading) setIsLoading(true);
@@ -135,6 +336,22 @@ export default function LeaderboardPage() {
         return () => {
             supabase.removeChannel(channel);
         };
+    }, []);
+
+    // Load unclaimed rewards and check for pending periods
+    useEffect(() => {
+        const loadRewards = async () => {
+            const rewards = await getUnclaimedRewards();
+            setUnclaimedRewards(rewards);
+
+            // Check if any periods need processing
+            await checkAndProcessPendingPeriods();
+        };
+        loadRewards();
+
+        // Set up interval to check every minute
+        const interval = setInterval(loadRewards, 60000);
+        return () => clearInterval(interval);
     }, []);
 
     const filterDataByTime = (data: LeaderboardEntry[], filter: string) => {
@@ -335,12 +552,62 @@ export default function LeaderboardPage() {
                     <Tabs defaultValue="level" className="w-full space-y-8" onValueChange={setActiveTab}>
 
                         <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
-                            <TabsList className="grid w-full md:w-[500px] grid-cols-4">
-                                <TabsTrigger value="level">Level</TabsTrigger>
-                                <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                                <TabsTrigger value="badges">Badges</TabsTrigger>
-                                <TabsTrigger value="xp">Total XP</TabsTrigger>
-                            </TabsList>
+                            <div className="flex items-center gap-2">
+                                <TabsList className="grid w-full md:w-[500px] grid-cols-4">
+                                    <TabsTrigger value="level">Level</TabsTrigger>
+                                    <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                                    <TabsTrigger value="badges">Badges</TabsTrigger>
+                                    <TabsTrigger value="xp">Total XP</TabsTrigger>
+                                </TabsList>
+                                {(activeTab === 'tasks' || activeTab === 'xp') && (
+                                    <div className="flex items-center gap-2">
+                                        <Dialog open={showRewardsInfo} onOpenChange={setShowRewardsInfo}>
+                                            <DialogTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="h-10 w-10 shrink-0 animate-in fade-in slide-in-from-right-4 duration-300"
+                                                >
+                                                    <HelpCircle className="w-4 h-4" />
+                                                </Button>
+                                            </DialogTrigger>
+                                            <RewardsInfoDialog timeFilter={timeFilter} />
+                                        </Dialog>
+
+                                        {/* Claim Rewards Button */}
+                                        {unclaimedRewards.length > 0 && (
+                                            <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        variant="default"
+                                                        size="sm"
+                                                        className="relative animate-in fade-in slide-in-from-right-4 duration-300"
+                                                    >
+                                                        <Gift className="w-4 h-4 mr-2" />
+                                                        Claim Rewards
+                                                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                                                            {unclaimedRewards.length}
+                                                        </span>
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <ClaimRewardsDialog
+                                                    rewards={unclaimedRewards}
+                                                    onClaim={async (id) => {
+                                                        const success = await claimReward(id);
+                                                        if (success) {
+                                                            const updated = await getUnclaimedRewards();
+                                                            setUnclaimedRewards(updated);
+                                                            if (updated.length === 0) {
+                                                                setShowClaimDialog(false);
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </Dialog>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
 
                             {(activeTab === 'tasks' || activeTab === 'xp') && (
                                 <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">

@@ -170,7 +170,10 @@ export function BudgetOverview() {
               <div className="flex flex-col items-end gap-1 sm:gap-2">
                 {/* Edit Button */}
                 <BudgetForm
-                  initialData={currentBudget}
+                  initialData={{
+                    ...currentBudget,
+                    total: effectiveTotal // Include rollover in the displayed total
+                  }}
                   trigger={
                     <Button variant="ghost" size="icon" className={`h-6 w-6 sm:h-8 sm:w-8 hover:bg-white/20 ${activeTheme.textColor}`}>
                       <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />

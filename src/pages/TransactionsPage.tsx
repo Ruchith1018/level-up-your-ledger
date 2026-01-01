@@ -137,6 +137,11 @@ export default function TransactionsPage() {
                                     <div className="space-y-2">
                                         {filteredTransactions.map((transaction, index) => {
                                             const isExpanded = expandedId === transaction.id;
+                                            const isSavingsTransaction = transaction.category === "Savings" || transaction.category === "Savings Refund";
+                                            const currentMonth = dayjs().format("YYYY-MM");
+                                            const transactionMonth = dayjs(transaction.date).format("YYYY-MM");
+                                            const isPreviousMonth = transactionMonth !== currentMonth;
+                                            const isTransactionLocked = transaction.isLocked || isSavingsTransaction || isPreviousMonth;
 
                                             return (
                                                 <motion.div
@@ -206,18 +211,25 @@ export default function TransactionsPage() {
                                                                     <div className="text-sm text-muted-foreground">
                                                                         {dayjs(transaction.date).format("MMMM D, YYYY h:mm A")}
                                                                     </div>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        size="sm"
-                                                                        className="h-8"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            deleteTransaction(transaction.id);
-                                                                        }}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4 mr-2" />
-                                                                        Delete
-                                                                    </Button>
+                                                                    {!isTransactionLocked && (
+                                                                        <Button
+                                                                            variant="destructive"
+                                                                            size="sm"
+                                                                            className="h-8"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                deleteTransaction(transaction.id);
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4 mr-2" />
+                                                                            Delete
+                                                                        </Button>
+                                                                    )}
+                                                                    {isTransactionLocked && (
+                                                                        <span className="text-xs text-muted-foreground italic flex items-center">
+                                                                            {isSavingsTransaction ? "🔒 Savings Transaction" : isPreviousMonth ? "🔒 Previous Month" : "🔒 Family Contribution"}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </motion.div>
                                                         )}

@@ -246,24 +246,23 @@ export default function FamilyPage() {
 
                 if (listError) throw listError;
 
-                // 4. Enrich members with profile info
-                const enrichedMembers = await Promise.all(
-                    (allMembers || []).map(async (m: any) => {
-                        const { data: userSettings } = await supabase
-                            .from('user_settings')
-                            .select('user_name, profile_image')
-                            .eq('user_id', m.user_id)
-                            .maybeSingle();
+                // 4. Enrich members with profile info (OPTIMIZED - batch query)
+                const userIds = (allMembers || []).map((m: any) => m.user_id);
+                const { data: userProfiles } = await supabase
+                    .from('user_settings')
+                    .select('user_id, user_name, profile_image')
+                    .in('user_id', userIds);
 
-                        return {
-                            ...m,
-                            profile: {
-                                name: userSettings?.user_name || "Unknown User",
-                                avatar_url: userSettings?.profile_image
-                            }
-                        };
-                    })
-                );
+                const enrichedMembers = (allMembers || []).map((m: any) => {
+                    const profile = userProfiles?.find((p: any) => p.user_id === m.user_id);
+                    return {
+                        ...m,
+                        profile: {
+                            name: profile?.user_name || "Unknown User",
+                            avatar_url: profile?.profile_image
+                        }
+                    };
+                });
 
                 setMembers(enrichedMembers as FamilyMember[]);
 
@@ -315,20 +314,22 @@ export default function FamilyPage() {
                     if (allBudgetIds && allBudgetIds.length > 0) {
                         const ids = allBudgetIds.map(b => b.id);
 
-                        // Lifetime Contributions
-                        const { data: totalCont } = await supabase
-                            .from('family_budget_contributions')
-                            .select('amount')
-                            .in('family_budget_id', ids);
+                        // Lifetime Contributions and Spent (OPTIMIZED - parallel queries)
+                        const [
+                            { data: totalCont },
+                            { data: totalExp }
+                        ] = await Promise.all([
+                            supabase
+                                .from('family_budget_contributions')
+                                .select('amount')
+                                .in('family_budget_id', ids),
+                            supabase
+                                .from('expenses')
+                                .select('amount')
+                                .in('family_budget_id', ids)
+                        ]);
 
                         const lifetimeContributed = (totalCont || []).reduce((sum, c: any) => sum + Number(c.amount), 0);
-
-                        // Lifetime Spent
-                        const { data: totalExp } = await supabase
-                            .from('expenses')
-                            .select('amount')
-                            .in('family_budget_id', ids);
-
                         const lifetimeSpent = (totalExp || []).reduce((sum, c: any) => sum + Number(c.amount), 0);
 
                         setLifetimeStats({ contributed: lifetimeContributed, spent: lifetimeSpent });
@@ -348,12 +349,21 @@ export default function FamilyPage() {
 
 
                 if (budgetData) {
-                    // Fetch contributions separately
-                    const { data: contributions } = await supabase
-                        .from('family_budget_contributions')
-                        .select('*')
-                        .eq('family_budget_id', budgetData.id)
-                        .order('created_at', { ascending: false });
+                    // Fetch contributions and limits in parallel (OPTIMIZED)
+                    const [
+                        { data: contributions },
+                        { data: limitsData }
+                    ] = await Promise.all([
+                        supabase
+                            .from('family_budget_contributions')
+                            .select('*')
+                            .eq('family_budget_id', budgetData.id)
+                            .order('created_at', { ascending: false }),
+                        supabase
+                            .from('family_budget_limits')
+                            .select('user_id, limit_amount')
+                            .eq('family_budget_id', budgetData.id)
+                    ]);
 
                     // Calculate total contributed
                     const totalContributed = (contributions || []).reduce(
@@ -361,7 +371,7 @@ export default function FamilyPage() {
                         0
                     );
 
-                    // Fetch profiles for contributors
+                    // Defer profile fetching until after we know all user IDs
                     const userIds = [...new Set((contributions || []).map((c: any) => c.user_id))];
                     let userProfiles: any[] = [];
 
@@ -384,12 +394,6 @@ export default function FamilyPage() {
                         };
                     });
 
-                    // Fetch limits for this budget
-                    const { data: limitsData } = await supabase
-                        .from('family_budget_limits')
-                        .select('user_id, limit_amount')
-                        .eq('family_budget_id', budgetData.id);
-
                     const limitsMap = (limitsData || []).reduce((acc: any, curr: any) => {
                         acc[curr.user_id] = Number(curr.limit_amount);
                         return acc;
@@ -397,32 +401,29 @@ export default function FamilyPage() {
 
 
 
-                    // Fetch Spending Limits if in spending mode or closed
+                    // Fetch Spending Limits and Expenses in parallel if in spending mode (OPTIMIZED)
                     if (budgetData.status === 'spending' || budgetData.status === 'closed') {
-                        const { data: spendLimitsData } = await supabase
-                            .from('family_spending_limits')
-                            .select('user_id, limit_amount')
-                            .eq('family_budget_id', budgetData.id);
+                        const [
+                            { data: spendLimitsData },
+                            { data: familyExpenses }
+                        ] = await Promise.all([
+                            supabase
+                                .from('family_spending_limits')
+                                .select('user_id, limit_amount')
+                                .eq('family_budget_id', budgetData.id),
+                            supabase
+                                .from('expenses')
+                                .select('*')
+                                .eq('family_budget_id', budgetData.id)
+                                .order('created_at', { ascending: false })
+                        ]);
 
                         const spendLimitsMap = (spendLimitsData || []).reduce((acc: any, curr: any) => {
                             acc[curr.user_id] = Number(curr.limit_amount);
                             return acc;
                         }, {});
 
-
-
-                        // We need to know who spent what. 
-                        // The expenses table has user_id (implicitly via auth? No, expenses table usually has user_id).
-                        // Let's check expenses schema. It usually has user_id.
-
-                        // 1. Fetch Expenses linked to this budget
-                        const { data: familyExpenses } = await supabase
-                            .from('expenses')
-                            .select('*')
-                            .eq('family_budget_id', budgetData.id)
-                            .order('created_at', { ascending: false });
-
-                        // 2. Fetch profiles for expense creators (if not already fetched)
+                        // Fetch profiles for expense creators (only if new users not already fetched)
                         const expenseUserIds = (familyExpenses || []).map((ex: any) => ex.user_id);
                         const uniqueExpenseUserIds = [...new Set(expenseUserIds)].filter(id => !userIds.includes(id));
 
@@ -481,37 +482,63 @@ export default function FamilyPage() {
                     setFamilyBudget(null);
                 }
 
-                // 6. Fetch Personal Budget Info (for creating/contributing)
-                const { data: personalBudget } = await supabase
-                    .from('budgets')
-                    .select('total')
-                    .eq('month', currentMonth)
-                    .maybeSingle();
+                // 6. Fetch Personal Budget Info in parallel (OPTIMIZED)
+                const previousMonth = dayjs(currentMonth).subtract(1, 'month').format('YYYY-MM');
+                const startOfMonth = `${currentMonth}-01`;
+                const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+                const prevStartOfMonth = `${previousMonth}-01`;
+                const prevDate = new Date(previousMonth);
+                const prevEndOfMonth = new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 0).toISOString().split('T')[0];
 
-                if (personalBudget) {
-                    setPersonalBudgetTotal(Number(personalBudget.total));
-
-                    // Calculate remaining balance
-                    const startOfMonth = `${currentMonth}-01`;
-                    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
-
-                    const { data: expenses } = await supabase
+                const [
+                    { data: personalBudget },
+                    { data: previousBudget },
+                    { data: expenses },
+                    { data: prevExpenses }
+                ] = await Promise.all([
+                    supabase
+                        .from('budgets')
+                        .select('total, surplus_action')
+                        .eq('month', currentMonth)
+                        .maybeSingle(),
+                    supabase
+                        .from('budgets')
+                        .select('total, surplus_action')
+                        .eq('month', previousMonth)
+                        .maybeSingle(),
+                    supabase
                         .from('expenses')
                         .select('amount, type')
                         .gte('date', startOfMonth)
-                        .lte('date', endOfMonth);
+                        .lte('date', endOfMonth),
+                    supabase
+                        .from('expenses')
+                        .select('amount, type')
+                        .gte('date', prevStartOfMonth)
+                        .lte('date', prevEndOfMonth)
+                ]);
 
+                if (personalBudget) {
+                    // Calculate rollover amount if previous budget had rollover action
+                    let rolloverAmount = 0;
+                    if (previousBudget && previousBudget.surplus_action === 'rollover') {
+                        const prevTotalExpenses = (prevExpenses || []).reduce((acc, curr) => {
+                            if (curr.type === 'expense') return acc + Number(curr.amount);
+                            return acc;
+                        }, 0);
+                        rolloverAmount = Math.max(0, Number(previousBudget.total) - prevTotalExpenses);
+                    }
+
+                    const effectiveBudgetTotal = Number(personalBudget.total) + rolloverAmount;
+                    setPersonalBudgetTotal(effectiveBudgetTotal);
+
+                    // Calculate remaining balance
                     const totalExpenses = (expenses || []).reduce((acc, curr) => {
                         if (curr.type === 'expense') return acc + Number(curr.amount);
-                        // Income doesn't increase budget limit usually, but if budget is strict limit, we compare against limit
-                        // If budget is "remaining funds", we might consider income. 
-                        // Requirement: "cannot be greater that bughet craeted from his personal one" implies Budget Limit.
-                        // "budget which is lees that the ther personal budget" -> Remaining Budget?
-                        // "contribute here the remaining balce decreses" -> implies checking against (Budget - Expenses).
                         return acc;
                     }, 0);
 
-                    setPersonalRemaining(Math.max(0, Number(personalBudget.total) - totalExpenses));
+                    setPersonalRemaining(Math.max(0, effectiveBudgetTotal - totalExpenses));
                 } else {
                     setPersonalBudgetTotal(0);
                     setPersonalRemaining(0);
@@ -681,8 +708,8 @@ export default function FamilyPage() {
             return;
         }
 
-        if (Number(budgetAmount) > personalBudgetTotal) {
-            toast.error(`Family budget cannot exceed your personal budget (${personalBudgetTotal})`);
+        if (Number(budgetAmount) > personalRemaining) {
+            toast.error(`Family budget cannot exceed your remaining balance (₹${personalRemaining.toFixed(2)})`);
             return;
         }
 
@@ -2311,13 +2338,14 @@ export default function FamilyPage() {
                                     placeholder="e.g. 50000"
                                     value={budgetAmount}
                                     onChange={(e) => setBudgetAmount(e.target.value)}
+                                    max={personalRemaining}
                                 />
                                 <div className="flex justify-between text-xs">
                                     <span className="text-muted-foreground flex items-center gap-1">
-                                        <Shield className="w-3 h-3" /> Max Limit (Your Budget)
+                                        <Shield className="w-3 h-3" /> Max Limit (Your Remaining Balance)
                                     </span>
-                                    <span className={`font-medium ${Number(budgetAmount) > personalBudgetTotal ? 'text-red-500' : 'text-green-600'}`}>
-                                        ₹{personalBudgetTotal}
+                                    <span className={`font-medium ${Number(budgetAmount) > personalRemaining ? 'text-red-500' : 'text-green-600'}`}>
+                                        ₹{personalRemaining.toFixed(2)}
                                     </span>
                                 </div>
                             </div>
