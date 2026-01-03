@@ -80,6 +80,11 @@ export function BudgetOverview() {
     rolloverAmount = Math.max(0, previousBudget.total - previousExpenses);
   }
 
+  // Calculate Savings Withdrawals (Income from Savings to Budget)
+  const savingsWithdrawals = useExpenses().state.items
+    .filter(e => e.type === 'income' && e.category === 'Savings Withdrawal')
+    .reduce((sum, e) => sum + e.amount, 0);
+
   // Calculate Total Savings
   const savedTransactions = useExpenses().state.items
     .filter(e => e.category === 'Savings' && e.type === 'expense')
@@ -91,7 +96,7 @@ export function BudgetOverview() {
       const expenses = getTotalByType("expense", b.month);
       const savedAmount = Math.max(0, b.total - expenses);
       return sum + savedAmount;
-    }, 0) + familySurplus.reduce((sum, item) => sum + Number(item.amount), 0) + savedTransactions;
+    }, 0) + familySurplus.reduce((sum, item) => sum + Number(item.amount), 0) + savedTransactions - savingsWithdrawals;
 
   if (!currentBudget) {
     // ... (no change to no-budget view)
@@ -108,11 +113,6 @@ export function BudgetOverview() {
       </Card>
     );
   }
-
-  // Calculate Savings Withdrawals (Income from Savings to Budget)
-  const savingsWithdrawals = useExpenses().state.items
-    .filter(e => e.type === 'income' && e.category === 'Savings Withdrawal')
-    .reduce((sum, e) => sum + e.amount, 0);
 
   const effectiveTotal = currentBudget.total + rolloverAmount + savingsWithdrawals;
   const remaining = effectiveTotal - totalExpense;
