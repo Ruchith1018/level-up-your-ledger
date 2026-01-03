@@ -143,6 +143,12 @@ export const BADGES = {
   MONTHLY_TASK_STREAK_18: { id: "monthly_task_streak_18", name: "Monthly Veteran", description: "Completed monthly tasks 18 months in a row", icon: "🎖️" },
   MONTHLY_TASK_STREAK_24: { id: "monthly_task_streak_24", name: "Monthly Master", description: "Completed monthly tasks 24 months in a row", icon: "👑" },
   MONTHLY_TASK_STREAK_36: { id: "monthly_task_streak_36", name: "Monthly Legend", description: "Completed monthly tasks 36 months in a row", icon: "💎" },
+
+  // Legacy/Imported Badges (to support existing user data)
+  FIRST_TRANSACTION: { id: "first_transaction", name: "First Transaction", description: "Added your first transaction", icon: "🌱" },
+  BUDGET_MASTER: { id: "budget_master", name: "Budget Master", description: "Mastered your budget", icon: "🎯" },
+  SAVINGS_STARTER: { id: "savings_starter", name: "Savings Starter", description: "Started your savings journey", icon: "🐷" },
+  WEALTH_BUILDER: { id: "wealth_builder", name: "Wealth Builder", description: "Growing your net worth", icon: "💼" },
 };
 
 // Badge Logic Helpers

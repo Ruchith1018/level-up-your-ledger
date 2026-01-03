@@ -42,6 +42,7 @@ import FamilyPage from "./pages/FamilyPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import PremiumPage from "./pages/PremiumPage";
 import FamilySavingsPage from "./pages/FamilySavingsPage";
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ const App = () => (
                                                             <Route path="/family/:familyId/savings" element={<FamilySavingsPage />} />
                                                             <Route path="/leaderboard" element={<LeaderboardPage />} />
                                                             <Route path="/premium" element={<PremiumPage />} />
+                                                            <Route path="/profile" element={<ProfilePage />} />
 
                                                         </Route>
                                                     </Route>

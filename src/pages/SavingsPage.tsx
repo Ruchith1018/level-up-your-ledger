@@ -8,13 +8,25 @@ import { useExpenses } from "@/contexts/ExpenseContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useSavings, SavingsGoal } from "@/contexts/SavingsContext";
 import { getCurrencySymbol } from "@/constants/currencies";
-import { PiggyBank, ArrowLeft, Calendar, Plus, Target } from "lucide-react";
+import { PiggyBank, ArrowLeft, Calendar, Plus, Target, ArrowRight, Wallet } from "lucide-react";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { SavingsGoalCard } from "@/components/savings/SavingsGoalCard";
 import { AddGoalModal } from "@/components/savings/AddGoalModal";
 import { AllocateSavingsModal } from "@/components/savings/AllocateSavingsModal";
+import { useTransaction } from "@/hooks/useTransaction";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 import {
     AlertDialog,
@@ -31,11 +43,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SavingsPage() {
     const navigate = useNavigate();
-    const { user } = useAuth(); // Add useAuth destructuring
+    const { user } = useAuth();
     const { state: budgetState } = useBudget();
     const { getTotalByType, state: expenseState } = useExpenses();
     const { settings } = useSettings();
     const { state: savingsState, deleteGoal, refreshSavings } = useSavings();
+    const { addTransaction } = useTransaction();
     const currencySymbol = getCurrencySymbol(settings.currency);
 
     const isLoading = budgetState.isLoading || expenseState.isLoading || savingsState.isLoading;
@@ -47,6 +60,10 @@ export default function SavingsPage() {
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('all');
 
     const [familySurplus, setFamilySurplus] = useState<any[]>([]);
+
+    // Transfer to Budget State
+    const [isTransferOpen, setIsTransferOpen] = useState(false);
+    const [transferAmount, setTransferAmount] = useState("");
 
     useEffect(() => {
         refreshSavings();
@@ -85,9 +102,29 @@ export default function SavingsPage() {
         label: 'Family Budget Surplus'
     }));
 
-    // 3. Combined History
-    const savingsHistory = [...personalSavingsHistory, ...familySavingsHistory]
-        .sort((a, b) => b.month.localeCompare(a.month));
+    // 3. Manual Savings Transactions
+    const manualSavings = expenseState.items
+        .filter(e => e.type === 'expense' && e.category === 'Savings')
+        .map(e => ({
+            type: 'manual',
+            month: e.date, // Using full date for specific transactions
+            amount: e.amount,
+            label: e.notes || 'Manual Contribution'
+        }));
+
+    // 4. Savings Withdrawals (Income) - Treated as negative in Savings History
+    const withdrawals = expenseState.items
+        .filter(e => e.type === 'income' && e.category === 'Savings Withdrawal')
+        .map(e => ({
+            type: 'manual',
+            month: e.date,
+            amount: -e.amount, // Negative because it reduces accumulated savings
+            label: e.notes || 'Withdrawal to Budget'
+        }));
+
+    // 5. Combined History
+    const savingsHistory = [...personalSavingsHistory, ...familySavingsHistory, ...manualSavings, ...withdrawals]
+        .sort((a, b) => b.month.localeCompare(a.month)); // Works for both YYYY-MM and ISO Dates
 
     const totalAccumulatedSavings = savingsHistory.reduce((sum, item) => sum + item.amount, 0);
     const totalAllocated = savingsState.goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
@@ -122,6 +159,35 @@ export default function SavingsPage() {
     const handleCloseAddGoal = () => {
         setIsAddGoalOpen(false);
         setEditingGoal(null);
+    };
+
+    const handleTransferSubmit = () => {
+        const amount = parseFloat(transferAmount);
+
+        if (!amount || amount <= 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+
+        if (amount > availableSavings) {
+            toast.error("Insufficient available savings");
+            return;
+        }
+
+        // Create income transaction (Positive in Transaction List, Negative in Savings History)
+        addTransaction({
+            type: "income",
+            category: "Savings Withdrawal",
+            amount: amount,
+            notes: "Transfer from Savings to Budget",
+            paymentMethod: "Savings",
+            merchant: "Savings Withdrawal"
+        });
+
+        setIsTransferOpen(false);
+        setTransferAmount("");
+        // toast.success is handled by addTransaction usually, or we can add one here if needed
+        // Assuming addTransaction handles success toast or we rely on the state update.
     };
 
     return (
@@ -182,11 +248,21 @@ export default function SavingsPage() {
                                     <div className="absolute top-0 right-0 p-8 opacity-10">
                                         <Target className="w-32 h-32 text-blue-500" />
                                     </div>
-                                    <CardHeader className="pb-2 relative z-10">
+                                    <CardHeader className="pb-2 relative z-10 flex flex-row items-center justify-between">
                                         <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
                                             <Target className="w-4 h-4" />
                                             Available to Allocate
                                         </CardTitle>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 px-2 text-blue-600 dark:text-blue-400 hover:bg-blue-200/20"
+                                            onClick={() => setIsTransferOpen(true)}
+                                            title="Transfer to Budget"
+                                        >
+                                            <ArrowRight className="w-4 h-4 mr-1" />
+                                            <Wallet className="w-3 h-3" />
+                                        </Button>
                                     </CardHeader>
                                     <CardContent className="relative z-10">
                                         <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
@@ -270,7 +346,7 @@ export default function SavingsPage() {
                                 <div className="grid gap-3">
                                     {savingsHistory.map((item, index) => (
                                         <motion.div
-                                            key={item.month}
+                                            key={`${item.month}-${index}`} // Unique key for combined list
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.05 }}
@@ -278,16 +354,25 @@ export default function SavingsPage() {
                                             <Card>
                                                 <CardContent className="flex justify-between items-center p-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                                            <PiggyBank className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${item.amount < 0 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+                                                            {item.amount < 0 ? (
+                                                                <Wallet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                                            ) : (
+                                                                <PiggyBank className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                                            )}
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium">{dayjs(item.month).format("MMMM YYYY")}</p>
+                                                            <p className="font-medium">
+                                                                {item.type === 'manual'
+                                                                    ? dayjs(item.month).format("D MMM, YYYY")
+                                                                    : dayjs(item.month).format("MMMM YYYY")
+                                                                }
+                                                            </p>
                                                             <p className="text-xs text-muted-foreground">{item.label}</p>
                                                         </div>
                                                     </div>
-                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                                        +{currencySymbol}{item.amount.toFixed(2)}
+                                                    <span className={`font-bold ${item.amount < 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                        {item.amount < 0 ? '-' : '+'}{currencySymbol}{Math.abs(item.amount).toFixed(2)}
                                                     </span>
                                                 </CardContent>
                                             </Card>
@@ -312,6 +397,36 @@ export default function SavingsPage() {
                 goal={allocatingGoal}
                 availableSavings={availableSavings}
             />
+
+            {/* Transfer to Budget Modal */}
+            <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Transfer to Budget</DialogTitle>
+                        <DialogDescription>
+                            Withdraw from your accumulated savings and add it back to your current budget.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Amount to Transfer</Label>
+                            <Input
+                                type="number"
+                                placeholder="0.00"
+                                value={transferAmount}
+                                onChange={(e) => setTransferAmount(e.target.value)}
+                            />
+                            <div className="text-xs text-muted-foreground">
+                                Available to withdraw: <span className="font-medium text-foreground">{currencySymbol}{availableSavings.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsTransferOpen(false)}>Cancel</Button>
+                        <Button onClick={handleTransferSubmit}>Transfer</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <AlertDialog open={!!goalToDelete} onOpenChange={() => setGoalToDelete(null)}>
                 <AlertDialogContent className="rounded-2xl sm:rounded-3xl">

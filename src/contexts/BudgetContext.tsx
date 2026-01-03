@@ -95,6 +95,56 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBudgets();
+
+    // Setup realtime subscription for budgets
+    const channel = supabase
+      .channel('budgets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'budgets',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Realtime budget change:', payload);
+
+          if (payload.eventType === 'INSERT') {
+            const newBudget: Budget = {
+              id: payload.new.id,
+              period: payload.new.period,
+              month: payload.new.month,
+              total: Number(payload.new.total),
+              categoryLimits: payload.new.category_limits || {},
+              surplusAction: payload.new.surplus_action,
+              rollover: payload.new.surplus_action === 'rollover',
+              createdAt: payload.new.created_at
+            };
+            dispatch({ type: "ADD", payload: newBudget });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedBudget: Budget = {
+              id: payload.new.id,
+              period: payload.new.period,
+              month: payload.new.month,
+              total: Number(payload.new.total),
+              categoryLimits: payload.new.category_limits || {},
+              surplusAction: payload.new.surplus_action,
+              rollover: payload.new.surplus_action === 'rollover',
+              createdAt: payload.new.created_at
+            };
+            dispatch({ type: "UPDATE", payload: updatedBudget });
+          } else if (payload.eventType === 'DELETE') {
+            dispatch({ type: "DELETE", payload: { id: payload.old.id } });
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const refreshBudgets = async () => {
@@ -127,7 +177,9 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
   const addBudget = async (budgetData: Omit<Budget, "id" | "createdAt">) => {
     if (!user) return;
 
+    // Optimistic Update - DISABLED to prevent duplicates with realtime
     const tempId = uuid();
+    /* 
     const newBudget: Budget = {
       id: tempId,
       createdAt: new Date().toISOString(),
@@ -135,16 +187,17 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       rollover: budgetData.surplusAction === 'rollover'
     };
     dispatch({ type: "ADD", payload: newBudget });
+    */
 
     const { data, error } = await supabase
       .from("budgets")
       .insert({
         user_id: user.id,
-        period: newBudget.period,
-        month: newBudget.month,
-        total: newBudget.total,
-        category_limits: newBudget.categoryLimits,
-        surplus_action: newBudget.surplusAction
+        period: budgetData.period,
+        month: budgetData.month,
+        total: budgetData.total,
+        category_limits: budgetData.categoryLimits,
+        surplus_action: budgetData.surplusAction
       })
       .select()
       .single();
@@ -152,7 +205,6 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       console.error("Error adding budget:", error);
       toast.error("Failed to save budget");
-      dispatch({ type: "DELETE", payload: { id: tempId } });
     } else {
       const savedBudget: Budget = {
         id: data.id,
@@ -164,8 +216,68 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
         rollover: data.surplus_action === 'rollover',
         createdAt: data.created_at
       };
-      dispatch({ type: "DELETE", payload: { id: tempId } });
-      dispatch({ type: "ADD", payload: savedBudget });
+
+      toast.success("Budget created successfully!");
+
+      // Create income entry for budget
+      try {
+        const budgetDate = dayjs(savedBudget.month, "YYYY-MM").startOf('month').toISOString();
+
+        await supabase.from("expenses").insert({
+          user_id: user.id,
+          type: "income",
+          amount: savedBudget.total,
+          currency: "INR", // Using default currency, could be made dynamic
+          category: "Budget",
+          merchant: "Budget Allocation",
+          payment_method: "budget",
+          date: budgetDate,
+          notes: `Budget for ${dayjs(savedBudget.month).format('MMMM YYYY')}`,
+          recurring: false,
+          tags: ["budget", "auto-generated"],
+          created_at: new Date().toISOString()
+        });
+
+        // Check for surplus rollover from previous month
+        const previousMonth = dayjs(savedBudget.month, "YYYY-MM").subtract(1, 'month').format("YYYY-MM");
+        const previousBudget = getBudgetByMonth(previousMonth);
+
+        if (previousBudget && previousBudget.surplusAction === 'rollover') {
+          // Calculate surplus from previous month
+          const { data: prevExpenses } = await supabase
+            .from("expenses")
+            .select("amount")
+            .eq("user_id", user.id)
+            .gte("date", dayjs(previousMonth, "YYYY-MM").startOf('month').toISOString())
+            .lt("date", dayjs(previousMonth, "YYYY-MM").add(1, 'month').startOf('month').toISOString())
+            .eq("type", "expense")
+            .is("family_budget_id", null);
+
+          const previousExpenses = (prevExpenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
+          const surplusAmount = Math.max(0, previousBudget.total - previousExpenses);
+
+          if (surplusAmount > 0) {
+            // Create income entry for surplus
+            await supabase.from("expenses").insert({
+              user_id: user.id,
+              type: "income",
+              amount: surplusAmount,
+              currency: "INR",
+              category: "Surplus",
+              merchant: "Surplus Rollover",
+              payment_method: "rollover",
+              date: budgetDate,
+              notes: `Surplus from ${dayjs(previousMonth).format('MMMM YYYY')}`,
+              recurring: false,
+              tags: ["surplus", "rollover", "auto-generated"],
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+      } catch (incomeError) {
+        console.error("Error creating income entry:", incomeError);
+        // Don't fail budget creation if income entry fails
+      }
     }
   };
 

@@ -45,8 +45,36 @@ serve(async (req) => {
         const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-        // Generate Referral ID for new user
-        const myReferralId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        // Check if this email exists in referral_tracking (persists even after account deletion)
+        let myReferralId: string;
+        let finalReferredBy: string | null;
+
+        const { data: existingTracking } = await supabaseAdmin
+            .from('referral_tracking')
+            .select('referral_id, referred_by')
+            .eq('email', email)
+            .single();
+
+        if (existingTracking) {
+            // RETURNING USER - Reuse original data to prevent fraud
+            myReferralId = existingTracking.referral_id || Math.random().toString(36).substring(2, 10).toUpperCase();
+
+            // CRITICAL: Always use original referred_by, ignore new referral code
+            finalReferredBy = existingTracking.referred_by;
+
+            console.log(`Returning user ${email}:`);
+            console.log(`  - Reusing referral_id: ${myReferralId}`);
+            console.log(`  - Preserving referred_by: ${finalReferredBy || 'null'}`);
+            console.log(`  - Ignoring new referral_code: ${referral_code}`);
+        } else {
+            // NEW USER - Use provided data
+            myReferralId = Math.random().toString(36).substring(2, 10).toUpperCase();
+            finalReferredBy = referral_code || null;
+
+            console.log(`New user ${email}:`);
+            console.log(`  - Generated referral_id: ${myReferralId}`);
+            console.log(`  - Using referred_by: ${finalReferredBy || 'null'}`);
+        }
 
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
             email: email,
@@ -57,7 +85,7 @@ serve(async (req) => {
                 has_paid: true,
                 plan_type: plan_type,
                 referral_id: myReferralId,
-                referred_by: referral_code || null
+                referred_by: finalReferredBy
             }
         });
 

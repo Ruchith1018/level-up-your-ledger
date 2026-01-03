@@ -95,6 +95,7 @@ export interface AppSettings {
   purchasedCardThemes?: string[];
   hasAcceptedTerms?: boolean;
   profileImage?: string;
+  bannerImage?: string;
   customCardImage?: string;
   customCardOverlay?: {
     showBalance: boolean;

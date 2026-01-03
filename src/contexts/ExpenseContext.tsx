@@ -77,9 +77,6 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         console.error("Error fetching expenses:", error);
         toast.error("Failed to load expenses");
       } else {
-        // Transform DB snake_case to CamelCase if needed, but our SQL schema uses names that match types mostly.
-        // Wait, our types use camelCase (paymentMethod), DB uses snake_case (payment_method).
-        // We need to map them.
         const mappedData: Expense[] = (data || []).map((dbItem: any) => ({
           id: dbItem.id,
           type: dbItem.type,
@@ -101,6 +98,68 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchExpenses();
+
+    // Setup realtime subscription for expenses
+    const channel = supabase
+      .channel('expenses-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'expenses',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Realtime expense change:', payload);
+
+          if (payload.eventType === 'INSERT') {
+            const newExpense: Expense = {
+              id: payload.new.id,
+              type: payload.new.type,
+              amount: Number(payload.new.amount),
+              currency: payload.new.currency,
+              category: payload.new.category,
+              merchant: payload.new.merchant,
+              paymentMethod: payload.new.payment_method,
+              date: payload.new.date,
+              notes: payload.new.notes,
+              recurring: payload.new.recurring,
+              tags: payload.new.tags,
+              isLocked: payload.new.is_locked,
+              createdAt: payload.new.created_at,
+              familyBudgetID: payload.new.family_budget_id
+            };
+            dispatch({ type: "ADD", payload: newExpense });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedExpense: Expense = {
+              id: payload.new.id,
+              type: payload.new.type,
+              amount: Number(payload.new.amount),
+              currency: payload.new.currency,
+              category: payload.new.category,
+              merchant: payload.new.merchant,
+              paymentMethod: payload.new.payment_method,
+              date: payload.new.date,
+              notes: payload.new.notes,
+              recurring: payload.new.recurring,
+              tags: payload.new.tags,
+              isLocked: payload.new.is_locked,
+              createdAt: payload.new.created_at,
+              familyBudgetID: payload.new.family_budget_id
+            };
+            dispatch({ type: "UPDATE", payload: updatedExpense });
+          } else if (payload.eventType === 'DELETE') {
+            dispatch({ type: "DELETE", payload: { id: payload.old.id } });
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const refreshExpenses = async () => {
@@ -139,32 +198,21 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
   const addExpense = async (expenseData: Omit<Expense, "id" | "createdAt">) => {
     if (!user) return;
 
-    // Optimistic Update
-    const tempId = uuid();
-    const finalId = "id" in expenseData ? (expenseData as any).id : tempId;
-
-    const newExpense: Expense = {
-      ...expenseData,
-      id: finalId,
-      createdAt: new Date().toISOString(),
-    };
-    dispatch({ type: "ADD", payload: newExpense });
-
-    // DB Call
+    // NOTE: Realtime subscription in useEffect handles adding the expense to state.
     const dbPayload = {
       user_id: user.id,
-      type: newExpense.type,
-      amount: newExpense.amount,
-      currency: newExpense.currency,
-      category: newExpense.category,
-      merchant: newExpense.merchant,
-      payment_method: newExpense.paymentMethod,
-      date: newExpense.date,
-      notes: newExpense.notes,
-      recurring: newExpense.recurring,
-      tags: newExpense.tags,
-      id: newExpense.id, // Ensure we use the generated ID
-      family_budget_id: newExpense.familyBudgetID,
+      type: expenseData.type,
+      amount: expenseData.amount,
+      currency: expenseData.currency,
+      category: expenseData.category,
+      merchant: expenseData.merchant,
+      payment_method: expenseData.paymentMethod,
+      date: expenseData.date,
+      notes: expenseData.notes,
+      recurring: expenseData.recurring,
+      tags: expenseData.tags,
+      is_locked: expenseData.isLocked,
+      family_budget_id: expenseData.familyBudgetID || null
     };
 
     const { data, error } = await supabase
@@ -176,28 +224,10 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       console.error("Error adding expense:", error);
       toast.error(`Failed to save expense: ${error.message}`);
-      // Revert optimistic update
-      dispatch({ type: "DELETE", payload: { id: finalId } });
+      // No need to revert since we didn't add optimistically
     } else {
-      // Update temp ID with real ID (if different, though we try to force it)
-      const savedExpense = {
-        id: data.id,
-        type: data.type,
-        amount: Number(data.amount),
-        currency: data.currency,
-        category: data.category,
-        merchant: data.merchant,
-        paymentMethod: data.payment_method,
-        date: data.date,
-        notes: data.notes,
-        recurring: data.recurring,
-        tags: data.tags,
-        isLocked: data.is_locked,
-        createdAt: data.created_at,
-        familyBudgetID: data.family_budget_id
-      };
-      dispatch({ type: "DELETE", payload: { id: finalId } }); // Remove optimistic
-      dispatch({ type: "ADD", payload: savedExpense }); // Add real
+      toast.success(`${expenseData.type === 'income' ? 'Income' : 'Expense'} added successfully!`);
+      // Realtime subscription will handle adding to state automatically
     }
   };
 

@@ -81,13 +81,17 @@ export function BudgetOverview() {
   }
 
   // Calculate Total Savings
+  const savedTransactions = useExpenses().state.items
+    .filter(e => e.category === 'Savings' && e.type === 'expense')
+    .reduce((sum, e) => sum + e.amount, 0);
+
   const totalSavings = budgetState.budgets
     .filter(b => b.surplusAction === 'saved')
     .reduce((sum, b) => {
       const expenses = getTotalByType("expense", b.month);
       const savedAmount = Math.max(0, b.total - expenses);
       return sum + savedAmount;
-    }, 0) + familySurplus.reduce((sum, item) => sum + Number(item.amount), 0);
+    }, 0) + familySurplus.reduce((sum, item) => sum + Number(item.amount), 0) + savedTransactions;
 
   if (!currentBudget) {
     // ... (no change to no-budget view)
@@ -105,7 +109,12 @@ export function BudgetOverview() {
     );
   }
 
-  const effectiveTotal = currentBudget.total + rolloverAmount;
+  // Calculate Savings Withdrawals (Income from Savings to Budget)
+  const savingsWithdrawals = useExpenses().state.items
+    .filter(e => e.type === 'income' && e.category === 'Savings Withdrawal')
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  const effectiveTotal = currentBudget.total + rolloverAmount + savingsWithdrawals;
   const remaining = effectiveTotal - totalExpense;
   const budgetUsed = (totalExpense / effectiveTotal) * 100;
   const isOverBudget = remaining < 0;
@@ -258,7 +267,7 @@ export function BudgetOverview() {
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                 <span className="text-[10px] sm:text-xs font-medium leading-tight">Income</span>
               </div>
-              <div className={`${getFontSizeClass(totalIncome, 'sub')} font-bold break-words transition-all duration-200 text-blue-700 dark:text-blue-300`}>{currencySymbol}{totalIncome.toFixed(2)}</div>
+              <div className={`${getFontSizeClass(totalIncome - savingsWithdrawals, 'sub')} font-bold break-words transition-all duration-200 text-blue-700 dark:text-blue-300`}>{currencySymbol}{(totalIncome - savingsWithdrawals).toFixed(2)}</div>
             </div>
             <div
               onClick={() => navigate('/expenses')}
