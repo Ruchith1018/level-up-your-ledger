@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, TrendingUp, Trophy, Users, ChevronRight, ArrowRight, Hammer } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Trophy, Users, ChevronRight, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HeroDashboardPreview } from './HeroDashboardPreview';
 import { AnalyticsPreview } from './AnalyticsPreview';
+import { FamilyFeaturePreview } from './FamilyFeaturePreview';
 
 interface Feature {
     id: string;
@@ -14,6 +15,12 @@ interface Feature {
     image: string;
     imageGradient: string;
     details: string[];
+    theme: {
+        text: string;
+        bg: string;
+        border: string;
+        icon: string;
+    };
 }
 
 const features: Feature[] = [
@@ -30,7 +37,13 @@ const features: Feature[] = [
             'Recent transaction history',
             'Quick action shortcuts',
             'Customizable widgets'
-        ]
+        ],
+        theme: {
+            text: 'text-blue-400',
+            bg: 'bg-blue-500',
+            border: 'border-blue-500/20',
+            icon: 'text-blue-400'
+        }
     },
     {
         id: 'analytics',
@@ -45,7 +58,13 @@ const features: Feature[] = [
             'Monthly spending trends',
             'Savings rate analysis',
             'Exportable reports'
-        ]
+        ],
+        theme: {
+            text: 'text-emerald-400',
+            bg: 'bg-emerald-500',
+            border: 'border-emerald-500/20',
+            icon: 'text-emerald-400'
+        }
     },
     {
         id: 'gamification',
@@ -60,7 +79,13 @@ const features: Feature[] = [
             'Achievement badges',
             'Global leaderboards',
             'Streak rewards'
-        ]
+        ],
+        theme: {
+            text: 'text-orange-400',
+            bg: 'bg-orange-500',
+            border: 'border-orange-500/20',
+            icon: 'text-orange-400'
+        }
     },
     {
         id: 'family',
@@ -75,7 +100,13 @@ const features: Feature[] = [
             'Family budget limits',
             'Activity notifications',
             'Role-based access'
-        ]
+        ],
+        theme: {
+            text: 'text-pink-400',
+            bg: 'bg-pink-500',
+            border: 'border-pink-500/20',
+            icon: 'text-pink-400'
+        }
     },
     {
         id: 'leaderboard',
@@ -90,7 +121,13 @@ const features: Feature[] = [
             'Weekly XP levels',
             'Achievement badges',
             'Exclusive rewards'
-        ]
+        ],
+        theme: {
+            text: 'text-purple-400',
+            bg: 'bg-purple-500',
+            border: 'border-purple-500/20',
+            icon: 'text-purple-400'
+        }
     }
 ];
 
@@ -100,7 +137,7 @@ export const FeaturesSection = () => {
     return (
         <section className="py-24 bg-slate-950 text-white relative overflow-hidden">
             {/* Background Ambience */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-green-500/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="container mx-auto px-4 relative z-10">
 
@@ -120,62 +157,81 @@ export const FeaturesSection = () => {
                 {/* Main Interactive Display area */}
                 <div className="bg-slate-900 border border-white/5 rounded-3xl p-4 md:p-8 grid lg:grid-cols-12 gap-8 shadow-2xl relative overflow-hidden">
                     {/* Background blob for the container */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/5 rounded-full blur-[100px] pointer-events-none" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none" />
 
                     {/* Left Side: Accordion/Selection List */}
                     <div className="lg:col-span-4 flex flex-col justify-center space-y-2">
-                        {features.map((feature, index) => (
-                            <motion.div
-                                key={feature.id}
-                                onClick={() => setActiveFeatureIndex(index)}
-                                className={cn(
-                                    "relative p-6 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group",
-                                    activeFeatureIndex === index ? "bg-white/5" : "hover:bg-white/5"
-                                )}
-                            >
-                                <div className="flex items-start justify-between relative z-10">
-                                    <div className="space-y-4">
-                                        <h3 className={cn(
-                                            "text-xl font-bold flex items-center gap-3 transition-colors",
-                                            activeFeatureIndex === index ? "text-green-400" : "text-white group-hover:text-green-300"
-                                        )}>
-                                            {feature.title}
-                                            {activeFeatureIndex === index && (
-                                                <motion.span layoutId="active-dot" className="w-2 h-2 rounded-full bg-green-500" />
-                                            )}
-                                        </h3>
+                        {features.map((feature, index) => {
+                            const isActive = activeFeatureIndex === index;
 
-                                        <AnimatePresence>
-                                            {activeFeatureIndex === index && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: 'auto' }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    className="text-slate-400 text-sm leading-relaxed"
-                                                >
-                                                    {feature.fullDesc}
-                                                    <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2">
-                                                        {feature.details.map((detail, i) => (
-                                                            <div key={i} className="flex items-center gap-2 text-slate-300">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                                                {detail}
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                            return (
+                                <motion.div
+                                    key={feature.id}
+                                    onClick={() => setActiveFeatureIndex(index)}
+                                    className={cn(
+                                        "relative p-6 rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group border",
+                                        isActive
+                                            ? `bg-white/5 border-white/10 shadow-lg`
+                                            : "border-transparent hover:bg-white/5"
+                                    )}
+                                >
+                                    {/* Active Highlight Border/Glow */}
+                                    {isActive && (
+                                        <div className={cn("absolute inset-0 bg-gradient-to-r opacity-5 pointer-events-none", feature.imageGradient)} />
+                                    )}
 
-                                                    {/* Button Removed */}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
+                                    <div className="flex items-start justify-between relative z-10">
+                                        <div className="space-y-4 w-full">
+                                            <h3 className={cn(
+                                                "text-xl font-bold flex items-center gap-3 transition-colors",
+                                                isActive ? feature.theme.text : "text-white group-hover:text-slate-200"
+                                            )}>
+                                                {feature.title}
+                                                {isActive && (
+                                                    <motion.span
+                                                        layoutId="active-dot"
+                                                        className={cn("w-2 h-2 rounded-full", feature.theme.bg)}
+                                                    />
+                                                )}
+                                            </h3>
+
+                                            <AnimatePresence>
+                                                {isActive && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, height: 0 }}
+                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                        exit={{ opacity: 0, height: 0 }}
+                                                        className="text-slate-400 text-sm leading-relaxed"
+                                                    >
+                                                        {feature.fullDesc}
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            transition={{ delay: 0.1 }}
+                                                            className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-3"
+                                                        >
+                                                            {feature.details.map((detail, i) => (
+                                                                <div key={i} className="flex items-center gap-2.5 text-slate-300">
+                                                                    <div className={cn("p-0.5 rounded-full bg-white/5", feature.theme.text)}>
+                                                                        <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                                                    </div>
+                                                                    <span>{detail}</span>
+                                                                </div>
+                                                            ))}
+                                                        </motion.div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        <ChevronRight className={cn(
+                                            "w-5 h-5 transition-transform duration-300 shrink-0 mt-1",
+                                            isActive ? `rotate-90 ${feature.theme.text}` : "text-slate-500"
+                                        )} />
                                     </div>
-
-                                    <ChevronRight className={cn(
-                                        "w-5 h-5 transition-transform duration-300",
-                                        activeFeatureIndex === index ? "rotate-90 text-green-400" : "text-slate-500"
-                                    )} />
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </div>
 
                     {/* Right Side: Dynamic Image/Preview Area */}
@@ -197,10 +253,14 @@ export const FeaturesSection = () => {
                                     <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
                                         <AnalyticsPreview className="w-full h-full min-h-0 shadow-none border-none bg-slate-950 rounded-none" />
                                     </div>
-                                ) : ['gamification', 'family', 'leaderboard'].includes(features[activeFeatureIndex].id) ? (
+                                ) : features[activeFeatureIndex].id === 'family' ? (
+                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
+                                        <FamilyFeaturePreview className="w-full h-full min-h-0 shadow-none border-none bg-slate-950 rounded-none" />
+                                    </div>
+                                ) : ['gamification', 'leaderboard'].includes(features[activeFeatureIndex].id) ? (
                                     <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-in fade-in zoom-in duration-500">
                                         <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6 ring-1 ring-white/10 shadow-xl">
-                                            <Hammer className="w-10 h-10 text-slate-400" />
+                                            {React.createElement(features[activeFeatureIndex].icon, { className: "w-10 h-10 text-slate-400" })}
                                         </div>
                                         <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">Under Development</h3>
                                         <p className="text-slate-400 text-lg max-w-md leading-relaxed">
