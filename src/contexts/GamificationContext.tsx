@@ -60,6 +60,7 @@ const initialState: GamificationState = {
   coins: 0,
   totalCoins: 0,
   streak: 0,
+  longestStreak: 0,
   lastCheckIn: new Date().toISOString(),
   badges: [],
   claimedTasks: [],
@@ -109,6 +110,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           coins: 0,
           total_coins: 0,
           streak: 0,
+          longest_streak: 0,
           last_check_in: new Date().toISOString(),
           badges: [],
           claimed_tasks: [],
@@ -129,6 +131,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
             coins: createdData.coins,
             totalCoins: createdData.total_coins,
             streak: createdData.streak,
+            longestStreak: createdData.longest_streak || 0,
             lastCheckIn: createdData.last_check_in,
             badges: createdData.badges || [],
             claimedTasks: createdData.claimed_tasks || [],
@@ -145,6 +148,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           coins: data.coins,
           totalCoins: data.total_coins,
           streak: data.streak,
+          longestStreak: data.longest_streak || 0,
           lastCheckIn: data.last_check_in,
           badges: data.badges || [],
           claimedTasks: data.claimed_tasks || [],
@@ -184,6 +188,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         coins: 0,
         total_coins: 0,
         streak: 0,
+        longest_streak: 0,
         last_check_in: new Date().toISOString(),
         badges: [],
         claimed_tasks: [],
@@ -204,6 +209,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
           coins: createdData.coins,
           totalCoins: createdData.total_coins,
           streak: createdData.streak,
+          longestStreak: createdData.longest_streak || 0,
           lastCheckIn: createdData.last_check_in,
           badges: createdData.badges || [],
           claimedTasks: createdData.claimed_tasks || [],
@@ -220,6 +226,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         coins: data.coins,
         totalCoins: data.total_coins,
         streak: data.streak,
+        longestStreak: data.longest_streak || 0,
         lastCheckIn: data.last_check_in,
         badges: data.badges || [],
         claimedTasks: data.claimed_tasks || [],
@@ -253,6 +260,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
       coins: newState.coins,
       total_coins: newState.totalCoins,
       streak: newState.streak,
+      longest_streak: newState.longestStreak,
       last_check_in: newState.lastCheckIn,
       badges: newState.badges,
       claimed_tasks: newState.claimedTasks,
@@ -325,9 +333,14 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         // Consecutive day
         const newStreak = (currentState.streak || 0) + 1;
 
+        // Update longest streak if necessary
+        const currentLongest = currentState.longestStreak || 0;
+        const updatedLongest = newStreak > currentLongest ? newStreak : currentLongest;
+
         let newState = {
           ...currentState,
           streak: newStreak,
+          longestStreak: updatedLongest,
           lastCheckIn: new Date().toISOString(),
         };
         // Reward XP inline

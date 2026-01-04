@@ -47,7 +47,7 @@ export function ExportImport() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Secure Data Export</CardTitle>
+          <CardTitle className="text-xl">Secure Data Export</CardTitle>
           <CardDescription>
             Download a password-protected PDF report of all your financial data.
           </CardDescription>

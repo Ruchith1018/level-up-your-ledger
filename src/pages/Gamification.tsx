@@ -202,14 +202,14 @@ export default function Gamification() {
                                             <p className="text-sm text-muted-foreground">Keep earning XP to reach the next level!</p>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500">
+                                            <div className="text-2xl font-bold text-primary">
                                                 {state.xp} <span className="text-sm text-muted-foreground font-medium">/ {nextLevelXP} XP</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="relative h-4 bg-muted overflow-hidden rounded-full transform translate-z-0">
                                         <motion.div
-                                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-[0_0_10px_rgba(139,92,246,0.3)]"
+                                            className="absolute top-0 left-0 h-full bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary),0.3)]"
                                             initial={{ width: 0 }}
                                             animate={{ width: `${progress}%` }}
                                             transition={{ duration: 1, ease: "easeOut" }}
@@ -412,7 +412,18 @@ export default function Gamification() {
                                                 <>
                                                     {earnedBadges.map((badge) => (
                                                         <div key={badge.id} className="bg-background border border-border/40 rounded-xl p-3 flex flex-col items-center text-center gap-2 hover:bg-accent/50 transition-colors">
-                                                            <div className="text-3xl filter drop-shadow-sm">{badge.icon}</div>
+                                                            <div className="w-12 h-12 flex items-center justify-center">
+                                                                <img
+                                                                    src={badge.image}
+                                                                    alt={badge.name}
+                                                                    className="w-full h-full object-contain filter drop-shadow-sm rounded-full"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                    }}
+                                                                />
+                                                                <span className="text-3xl hidden">{badge.icon}</span>
+                                                            </div>
                                                             <p className="font-semibold text-[10px] leading-tight line-clamp-2">{badge.name}</p>
                                                         </div>
                                                     ))}

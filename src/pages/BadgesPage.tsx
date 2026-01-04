@@ -47,9 +47,18 @@ export default function BadgesPage() {
                 onClick={() => handleBadgeClick(badge)}
             >
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-3 h-full">
-                    <div className={`text-3xl ${unlocked || isClaimable ? '' : 'opacity-50'}`}>
-                        {/* @ts-ignore - icon exists now */}
-                        {badge.icon || <Trophy className="w-8 h-8" />}
+                    <div className={`w-12 h-12 flex items-center justify-center ${unlocked || isClaimable ? '' : 'opacity-50'}`}>
+                        {/* @ts-ignore - image exists now */}
+                        <img
+                            src={badge.image}
+                            alt={badge.name}
+                            className="w-full h-full object-contain filter drop-shadow-sm rounded-full"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                        />
+                        <span className="text-3xl hidden">{badge.icon}</span>
                     </div>
                     <div>
                         <h3 className="font-bold text-sm">{badge.name}</h3>
@@ -149,7 +158,18 @@ export default function BadgesPage() {
                     <DialogHeader className="items-center text-center gap-2">
                         <div className="text-6xl mb-2">
                             {/* @ts-ignore */}
-                            {selectedBadge?.icon || <Trophy className="w-12 h-12" />}
+                            <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                                <img
+                                    src={selectedBadge?.image}
+                                    alt={selectedBadge?.name}
+                                    className="w-full h-full object-contain filter drop-shadow-lg rounded-full"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                />
+                                <span className="text-6xl hidden">{selectedBadge?.icon}</span>
+                            </div>
                         </div>
                         <DialogTitle className="text-2xl font-bold">{selectedBadge?.name}</DialogTitle>
                         <DialogDescription className="text-center">

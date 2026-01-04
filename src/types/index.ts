@@ -36,6 +36,7 @@ export interface GamificationState {
   coins: number;
   totalCoins: number;
   streak: number;
+  longestStreak: number;
   lastCheckIn: string;
   badges: string[];
   claimedTasks: string[];

@@ -1,5 +1,5 @@
 import { CurrencySelector } from "@/components/settings/CurrencySelector";
-import { ExportImport } from "@/components/export/ExportImport";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { GamificationStats } from "@/components/gamification/GamificationStats";
+
 
 import {
   AlertDialog,
@@ -403,13 +403,7 @@ export default function Settings() {
               </Card>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-            >
-              <GamificationStats />
-            </motion.div>
+
 
             {user && (
               <motion.div
@@ -559,13 +553,7 @@ export default function Settings() {
               </Card>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <ExportImport />
-            </motion.div>
+
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}

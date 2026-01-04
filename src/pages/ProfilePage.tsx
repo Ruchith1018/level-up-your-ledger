@@ -18,6 +18,9 @@ import {
     ArrowDownRight,
     MapPin,
     Trophy,
+    Calendar,
+    Crown,
+    Sparkles,
     TrendingUp,
     Wallet,
     Star,
@@ -26,12 +29,22 @@ import {
     Zap,
     Camera,
     Upload,
+    Sun,
+    Moon,
+    Laptop,
     Loader2,
     Mail,
-    Users
+    Users,
+    Pencil,
+    User
 } from "lucide-react";
+import { CurrencySelector } from "@/components/settings/CurrencySelector";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GamificationStats } from "@/components/gamification/GamificationStats";
+import { ExportImport } from "@/components/export/ExportImport";
 import { BADGES } from "@/utils/gamify";
+import { AffiliateTab } from "@/components/profile/AffiliateTab";
 
 const ProfilePage = () => {
     const { user } = useAuth();
@@ -41,14 +54,14 @@ const ProfilePage = () => {
     const { state: budgetState, getBudgetByMonth } = useBudget();
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const profileInputRef = useRef<HTMLInputElement>(null);
-    const longestStreak = 14;
+    const longestStreak = state.longestStreak || 0;
     // State for banner and profile images
     const [bannerImage, setBannerImage] = useState<string | null>(settings.bannerImage || null);
     const [profileImage, setProfileImage] = useState<string | null>(settings.profileImage || null);
     const [uploadingBanner, setUploadingBanner] = useState(false);
     const [uploadingProfile, setUploadingProfile] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'stats' | 'analysis' | 'account'>('stats');
+    const [activeTab, setActiveTab] = useState<'stats' | 'analysis' | 'account' | 'affiliate'>('stats');
     const [expandedSection, setExpandedSection] = useState<'streak' | 'achievements' | 'activity' | null>('streak');
 
     // Update local state when settings change
@@ -568,6 +581,19 @@ const ProfilePage = () => {
                             <Star className="h-4 w-4" />
                             Account
                             {activeTab === 'account' && (
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('affiliate')}
+                            className={`flex items-center gap-2 py-4 px-2 text-sm font-medium transition-colors relative ${activeTab === 'affiliate'
+                                ? 'text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <Users className="h-4 w-4" />
+                            Affiliate Program
+                            {activeTab === 'affiliate' && (
                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                             )}
                         </button>
@@ -1303,168 +1329,196 @@ const ProfilePage = () => {
                 )}
 
                 {activeTab === 'account' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Column - Account Info */}
-                        <div className="space-y-6">
-                            <Card className="p-6">
-                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
-                                    Account Information
-                                </h2>
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                                        <Mail className="h-5 w-5 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Email</p>
-                                            <p className="text-sm font-medium">{user?.email}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                                        <MapPin className="h-5 w-5 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Location</p>
-                                            <p className="text-sm font-medium">{user?.user_metadata?.location || "Global"}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                                        <Star className="h-5 w-5 text-muted-foreground" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Username</p>
-                                            <p className="text-sm font-medium">{getUserName()}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="lg:col-span-2 space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        {/* Left Column - Settings (Now Swapped) */}
+                        <div className="lg:col-span-3 space-y-6">
                             {/* Account Settings */}
-                            <Card className="p-6">
-                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
+                            <Card className="p-6 bg-gradient-to-br from-card to-muted/30 border-primary/10 shadow-lg">
+                                <h2 className="text-lg font-bold tracking-tight mb-6">
                                     Profile Settings
                                 </h2>
-                                <div className="space-y-6">
+
+                                <div className="space-y-8">
+                                    {/* Image Upload Section */}
                                     <div>
-                                        <h3 className="text-sm font-medium text-foreground mb-3">Upload Images</h3>
+                                        <h3 className="text-sm font-semibold text-muted-foreground mb-4">
+                                            Profile Visuals
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div
+                                                className="group relative overflow-hidden rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-primary/5 transition-all cursor-pointer p-6 flex flex-col items-center justify-center text-center gap-3"
+                                                onClick={() => profileInputRef.current?.click()}
+                                            >
+                                                <div>
+                                                    <p className="font-semibold text-sm">Profile Picture</p>
+                                                    <p className="text-xs text-muted-foreground">Max 2MB</p>
+                                                </div>
+                                                {uploadingProfile && (
+                                                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div
+                                                className="group relative overflow-hidden rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-primary/5 transition-all cursor-pointer p-6 flex flex-col items-center justify-center text-center gap-3"
+                                                onClick={() => bannerInputRef.current?.click()}
+                                            >
+                                                <div>
+                                                    <p className="font-semibold text-sm">Banner Image</p>
+                                                    <p className="text-xs text-muted-foreground">Max 5MB</p>
+                                                </div>
+                                                {uploadingBanner && (
+                                                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Account Details Section */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-muted-foreground mb-4">
+                                            Account Overview
+                                        </h3>
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="p-4 border rounded-lg">
-                                                <p className="text-sm font-medium mb-2">Profile Picture</p>
-                                                <p className="text-xs text-muted-foreground mb-3">Max size: 2MB</p>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => profileInputRef.current?.click()}
-                                                    disabled={uploadingProfile}
-                                                    className="w-full"
-                                                >
-                                                    {uploadingProfile ? (
-                                                        <>
-                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                            Uploading...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Camera className="h-4 w-4 mr-2" />
-                                                            Change Profile Picture
-                                                        </>
-                                                    )}
-                                                </Button>
+                                            {/* Display Name */}
+                                            <div className="p-4 rounded-xl bg-background border shadow-sm">
+                                                <p className="text-xs font-medium text-muted-foreground mb-1">Display Name</p>
+                                                <p className="font-semibold text-lg">{getUserName()}</p>
                                             </div>
-                                            <div className="p-4 border rounded-lg">
-                                                <p className="text-sm font-medium mb-2">Banner Image</p>
-                                                <p className="text-xs text-muted-foreground mb-3">Max size: 5MB</p>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => bannerInputRef.current?.click()}
-                                                    disabled={uploadingBanner}
-                                                    className="w-full"
-                                                >
-                                                    {uploadingBanner ? (
-                                                        <>
-                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                            Uploading...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Upload className="h-4 w-4 mr-2" />
-                                                            Change Banner
-                                                        </>
-                                                    )}
-                                                </Button>
+
+                                            {/* Email */}
+                                            <div className="p-4 rounded-xl bg-background border shadow-sm">
+                                                <p className="text-xs font-medium text-muted-foreground mb-1">Email Address</p>
+                                                <p className="font-semibold text-sm truncate" title={user?.email}>{user?.email}</p>
+                                            </div>
+
+                                            {/* Member Since */}
+                                            <div className="p-4 rounded-xl bg-background border shadow-sm">
+                                                <p className="text-xs font-medium text-muted-foreground mb-1">Member Since</p>
+                                                <p className="font-semibold text-lg">
+                                                    {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    }) : "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Status */}
+                                            <div className="p-4 rounded-xl bg-background border shadow-sm relative overflow-hidden">
+                                                <p className="text-xs font-medium text-muted-foreground mb-1 relative z-10">Plan Status</p>
+                                                <div className="relative z-10">
+                                                    <p className={`font-bold text-lg ${settings.hasPremiumPack ? 'text-yellow-600' : 'text-foreground'}`}>
+                                                        {settings.hasPremiumPack ? "Premium Member" : "Free Plan"}
+                                                    </p>
+                                                </div>
+                                                {settings.hasPremiumPack && (
+                                                    <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-yellow-500/20 blur-2xl rounded-full" />
+                                                )}
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <h3 className="text-sm font-medium text-foreground mb-3">Account Details</h3>
-                                        <div className="space-y-3">
-                                            <div className="p-4 bg-muted/50 rounded-lg">
-                                                <p className="text-xs text-muted-foreground mb-1">Display Name</p>
-                                                <p className="text-sm font-medium">{getUserName()}</p>
-                                            </div>
-                                            <div className="p-4 bg-muted/50 rounded-lg">
-                                                <p className="text-xs text-muted-foreground mb-1">Email Address</p>
-                                                <p className="text-sm font-medium">{user?.email}</p>
-                                            </div>
-                                            <div className="p-4 bg-muted/50 rounded-lg">
-                                                <p className="text-xs text-muted-foreground mb-1">Account Level</p>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge>Level {state.level}</Badge>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {state.totalXP.toLocaleString()} Total XP
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            {/* Recent Activity for Account Tab */}
-                            <Card className="p-6">
-                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
-                                    Recent Activity
-                                </h2>
-                                <div className="space-y-3">
-                                    {recentActivity.length > 0 ? (
-                                        recentActivity.map((item, index) => {
-                                            const xpAmount = item.xpEarned || 0;
-                                            const coinsAmount = item.coinsEarned || item.coinsSpent || 0;
-                                            const isPositive = (item.xpEarned && item.xpEarned > 0) || (item.coinsEarned && item.coinsEarned > 0);
-                                            const Icon = isPositive ? TrendingUp : Wallet;
-
-                                            return (
-                                                <div
-                                                    key={index}
-                                                    className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                                                >
-                                                    <div className={`p-2 rounded-lg ${isPositive ? 'bg-success/20' : 'bg-muted'}`}>
-                                                        <Icon className={`h-5 w-5 ${isPositive ? 'text-success' : 'text-muted-foreground'}`} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-foreground truncate">
-                                                            {item.reason}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {new Date(item.date).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    <Badge variant={isPositive ? "default" : "secondary"} className="shrink-0">
-                                                        {xpAmount > 0 ? `+${xpAmount} XP` : coinsAmount > 0 ? `${coinsAmount} coins` : '-'}
-                                                    </Badge>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <Zap className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                                            <p>No recent activity. Start tracking your finances!</p>
-                                        </div>
-                                    )}
                                 </div>
                             </Card>
                         </div>
+
+                        {/* Right Column - Account Info & Export (Now Swapped) */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <Card className="p-6">
+                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
+                                    Appearance & Preferences
+                                </h2>
+                                <div className="space-y-4">
+                                    <CurrencySelector />
+
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                                        <div className="space-y-0.5">
+                                            <Label>Theme</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Select your preferred theme
+                                            </p>
+                                        </div>
+                                        <Select
+                                            value={settings.theme}
+                                            onValueChange={(value: "light" | "dark" | "system") =>
+                                                updateSettings({ theme: value })
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full sm:w-[180px]">
+                                                <SelectValue placeholder="Select theme" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="light">
+                                                    <div className="flex items-center gap-2">
+                                                        <Sun className="w-4 h-4" />
+                                                        <span>Light</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="dark">
+                                                    <div className="flex items-center gap-2">
+                                                        <Moon className="w-4 h-4" />
+                                                        <span>Dark</span>
+                                                    </div>
+                                                </SelectItem>
+                                                <SelectItem value="system">
+                                                    <div className="flex items-center gap-2">
+                                                        <Laptop className="w-4 h-4" />
+                                                        <span>System</span>
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                                        <div className="space-y-0.5">
+                                            <Label>App Font</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Choose the global font family
+                                            </p>
+                                        </div>
+                                        <Select
+                                            value={settings.appFont || "Inter"}
+                                            onValueChange={(value) =>
+                                                updateSettings({ appFont: value })
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full sm:w-[180px]">
+                                                <SelectValue placeholder="Select font" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Inter" style={{ fontFamily: '"Inter", sans-serif' }}>Inter</SelectItem>
+                                                <SelectItem value="Poppins" style={{ fontFamily: '"Poppins", sans-serif' }}>Poppins (Default)</SelectItem>
+                                                <SelectItem value="Roboto" style={{ fontFamily: '"Roboto", sans-serif' }}>Roboto</SelectItem>
+                                                <SelectItem value="Open Sans" style={{ fontFamily: '"Open Sans", sans-serif' }}>Open Sans</SelectItem>
+                                                <SelectItem value="Montserrat" style={{ fontFamily: '"Montserrat", sans-serif' }}>Montserrat</SelectItem>
+                                                <SelectItem value="Lato" style={{ fontFamily: '"Lato", sans-serif' }}>Lato</SelectItem>
+                                                <SelectItem value="Nunito" style={{ fontFamily: '"Nunito", sans-serif' }}>Nunito</SelectItem>
+                                                <SelectItem value="Raleway" style={{ fontFamily: '"Raleway", sans-serif' }}>Raleway</SelectItem>
+                                                <SelectItem value="Outfit" style={{ fontFamily: '"Outfit", sans-serif' }}>Outfit</SelectItem>
+                                                <SelectItem value="DM Sans" style={{ fontFamily: '"DM Sans", sans-serif' }}>DM Sans</SelectItem>
+                                                <SelectItem value="Space Grotesk" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Space Grotesk</SelectItem>
+                                                <SelectItem value="Playfair Display" style={{ fontFamily: '"Playfair Display", serif' }}>Playfair Display</SelectItem>
+                                                <SelectItem value="Quicksand" style={{ fontFamily: '"Quicksand", sans-serif' }}>Quicksand</SelectItem>
+                                                <SelectItem value="Merriweather" style={{ fontFamily: '"Merriweather", serif' }}>Merriweather</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </Card>
+                            <ExportImport />
+                        </div>
+                    </div>
+                )}
+
+                {/* Affiliate Tab Content */}
+                {activeTab === 'affiliate' && (
+                    <div className="max-w-4xl mx-auto">
+                        <AffiliateTab />
                     </div>
                 )}
             </div>
