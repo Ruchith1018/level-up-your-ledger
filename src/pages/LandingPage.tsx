@@ -270,43 +270,61 @@ const LandingPage = () => {
 
 
             {/* Usage Stats / Eligibility */}
-            <section id="eligibility" className="py-20 bg-background/50 dark:bg-slate-900/50 overflow-hidden transition-colors duration-300">
-                <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-center gap-16">
-                    <div className="space-y-8 max-w-md">
-                        <h2 className="text-4xl font-bold text-foreground">Eligibility</h2>
-                        <ul className="space-y-6">
-                            {[
-                                'Active Email Address',
-                                'Commitment to Saving',
-                                'Ready to Level Up',
-                                'Any Age Group'
-                            ].map((item, i) => (
-                                <li key={i} className="flex items-center gap-4 text-lg text-muted-foreground">
-                                    <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
-                                        <Check className="w-4 h-4" />
-                                    </div>
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
+            <section id="eligibility" className="py-24 bg-background dark:bg-slate-950 overflow-hidden transition-colors duration-300 relative">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none translate-y-1/2 -translate-x-1/2" />
+
+                <div className="container mx-auto px-4 relative z-10">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-4">Who is BudGlio for?</h2>
+                        <p className="text-xl text-muted-foreground font-light">If you relate to any of these, you're ready.</p>
                     </div>
 
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-green-500/20 blur-[80px]" />
-                        <div className="relative bg-gradient-to-br from-card to-background dark:from-slate-800 dark:to-slate-900 p-8 rounded-3xl border border-border/10 shadow-2xl rotate-3 hover:rotate-0 transition-all duration-500">
-                            <div className="flex gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center text-white font-bold text-lg">
-                                    Bg
+                    <div className="bg-card/50 dark:bg-slate-900/50 border border-border/10 dark:border-white/5 rounded-[3rem] p-8 md:p-12 max-w-7xl mx-auto shadow-2xl backdrop-blur-sm relative overflow-hidden transition-colors duration-300">
+                        {/* Inner Background Blob */}
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 max-w-6xl mx-auto relative z-10">
+                            {/* 1. Animated Card (Where did it go?) */}
+                            <AnimatedEligibilityCard />
+
+                            {/* 2. Animated Card (Spreadsheet Fatigue) */}
+                            <AnimatedSpreadsheetCard />
+
+                            {/* 3. Animated Card (Money-Curious) */}
+                            <AnimatedMoneyCuriousCard />
+
+                            {/* 4. Animated Card (Competitive) */}
+                            <AnimatedCompetitiveCard />
+
+                            {/* 5. Animated Card (Save Not Stress) */}
+                            <AnimatedSaveCard />
+                        </div>
+                        <div className="max-w-6xl mx-auto mt-12 relative z-10">
+                            <motion.div
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.6 }}
+                                className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 border border-border/10 p-12 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-8 min-h-[180px] shadow-2xl relative overflow-hidden group cursor-pointer transition-colors duration-300"
+                                onClick={() => scrollToSection('pricing')}
+                            >
+                                {/* Background Glow */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/10 rounded-full blur-[100px] group-hover:bg-green-500/20 transition-colors duration-500" />
+
+                                <div className="relative z-10 text-center md:text-left">
+                                    <h3 className="text-4xl md:text-6xl font-black tracking-tighter text-white dark:text-slate-950 mb-2 transition-colors duration-300">
+                                        Ready to Level Up?
+                                    </h3>
+                                    <p className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-light transition-colors duration-300">
+                                        Join thousands of users mastering their money today.
+                                    </p>
                                 </div>
-                                <div>
-                                    <div className="font-bold text-lg text-foreground">One Time Fee</div>
-                                    <div className="text-muted-foreground text-sm">Lifetime Access</div>
+
+                                <div className="relative z-10 bg-white dark:bg-slate-950 text-slate-950 dark:text-white px-10 py-4 rounded-full font-bold text-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors shrink-0">
+                                    Get Started
                                 </div>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="h-2 bg-muted rounded-full w-48" />
-                                <div className="h-2 bg-muted rounded-full w-32" />
-                            </div>
+                            </motion.div>
                         </div>
                     </div>
                 </div>
@@ -320,54 +338,84 @@ const LandingPage = () => {
                     <h2 className="text-4xl font-bold text-center mb-4 text-foreground">Choose Your Path</h2>
                     <p className="text-center text-muted-foreground mb-16 text-lg">Simple pricing. No hidden fees.</p>
 
-                    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        {/* Standard Plan */}
+                    <div className="grid md:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
+                        {/* Basic Plan - The "Anchor" */}
                         <Card
-                            className={`relative border-2 bg-card/50 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300 cursor-pointer ${selectedPlan === 'standard' ? 'border-green-500 shadow-xl shadow-green-500/10' : 'border-border/10 hover:border-green-500/50'}`}
+                            className={`relative h-full flex flex-col border-2 border-border/10 bg-card/30 dark:bg-slate-900/30 backdrop-blur-sm transition-all duration-500 cursor-pointer hover:border-border/30 hover:bg-card/50 md:scale-95 group ${selectedPlan === 'standard' ? 'border-green-500/30' : ''}`}
                             onClick={() => setSelectedPlan('standard')}
                         >
                             <CardHeader>
-                                <CardTitle className="text-3xl text-foreground">Standard Agent</CardTitle>
-                                <CardDescription className="text-muted-foreground">Everything you need to start tracking.</CardDescription>
+                                <CardTitle className="text-2xl text-foreground font-medium">Basic</CardTitle>
+                                <CardDescription className="text-muted-foreground">The essentials to get you started.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="text-5xl font-bold text-foreground">₹99</div>
+                            <CardContent className="space-y-6 flex-1">
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-bold text-foreground">₹99</span>
+                                    <span className="text-sm text-muted-foreground font-medium uppercase tracking-wider">(One-time)</span>
+                                </div>
+                                <div className="h-px w-full bg-border/10 my-6" /> {/* Divider */}
                                 <ul className="space-y-3">
                                     <CheckItem text="Unlimited Transactions" />
-                                    <CheckItem text="Basic Budgeting" />
-                                    <CheckItem text="Family Features" />
-                                    <CheckItem text="Standard Themes" />
+                                    <CheckItem text="Budgeting & Goal Tracking" />
+                                    <CheckItem text="Detailed Analysis" />
+                                    <CheckItem text="Themes, Cards" />
+                                    <CheckItem text="Leaderboards" />
+                                    <CheckItem text="Detailed Insights" />
+                                    <CheckItem text="Basic Support" />
+                                    <CheckItem text="Export to Document" />
                                 </ul>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full bg-foreground/10 hover:bg-foreground/20 text-foreground" variant="outline">Select Standard</Button>
+                                <Button className="w-full bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors py-6 text-lg" variant="ghost">Select Basic</Button>
                             </CardFooter>
                         </Card>
 
-                        {/* Premium Plan */}
+                        {/* Premium Plan - The "Star" */}
                         <Card
-                            className={`relative border-2 bg-gradient-to-b from-card to-background dark:from-slate-900 dark:to-slate-950 transition-all duration-300 transform hover:scale-105 cursor-pointer ${selectedPlan === 'premium' ? 'border-green-500 shadow-2xl shadow-green-500/20' : 'border-green-500/30'}`}
+                            className={`relative h-full flex flex-col border-[3px] bg-slate-900 dark:bg-black text-white transition-all duration-500 transform cursor-pointer overflow-visible z-10 ${selectedPlan === 'premium' ? 'border-green-400 shadow-[0_0_50px_-12px_rgba(74,222,128,0.5)] scale-[1.02] md:scale-110' : 'border-green-500/50 shadow-2xl shadow-green-900/20 md:scale-105 hover:scale-[1.08]'}`}
                             onClick={() => setSelectedPlan('premium')}
                         >
-                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-1.5 rounded-full text-sm font-medium flex items-center gap-1 shadow-lg">
-                                <Star className="w-3 h-3 fill-current" /> Most Popular
+                            {/* "Sticker" Badge */}
+                            <div className="absolute -top-6 -right-6 bg-yellow-400 text-slate-900 px-6 py-2 rounded-lg font-black text-sm uppercase tracking-widest shadow-xl rotate-6 group-hover:rotate-12 transition-transform duration-300 flex items-center gap-2 z-20 border-2 border-slate-900">
+                                <Star className="w-4 h-4 fill-slate-900" /> Best Value
                             </div>
-                            <CardHeader>
-                                <CardTitle className="text-3xl text-foreground">Elite Agent</CardTitle>
-                                <CardDescription className="text-muted-foreground">Unlock the full potential of your ledger.</CardDescription>
+
+                            <CardHeader className="pb-8">
+                                <CardTitle className="text-4xl font-black tracking-tight text-white mb-2">Premium</CardTitle>
+                                <CardDescription className="text-green-400 font-medium text-lg">For those who want to win.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">₹249</div>
-                                <ul className="space-y-3">
-                                    <CheckItem text="Everything in Standard" />
-                                    <CheckItem text="Premium Themes Pack" highlight />
-                                    <CheckItem text="Exclusive Card Skins" highlight />
-                                    <CheckItem text="Priority Support" />
-                                    <CheckItem text="Founder Badge" highlight />
-                                </ul>
+                            <CardContent className="space-y-8 flex-1">
+                                <div className="flex flex-col">
+                                    <span className="text-2xl text-slate-400 font-bold line-through decoration-red-500 decoration-2 pl-1">₹499</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-7xl font-black tracking-tighter text-white">₹249</span>
+                                        <span className="text-sm text-green-400/80 font-bold uppercase tracking-wider">(One-time)</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 text-lg font-medium">
+                                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-slate-900"><Check className="w-4 h-4 stroke-[4]" /></div>
+                                        <span>Everything in Basic</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-lg font-bold text-green-300">
+                                        <div className="w-6 h-6 rounded-full bg-green-400 flex items-center justify-center text-slate-900"><Check className="w-4 h-4 stroke-[4]" /></div>
+                                        <span>Family Tracking</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-lg font-bold text-yellow-300">
+                                        <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-slate-900"><Star className="w-4 h-4 fill-slate-900" /></div>
+                                        <span className="leading-tight">Custom Card & 3 Premium Cards <span className="text-xs opacity-80 block font-normal text-white">(free worth 500/-)</span></span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-lg font-medium">
+                                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-slate-900"><Check className="w-4 h-4 stroke-[4]" /></div>
+                                        <span>Priority Support</span>
+                                    </div>
+                                </div>
                             </CardContent>
-                            <CardFooter>
-                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/25">Select Elite</Button>
+                            <CardFooter className="pt-8">
+                                <Button className="w-full bg-green-500 hover:bg-green-400 text-slate-900 font-black text-xl py-8 rounded-2xl shadow-[0_10px_30px_-10px_rgba(34,197,94,0.6)] transform hover:-translate-y-1 transition-all duration-300">
+                                    Get Premium Access
+                                </Button>
                             </CardFooter>
                         </Card>
                     </div>
@@ -400,7 +448,7 @@ const LandingPage = () => {
                 onOpenChange={(open) => !open && setSelectedPlan(null)}
                 planType={selectedPlan || 'standard'}
                 price={selectedPlan === 'premium' ? 249 : 99}
-                title={selectedPlan === 'premium' ? 'Elite Agent' : 'Standard Agent'}
+                title={selectedPlan === 'premium' ? 'Premium' : 'Basic'}
             />
         </div>
     );
@@ -488,6 +536,298 @@ function FloatingTag({ text, icon, color, className }: { text: string, icon: Rea
             {icon}
             <span className="text-sm font-semibold">{text}</span>
         </motion.div>
+    );
+}
+
+function AnimatedEligibilityCard() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setIndex((prev) => (prev + 1) % 3);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const content = [
+        {
+            title: (
+                <>
+                    The <span className="text-red-500 dark:text-red-400">"Where did it go?"</span><br />Syndrome
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    <span className="text-red-500 dark:text-red-400">"Mystery"</span> Subscription<br />Charges?
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Month-End <br /><span className="text-red-500 dark:text-red-400">Wallet Panic?</span>
+                </>
+            )
+        }
+    ];
+
+    return (
+        <div className="md:col-span-7 bg-card dark:bg-white/5 border border-border/10 p-10 rounded-3xl flex items-center justify-center min-h-[240px] group hover:border-red-500/20 transition-all relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative z-10 text-center"
+                >
+                    <h3 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight">
+                        {content[index].title}
+                    </h3>
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AnimatedSpreadsheetCard() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        // Offset start time slightly (1s) to stagger 
+        const timeout = setTimeout(() => {
+            const timer = setInterval(() => {
+                setIndex((prev) => (prev + 1) % 3);
+            }, 5000);
+            return () => clearInterval(timer);
+        }, 1000);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    const content = [
+        {
+            title: (
+                <>
+                    Spreadsheet<br /><span className="line-through decoration-2 opacity-60">Fatigue</span>
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Formula<br /><span className="text-red-500/80 font-mono">#REF! Errors</span>
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Manual Entry<br /><span className="opacity-60">Burnout?</span>
+                </>
+            )
+        }
+    ];
+
+    return (
+        <div className="md:col-span-5 bg-card dark:bg-white/5 border border-border/10 p-10 rounded-3xl flex items-center justify-center min-h-[240px] group hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+            {/* Grid pattern overlay */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative z-10 text-center"
+                >
+                    <h3 className="text-2xl md:text-4xl font-bold text-muted-foreground group-hover:text-foreground transition-colors leading-tight">
+                        {content[index].title}
+                    </h3>
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AnimatedMoneyCuriousCard() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        // Offset start time (2s) to cascade 
+        const timeout = setTimeout(() => {
+            const timer = setInterval(() => {
+                setIndex((prev) => (prev + 1) % 3);
+            }, 5000);
+            return () => clearInterval(timer);
+        }, 2000);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    const content = [
+        {
+            title: (
+                <>
+                    Money-Curious<br />Mindset
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Ready to<br /><span className="text-green-700 dark:text-green-400">Build Wealth?</span>
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Breaking<br /><span className="text-green-700/80 dark:text-green-400/80">Old Habits?</span>
+                </>
+            )
+        }
+    ];
+
+    return (
+        <div className="md:col-span-5 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/10 p-10 rounded-3xl flex items-center justify-center min-h-[240px] group hover:shadow-lg hover:shadow-green-500/5 transition-all relative overflow-hidden">
+
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative z-10 text-center"
+                >
+                    <h3 className="text-2xl md:text-4xl font-bold text-green-700 dark:text-green-400 text-center leading-tight">
+                        {content[index].title}
+                    </h3>
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AnimatedCompetitiveCard() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        // Offset start time (3s) to cascade
+        const timeout = setTimeout(() => {
+            const timer = setInterval(() => {
+                setIndex((prev) => (prev + 1) % 3);
+            }, 5000);
+            return () => clearInterval(timer);
+        }, 3000);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    const content = [
+        {
+            title: (
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-400 dark:to-orange-500">
+                    A Competitive Streak
+                </span>
+            )
+        },
+        {
+            title: (
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-400 dark:to-orange-500">
+                    Gamified Finance
+                </span>
+            )
+        },
+        {
+            title: (
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-400 dark:to-orange-500">
+                    Weekly Challenges
+                </span>
+            )
+        }
+    ];
+
+    return (
+        <div className="md:col-span-7 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border border-border/60 dark:border-white/10 p-10 rounded-3xl flex items-center justify-center min-h-[240px] group transition-all hover:bg-gradient-to-r hover:from-amber-500/10 hover:to-orange-500/10 overflow-hidden relative">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative z-10 text-center"
+                >
+                    <h3 className="text-3xl md:text-5xl font-black text-center leading-tight">
+                        {content[index].title}
+                    </h3>
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AnimatedSaveCard() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        // Offset start time (4s) to cascade
+        const timeout = setTimeout(() => {
+            const timer = setInterval(() => {
+                setIndex((prev) => (prev + 1) % 3);
+            }, 5000);
+            return () => clearInterval(timer);
+        }, 4000);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    const content = [
+        {
+            title: (
+                <>
+                    Save, <span className="text-muted-foreground line-through decoration-4 decoration-red-500/40 opacity-70">Not Stress</span>
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Automate <span className="text-purple-500">Your Savings</span>
+                </>
+            )
+        },
+        {
+            title: (
+                <>
+                    Achieve <span className="text-purple-500">Financial Zen</span>
+                </>
+            )
+        }
+    ];
+
+    return (
+        <div className="col-span-1 md:col-span-12 bg-card dark:bg-white/5 border border-border/60 dark:border-white/10 p-12 rounded-3xl flex items-center justify-center min-h-[180px] group hover:border-purple-500/20 transition-all overflow-hidden relative">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative z-10 text-center"
+                >
+                    <h3 className="text-4xl md:text-6xl font-bold text-foreground text-center leading-none">
+                        {content[index].title}
+                    </h3>
+                </motion.div>
+            </AnimatePresence>
+        </div>
     );
 }
 
