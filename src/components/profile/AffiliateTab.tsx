@@ -130,7 +130,11 @@ export function AffiliateTab() {
                         <CardContent>
                             {loading ? (
                                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                                    <img
+                                        src="/assets/token.png"
+                                        alt="Loading..."
+                                        className="w-12 h-12 animate-spin object-contain"
+                                    />
                                     <p className="text-muted-foreground animate-pulse font-medium">Loading referrals...</p>
                                 </div>
                             ) : referrals.length === 0 ? (

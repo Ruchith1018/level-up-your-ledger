@@ -38,6 +38,7 @@ import {
     Pencil,
     User
 } from "lucide-react";
+import { AnalysisTab } from "@/components/profile/AnalysisTab";
 import { CurrencySelector } from "@/components/settings/CurrencySelector";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -45,7 +46,6 @@ import { GamificationStats } from "@/components/gamification/GamificationStats";
 import { ExportImport } from "@/components/export/ExportImport";
 import { BADGES } from "@/utils/gamify";
 import { AffiliateTab } from "@/components/profile/AffiliateTab";
-
 const ProfilePage = () => {
     const { user } = useAuth();
     const { state, refreshGamification } = useGamification();
@@ -448,7 +448,7 @@ const ProfilePage = () => {
                             <div className="absolute inset-0 bg-black/30" />
                         </div>
                     ) : (
-                        <div className="absolute inset-0 bg-gradient-to-r from-secondary via-accent to-primary opacity-90" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-violet-950 via-indigo-950 to-slate-900 opacity-90" />
                     )}
 
                     {/* Banner Upload Button */}
@@ -565,7 +565,7 @@ const ProfilePage = () => {
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
-                            <TrendingUp className="h-4 w-4" />
+
                             Analysis
                             {activeTab === 'analysis' && (
                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
@@ -578,7 +578,7 @@ const ProfilePage = () => {
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
-                            <Star className="h-4 w-4" />
+
                             Account
                             {activeTab === 'account' && (
                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
@@ -591,7 +591,7 @@ const ProfilePage = () => {
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
-                            <Users className="h-4 w-4" />
+
                             Affiliate Program
                             {activeTab === 'affiliate' && (
                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
@@ -926,9 +926,9 @@ const ProfilePage = () => {
                                                     <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors">
                                                         <div className="w-10 h-10 flex-shrink-0">
                                                             <img
-                                                                src="/assets/badge.png"
-                                                                alt="Badge"
-                                                                className="w-full h-full object-contain"
+                                                                src={badge?.image || "/assets/badge.png"}
+                                                                alt={badgeName}
+                                                                className="w-full h-full object-contain rounded-full"
                                                             />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
@@ -1207,126 +1207,7 @@ const ProfilePage = () => {
                     </div>
                 )}
 
-                {activeTab === 'analysis' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Column - Financial Metrics */}
-                        <div className="space-y-6">
-                            <Card className="p-6">
-                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
-                                    Financial Health
-                                </h2>
-                                <div className="space-y-5">
-                                    {financialMetrics.map((metric) => (
-                                        <div key={metric.name} className="space-y-2">
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-foreground">{metric.name}</span>
-                                                <span className="text-muted-foreground">{metric.value}%</span>
-                                            </div>
-                                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
-                                                    style={{ width: `${metric.value}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </div>
-
-
-
-                        {/* Right Column */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Financial Overview */}
-                            <Card className="p-6">
-                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
-                                    Financial Overview
-                                </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-                                        <div className="flex items-center gap-3">
-                                            <Star className="h-8 w-8 text-primary" />
-                                            <div>
-                                                <p className="text-2xl font-bold text-foreground">{state.totalXP.toLocaleString()}</p>
-                                                <p className="text-xs text-muted-foreground">Total XP</p>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                    <Card className="p-4 bg-gradient-to-br from-gold/10 to-gold/5 border-gold/20">
-                                        <div className="flex items-center gap-3">
-                                            <Wallet className="h-8 w-8 text-gold" />
-                                            <div>
-                                                <p className="text-2xl font-bold text-foreground">{state.coins.toLocaleString()}</p>
-                                                <p className="text-xs text-muted-foreground">Coins</p>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                    <Card className="p-4 bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
-                                        <div className="flex items-center gap-3">
-                                            <Target className="h-8 w-8 text-accent" />
-                                            <div>
-                                                <p className="text-2xl font-bold text-foreground">{state.streak}</p>
-                                                <p className="text-xs text-muted-foreground">Day Streak</p>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                </div>
-                            </Card>
-
-                            {/* Detailed Analysis */}
-                            <Card className="p-6">
-                                <h2 className="text-sm font-semibold text-muted-foreground mb-6 uppercase tracking-wider">
-                                    Performance Analysis
-                                </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-medium text-foreground">Achievement Progress</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {gamificationStats.map((stat) => (
-                                                <div key={stat.label} className="p-4 bg-muted/50 rounded-lg">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <div className={`h-2 w-2 rounded-full ${stat.color.replace('text-', 'bg-')}`} />
-                                                        <span className="text-xs text-muted-foreground">{stat.label}</span>
-                                                    </div>
-                                                    <p className="text-xl font-bold text-foreground">{stat.value}</p>
-                                                    <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full ${stat.color.replace('text-', 'bg-')}`}
-                                                            style={{ width: `${stat.percentage}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-medium text-foreground">Recent Performance</h3>
-                                        <div className="space-y-3">
-                                            {recentActivity.slice(0, 3).map((item, index) => {
-                                                const xpAmount = item.xpEarned || 0;
-                                                const isPositive = item.xpEarned && item.xpEarned > 0;
-                                                return (
-                                                    <div key={index} className="p-3 bg-muted/50 rounded-lg">
-                                                        <div className="flex justify-between items-start mb-1">
-                                                            <p className="text-sm font-medium truncate flex-1">{item.reason}</p>
-                                                            <Badge variant={isPositive ? "default" : "secondary"} className="ml-2">
-                                                                {xpAmount > 0 ? `+${xpAmount}` : '0'} XP
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {new Date(item.date).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
-                )}
+                {activeTab === 'analysis' && <AnalysisTab />}
 
                 {activeTab === 'account' && (
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

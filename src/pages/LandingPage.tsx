@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star, Sparkles, Trophy } from "lucide-react";
+import { Check, Shield, Zap, TrendingUp, Users, Smartphone, CreditCard, Menu, X, Star, Sparkles, Trophy, Sun, Moon } from "lucide-react";
 import { PaymentRegistrationDialog } from "@/components/payment/PaymentRegistrationDialog";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { useNavigate } from "react-router-dom";
@@ -10,15 +10,23 @@ import { BenefitsGrid } from "@/components/landing/BenefitsGrid";
 import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { HeroDashboardPreview } from "@/components/landing/HeroDashboardPreview";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const { loading } = useAuth();
+    const { settings, updateSettings } = useSettings();
     const [selectedPlan, setSelectedPlan] = useState<'standard' | 'premium' | null>(null);
     const [minLoading, setMinLoading] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [hidden, setHidden] = useState(false);
     const { scrollY } = useScroll();
+
+    const isDark = settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    const toggleTheme = () => {
+        updateSettings({ theme: isDark ? 'light' : 'dark' });
+    };
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         const previous = scrollY.getPrevious() || 0;
@@ -61,19 +69,19 @@ const LandingPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white selection:bg-green-500/30 font-sans">
-            {/* Floating Navbar */}
+        <div className="min-h-screen bg-background text-foreground selection:bg-green-500/30 font-sans transition-colors duration-300">
+            {/* Fixed Full Width Navbar */}
             <motion.header
-                initial={{ y: -100, x: "-50%", opacity: 0 }}
+                initial={{ y: -100, x: 0, opacity: 0 }}
                 animate={{
                     y: hidden ? -100 : 0,
-                    x: "-50%",
+                    x: 0,
                     opacity: hidden ? 0 : 1
                 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-6 left-1/2 z-50 w-[95%] max-w-6xl"
+                className="fixed top-0 left-0 right-0 z-50 w-full bg-background/95 backdrop-blur-xl border-b border-border/10 shadow-sm transition-colors duration-300"
             >
-                <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-8 py-4 shadow-2xl flex items-center justify-between">
+                <div className="w-full mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
                     {/* Logo Mobile/Desktop */}
                     <div
                         className="flex items-center gap-3 font-bold text-xl tracking-tight cursor-pointer shrink-0"
@@ -84,7 +92,7 @@ const LandingPage = () => {
                             alt="BudGlio"
                             className="w-9 h-9 rounded-full object-cover shadow-lg shadow-green-500/20"
                         />
-                        <span className="hidden md:inline bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-green-500">BudGlio</span>
+                        <span className="hidden md:inline bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-500 dark:from-green-500 dark:to-green-400">BudGlio</span>
                     </div>
 
                     {/* Desktop Split Nav */}
@@ -99,7 +107,7 @@ const LandingPage = () => {
                             <button
                                 key={item.id}
                                 onClick={() => scrollToSection(item.id)}
-                                className="text-sm xl:text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 px-3 py-1.5 rounded-full transition-all duration-300"
+                                className="text-sm xl:text-base font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 px-3 py-1.5 rounded-full transition-all duration-300"
                             >
                                 {item.label}
                             </button>
@@ -110,8 +118,16 @@ const LandingPage = () => {
                     <div className="flex items-center gap-3 shrink-0">
                         <Button
                             variant="ghost"
+                            size="icon"
+                            className="rounded-full text-muted-foreground hover:text-foreground"
+                            onClick={toggleTheme}
+                        >
+                            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </Button>
+                        <Button
+                            variant="ghost"
                             size="sm"
-                            className="hidden md:flex text-slate-300 hover:text-white hover:bg-white/10 rounded-full px-4"
+                            className="hidden md:flex text-muted-foreground hover:text-foreground hover:bg-foreground/5 rounded-full px-4"
                             onClick={() => navigate("/auth")}
                         >
                             Login
@@ -123,7 +139,7 @@ const LandingPage = () => {
                         >
                             Start Saving
                         </Button>
-                        <button className="md:hidden p-2 text-slate-300 hover:bg-white/5 rounded-full" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                        <button className="md:hidden p-2 text-muted-foreground hover:bg-foreground/5 rounded-full" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                     </div>
@@ -136,7 +152,7 @@ const LandingPage = () => {
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                        className="fixed inset-x-4 top-24 z-40 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-3xl md:hidden flex flex-col p-6 space-y-2 shadow-2xl"
+                        className="fixed inset-x-4 top-24 z-40 bg-background/95 dark:bg-slate-900/95 backdrop-blur-xl border border-border/10 rounded-3xl md:hidden flex flex-col p-6 space-y-2 shadow-2xl transition-colors duration-300"
                     >
                         {[
                             { label: 'Features', id: 'features' },
@@ -148,13 +164,13 @@ const LandingPage = () => {
                             <button
                                 key={item.id}
                                 onClick={() => scrollToSection(item.id)}
-                                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+                                className="w-full text-left px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/5 rounded-xl transition-colors"
                             >
                                 {item.label}
                             </button>
                         ))}
-                        <div className="pt-4 mt-2 border-t border-white/5 flex flex-col gap-3">
-                            <Button variant="outline" className="w-full justify-center border-white/10 text-slate-300 hover:bg-white/5 rounded-xl" onClick={() => navigate("/auth")}>Login</Button>
+                        <div className="pt-4 mt-2 border-t border-border/5 flex flex-col gap-3">
+                            <Button variant="outline" className="w-full justify-center border-border/10 text-muted-foreground hover:bg-foreground/5 rounded-xl" onClick={() => navigate("/auth")}>Login</Button>
                         </div>
                     </motion.div>
                 )}
@@ -172,79 +188,79 @@ const LandingPage = () => {
             <BenefitsGrid />
 
             {/* Partners/Rewards Section */}
-            <section id="rewards" className="py-24 bg-slate-950 relative overflow-hidden">
+            <section id="rewards" className="py-24 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
                 {/* Background Glow */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/5 rounded-full blur-[120px] pointer-events-none" />
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold mb-6 text-white tracking-tight">Redeem Your Tokens</h2>
-                        <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                        <h2 className="text-4xl font-bold mb-6 text-foreground tracking-tight">Redeem Your Tokens</h2>
+                        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                             Exchange your hard-earned tokens for real-world rewards. Shop your favorite brands directly from the app.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
                         {/* Google Play */}
-                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-500/20 bg-slate-900">
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-border/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-500/20 bg-card dark:bg-slate-900 shadow-sm">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-green-500/10 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-foreground/5 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors" />
 
                             <div className="relative z-10 flex flex-col items-center gap-3">
                                 <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
                                     <img src="/assets/payment/google_play.png" alt="Google Play" className="w-full h-full object-contain" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="text-lg font-bold text-white leading-tight">Google Play</h3>
-                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                    <h3 className="text-lg font-bold text-foreground leading-tight">Google Play</h3>
+                                    <p className="text-muted-foreground text-xs">Gift Card</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Flipkart */}
-                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-600/20 bg-slate-900">
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-border/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-600/20 bg-card dark:bg-slate-900 shadow-sm">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-blue-600/20 transition-colors" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-foreground/5 rounded-full blur-2xl group-hover:bg-blue-600/20 transition-colors" />
 
                             <div className="relative z-10 flex flex-col items-center gap-3">
                                 <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
                                     <img src="/assets/payment/flipkart.png" alt="Flipkart" className="w-full h-full object-contain" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="text-lg font-bold text-white leading-tight">Flipkart</h3>
-                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                    <h3 className="text-lg font-bold text-foreground leading-tight">Flipkart</h3>
+                                    <p className="text-muted-foreground text-xs">Gift Card</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Amazon */}
-                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-orange-500/20 bg-slate-900">
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-border/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-orange-500/20 bg-card dark:bg-slate-900 shadow-sm">
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-slate-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-colors" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-foreground/5 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-colors" />
 
                             <div className="relative z-10 flex flex-col items-center gap-3">
                                 <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
                                     <img src="/assets/payment/amazon.png" alt="Amazon" className="w-full h-full object-contain" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="text-lg font-bold text-white leading-tight">Amazon</h3>
-                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                    <h3 className="text-lg font-bold text-foreground leading-tight">Amazon</h3>
+                                    <p className="text-muted-foreground text-xs">Gift Card</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Paytm */}
-                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-white/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-cyan-500/20 bg-slate-900">
+                        <div className="group relative overflow-hidden rounded-3xl p-4 aspect-square flex flex-col items-center justify-center text-center border border-border/10 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-cyan-500/20 bg-card dark:bg-slate-900 shadow-sm">
                             <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-colors" />
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-foreground/5 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-colors" />
 
                             <div className="relative z-10 flex flex-col items-center gap-3">
                                 <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
                                     <img src="/assets/payment/paytm_voucher.png" alt="Paytm" className="w-full h-full object-contain" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="text-lg font-bold text-white leading-tight">Paytm</h3>
-                                    <p className="text-slate-400 text-xs">Gift Card</p>
+                                    <h3 className="text-lg font-bold text-foreground leading-tight">Paytm</h3>
+                                    <p className="text-muted-foreground text-xs">Gift Card</p>
                                 </div>
                             </div>
                         </div>
@@ -254,10 +270,10 @@ const LandingPage = () => {
 
 
             {/* Usage Stats / Eligibility */}
-            <section id="eligibility" className="py-20 bg-slate-900/50 overflow-hidden">
+            <section id="eligibility" className="py-20 bg-background/50 dark:bg-slate-900/50 overflow-hidden transition-colors duration-300">
                 <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-center gap-16">
                     <div className="space-y-8 max-w-md">
-                        <h2 className="text-4xl font-bold">Eligibility</h2>
+                        <h2 className="text-4xl font-bold text-foreground">Eligibility</h2>
                         <ul className="space-y-6">
                             {[
                                 'Active Email Address',
@@ -265,7 +281,7 @@ const LandingPage = () => {
                                 'Ready to Level Up',
                                 'Any Age Group'
                             ].map((item, i) => (
-                                <li key={i} className="flex items-center gap-4 text-lg text-slate-300">
+                                <li key={i} className="flex items-center gap-4 text-lg text-muted-foreground">
                                     <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
                                         <Check className="w-4 h-4" />
                                     </div>
@@ -277,19 +293,19 @@ const LandingPage = () => {
 
                     <div className="relative">
                         <div className="absolute inset-0 bg-green-500/20 blur-[80px]" />
-                        <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-3xl border border-white/10 shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <div className="relative bg-gradient-to-br from-card to-background dark:from-slate-800 dark:to-slate-900 p-8 rounded-3xl border border-border/10 shadow-2xl rotate-3 hover:rotate-0 transition-all duration-500">
                             <div className="flex gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center text-white font-bold text-lg">
                                     Bg
                                 </div>
                                 <div>
-                                    <div className="font-bold text-lg">One Time Fee</div>
-                                    <div className="text-slate-400 text-sm">Lifetime Access</div>
+                                    <div className="font-bold text-lg text-foreground">One Time Fee</div>
+                                    <div className="text-muted-foreground text-sm">Lifetime Access</div>
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                <div className="h-2 bg-slate-700 rounded-full w-48" />
-                                <div className="h-2 bg-slate-700 rounded-full w-32" />
+                                <div className="h-2 bg-muted rounded-full w-48" />
+                                <div className="h-2 bg-muted rounded-full w-32" />
                             </div>
                         </div>
                     </div>
@@ -297,25 +313,25 @@ const LandingPage = () => {
             </section>
 
             {/* Pricing Section */}
-            <section id="pricing" className="py-24 px-4 bg-slate-950 relative overflow-hidden">
+            <section id="pricing" className="py-24 px-4 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/5 rounded-full blur-[120px]" />
 
                 <div className="container mx-auto relative z-10">
-                    <h2 className="text-4xl font-bold text-center mb-4">Choose Your Path</h2>
-                    <p className="text-center text-slate-400 mb-16 text-lg">Simple pricing. No hidden fees.</p>
+                    <h2 className="text-4xl font-bold text-center mb-4 text-foreground">Choose Your Path</h2>
+                    <p className="text-center text-muted-foreground mb-16 text-lg">Simple pricing. No hidden fees.</p>
 
                     <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {/* Standard Plan */}
                         <Card
-                            className={`relative border-2 bg-slate-900/50 backdrop-blur-sm transition-all duration-300 cursor-pointer ${selectedPlan === 'standard' ? 'border-green-500 shadow-xl shadow-green-500/10' : 'border-white/10 hover:border-green-500/50'}`}
+                            className={`relative border-2 bg-card/50 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300 cursor-pointer ${selectedPlan === 'standard' ? 'border-green-500 shadow-xl shadow-green-500/10' : 'border-border/10 hover:border-green-500/50'}`}
                             onClick={() => setSelectedPlan('standard')}
                         >
                             <CardHeader>
-                                <CardTitle className="text-3xl text-white">Standard Agent</CardTitle>
-                                <CardDescription className="text-slate-400">Everything you need to start tracking.</CardDescription>
+                                <CardTitle className="text-3xl text-foreground">Standard Agent</CardTitle>
+                                <CardDescription className="text-muted-foreground">Everything you need to start tracking.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="text-5xl font-bold text-white">₹99</div>
+                                <div className="text-5xl font-bold text-foreground">₹99</div>
                                 <ul className="space-y-3">
                                     <CheckItem text="Unlimited Transactions" />
                                     <CheckItem text="Basic Budgeting" />
@@ -324,21 +340,21 @@ const LandingPage = () => {
                                 </ul>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full bg-white/10 hover:bg-white/20 text-white" variant="outline">Select Standard</Button>
+                                <Button className="w-full bg-foreground/10 hover:bg-foreground/20 text-foreground" variant="outline">Select Standard</Button>
                             </CardFooter>
                         </Card>
 
                         {/* Premium Plan */}
                         <Card
-                            className={`relative border-2 bg-gradient-to-b from-slate-900 to-slate-950 transition-all duration-300 transform hover:scale-105 cursor-pointer ${selectedPlan === 'premium' ? 'border-green-500 shadow-2xl shadow-green-500/20' : 'border-green-500/30'}`}
+                            className={`relative border-2 bg-gradient-to-b from-card to-background dark:from-slate-900 dark:to-slate-950 transition-all duration-300 transform hover:scale-105 cursor-pointer ${selectedPlan === 'premium' ? 'border-green-500 shadow-2xl shadow-green-500/20' : 'border-green-500/30'}`}
                             onClick={() => setSelectedPlan('premium')}
                         >
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-1.5 rounded-full text-sm font-medium flex items-center gap-1 shadow-lg">
                                 <Star className="w-3 h-3 fill-current" /> Most Popular
                             </div>
                             <CardHeader>
-                                <CardTitle className="text-3xl text-white">Elite Agent</CardTitle>
-                                <CardDescription className="text-slate-400">Unlock the full potential of your ledger.</CardDescription>
+                                <CardTitle className="text-3xl text-foreground">Elite Agent</CardTitle>
+                                <CardDescription className="text-muted-foreground">Unlock the full potential of your ledger.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">₹249</div>
@@ -359,20 +375,20 @@ const LandingPage = () => {
             </section>
 
             {/* Footer */}
-            <footer className="py-12 bg-slate-950 border-t border-white/10">
+            <footer className="py-12 bg-background dark:bg-slate-950 border-t border-border/10 transition-colors duration-300">
                 <div className="container mx-auto px-4 text-center">
                     <div className="flex items-center justify-center gap-2 font-bold text-2xl mb-6 opacity-80">
                         <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white">
                             <TrendingUp className="w-5 h-5" />
                         </div>
-                        <span className="text-white">BudGlio</span>
+                        <span className="text-foreground">BudGlio</span>
                     </div>
-                    <div className="flex justify-center gap-8 mb-8 text-sm text-slate-400">
+                    <div className="flex justify-center gap-8 mb-8 text-sm text-muted-foreground">
                         <a href="#" className="hover:text-green-400 transition-colors">Terms</a>
                         <a href="#" className="hover:text-green-400 transition-colors">Privacy</a>
                         <a href="#" className="hover:text-green-400 transition-colors">Contact</a>
                     </div>
-                    <p className="text-slate-600 text-sm">
+                    <p className="text-muted-foreground text-sm">
                         © {new Date().getFullYear()} BudGlio. All rights reserved. Made with 💚 for savers.
                     </p>
                 </div>
@@ -390,11 +406,11 @@ const LandingPage = () => {
     );
 };
 
-const HeroIntro = ({ scrollToSection }: { scrollToSection: (id: string) => void }) => {
+function HeroIntro({ scrollToSection }: { scrollToSection: (id: string) => void }) {
     return (
-        <section className="relative min-h-screen flex flex-col items-center justify-center bg-slate-950 overflow-hidden pt-32 pb-20">
+        <section className="relative min-h-screen flex flex-col items-center justify-center bg-background dark:bg-slate-950 overflow-hidden pt-32 pb-20 transition-colors duration-300">
             {/* --- Background Arc Effect --- */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-[1000px] bg-slate-950 rounded-[100%] border-b border-white/5 shadow-[0_20px_100px_rgba(22,163,74,0.15)] z-0 -mt-[600px]" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-[1000px] bg-background dark:bg-slate-950 rounded-[100%] border-b border-border/5 shadow-[0_20px_100px_rgba(22,163,74,0.15)] z-0 -mt-[600px] transition-colors duration-300" />
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150%] h-[800px] bg-green-500/5 rounded-[100%] blur-3xl z-0 -mt-[500px] pointer-events-none" />
 
             {/* Content Container */}
@@ -411,15 +427,15 @@ const HeroIntro = ({ scrollToSection }: { scrollToSection: (id: string) => void 
                     {/* Badge */}
 
 
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.1]">
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.1] text-foreground">
                         Level Up Your <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 animate-gradient-x"> Financial Legacy </span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 dark:from-green-400 dark:via-emerald-500 dark:to-green-600 animate-gradient-x"> Financial Legacy </span>
                         With <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 animate-gradient-x"> BudGlio</span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 dark:from-green-400 dark:via-emerald-500 dark:to-green-600 animate-gradient-x"> BudGlio</span>
 
                     </h1>
 
-                    <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                         The first expense tracker that treats your budget like a high-stakes game. Earn XP, unlock themes, and master your money.
                     </p>
 
@@ -431,7 +447,7 @@ const HeroIntro = ({ scrollToSection }: { scrollToSection: (id: string) => void 
                             Start Your Journey
                         </Button>
                         <Button
-                            className="h-14 px-10 text-lg rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-sm transition-all w-full sm:w-auto"
+                            className="h-14 px-10 text-lg rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground border border-border/10 backdrop-blur-sm transition-all w-full sm:w-auto"
                             onClick={() => scrollToSection('features')}
                         >
                             Explore Features
@@ -462,18 +478,20 @@ const HeroIntro = ({ scrollToSection }: { scrollToSection: (id: string) => void 
     );
 };
 
-const FloatingTag = ({ text, icon, color, className }: { text: string, icon: React.ReactNode, color: string, className?: string }) => (
-    <motion.div
-        animate={{ y: [0, -15, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: Math.random() * 2 }}
-        className={cn("items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md shadow-lg", color, className)}
-    >
-        {icon}
-        <span className="text-sm font-semibold">{text}</span>
-    </motion.div>
-);
+function FloatingTag({ text, icon, color, className }: { text: string, icon: React.ReactNode, color: string, className?: string }) {
+    return (
+        <motion.div
+            animate={{ y: [0, -15, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: Math.random() * 2 }}
+            className={cn("items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md shadow-lg", color, className)}
+        >
+            {icon}
+            <span className="text-sm font-semibold">{text}</span>
+        </motion.div>
+    );
+}
 
-const StickyScrollShowcase = () => {
+function StickyScrollShowcase() {
     // --- Sticky Scroll Logic ---
     const sectionRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({
@@ -787,12 +805,12 @@ const StickyScrollShowcase = () => {
     const currentTheme = themes[themeIndex];
 
     return (
-        <section ref={sectionRef} className="relative h-[400vh] bg-slate-950 z-20 mt-[-1px]">
+        <section ref={sectionRef} className="relative h-[400vh] bg-background dark:bg-slate-950 z-20 mt-[-1px] transition-colors duration-300">
             {/* Sticky Wrapper */}
             <div className="sticky top-0 h-screen w-full overflow-hidden">
 
                 {/* Dynamic Background */}
-                <div className="absolute inset-0 z-0 transition-colors duration-1000 ease-in-out bg-slate-950">
+                <div className="absolute inset-0 z-0 transition-colors duration-1000 ease-in-out bg-background dark:bg-slate-950">
                     <div
                         className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-[32%] lg:top-1/2 lg:translate-y-[-50%] w-[800px] h-[800px] rounded-full blur-[120px] transition-all duration-1000 opacity-20"
                         style={{
@@ -807,11 +825,11 @@ const StickyScrollShowcase = () => {
                         initial={{ opacity: 0, y: -20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-green-500 mb-2"
+                        className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-500 dark:from-green-500 dark:to-green-400 mb-2"
                     >
                         Pick Your Power Card
                     </motion.h2>
-                    <p className="text-slate-400 text-lg">Choose a style that matches your ambition.</p>
+                    <p className="text-muted-foreground dark:text-slate-400 text-lg">Choose a style that matches your ambition.</p>
                 </div>
 
                 {/* Content Container */}
@@ -819,7 +837,7 @@ const StickyScrollShowcase = () => {
 
                     {/* The Center Card - Absolutely Positioned */}
                     <div
-                        className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-[32%] lg:top-1/2 lg:translate-y-[-50%] w-[90vw] max-w-[380px] md:max-w-none md:w-[500px] aspect-[1.586/1] rounded-3xl border border-white/10 flex flex-col justify-between group bg-slate-900 shadow-2xl overflow-hidden"
+                        className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 lg:left-[32%] lg:top-1/2 lg:translate-y-[-50%] w-[90vw] max-w-[380px] md:max-w-none md:w-[500px] aspect-[1.586/1] rounded-3xl border border-border/10 dark:border-white/10 flex flex-col justify-between group bg-slate-900 shadow-2xl overflow-hidden"
                         style={{
                             background: currentTheme.image ? `url(${currentTheme.image}) center/cover no-repeat` : currentTheme.gradient,
                             boxShadow: currentTheme.shadow
@@ -896,7 +914,7 @@ const StickyScrollShowcase = () => {
                                 <h3 className={`text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.headingGradient} mb-4 drop-shadow-sm py-2 leading-relaxed`}>
                                     {currentTheme.label}
                                 </h3>
-                                <p className="text-slate-400 text-lg leading-relaxed mb-6">
+                                <p className="text-muted-foreground dark:text-slate-400 text-lg leading-relaxed mb-6">
                                     {currentTheme.desc}
                                 </p>
 
@@ -912,8 +930,8 @@ const StickyScrollShowcase = () => {
                                                 key={subTheme.id}
                                                 onClick={() => setClassicSubThemeId(subTheme.id)}
                                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${classicSubThemeId === subTheme.id
-                                                    ? "bg-white/10 border-white/40 text-white shadow-lg scale-105"
-                                                    : "bg-transparent border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                                                    ? "bg-muted dark:bg-white/10 border-border/40 dark:border-white/40 text-foreground dark:text-white shadow-lg scale-105"
+                                                    : "bg-transparent border-border/10 dark:border-white/10 text-muted-foreground dark:text-slate-400 hover:bg-muted/50 dark:hover:bg-white/5 hover:text-foreground dark:hover:text-slate-200"
                                                     }`}
                                             >
                                                 {subTheme.name}
@@ -934,8 +952,8 @@ const StickyScrollShowcase = () => {
                                                 key={subTheme.id}
                                                 onClick={() => setMarvelSubThemeId(subTheme.id)}
                                                 className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 border ${marvelSubThemeId === subTheme.id
-                                                    ? "bg-red-500/20 border-red-500/50 text-white shadow-lg scale-105"
-                                                    : "bg-transparent border-white/10 text-slate-400 hover:bg-red-500/10 hover:text-slate-200"
+                                                    ? "bg-red-500/10 dark:bg-red-500/20 border-red-500/40 dark:border-red-500/50 text-foreground dark:text-white shadow-lg scale-105"
+                                                    : "bg-transparent border-border/10 dark:border-white/10 text-muted-foreground dark:text-slate-400 hover:bg-red-500/5 dark:hover:bg-red-500/10 hover:text-foreground dark:hover:text-slate-200"
                                                     }`}
                                             >
                                                 {subTheme.name}
@@ -956,8 +974,8 @@ const StickyScrollShowcase = () => {
                                                 key={subTheme.id}
                                                 onClick={() => setAnimeSubThemeId(subTheme.id)}
                                                 className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 border ${animeSubThemeId === subTheme.id
-                                                    ? "bg-indigo-500/20 border-indigo-500/50 text-white shadow-lg scale-105"
-                                                    : "bg-transparent border-white/10 text-slate-400 hover:bg-indigo-500/10 hover:text-slate-200"
+                                                    ? "bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/40 dark:border-indigo-500/50 text-foreground dark:text-white shadow-lg scale-105"
+                                                    : "bg-transparent border-border/10 dark:border-white/10 text-muted-foreground dark:text-slate-400 hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10 hover:text-foreground dark:hover:text-slate-200"
                                                     }`}
                                             >
                                                 {subTheme.name}
@@ -975,33 +993,17 @@ const StickyScrollShowcase = () => {
     );
 };
 
-const BenefitItem = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-    <div className="flex flex-col items-center text-center space-y-4 group">
-        <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xl">
-            {icon}
-        </div>
-        <h3 className="text-xl font-bold text-white">{title}</h3>
-        <p className="text-slate-400 leading-relaxed">{description}</p>
-    </div>
-);
 
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-    <div className="bg-slate-900/50 p-8 rounded-3xl border border-white/5 hover:border-green-500/30 transition-all duration-300 text-center flex flex-col items-center gap-6 group hover:-translate-y-1">
-        <div className="transform group-hover:scale-110 transition-transform duration-300">
-            {icon}
-        </div>
-        <h3 className="text-2xl font-bold text-white">{title}</h3>
-        <p className="text-slate-400">{description}</p>
-    </div>
-);
 
-const CheckItem = ({ text, highlight = false }: { text: string, highlight?: boolean }) => (
-    <li className="flex items-center gap-3">
-        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${highlight ? 'bg-green-500 text-white' : 'bg-slate-800 text-green-500'}`}>
-            <Check className="w-3 h-3" />
-        </div>
-        <span className={highlight ? 'text-white font-medium' : 'text-slate-300'}>{text}</span>
-    </li>
-);
+function CheckItem({ text, highlight = false }: { text: string, highlight?: boolean }) {
+    return (
+        <li className="flex items-center gap-3">
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${highlight ? 'bg-green-500 text-white' : 'bg-muted dark:bg-slate-800 text-green-500'}`}>
+                <Check className="w-3 h-3" />
+            </div>
+            <span className={highlight ? 'text-foreground font-medium' : 'text-muted-foreground'}>{text}</span>
+        </li>
+    );
+}
 
 export default LandingPage;

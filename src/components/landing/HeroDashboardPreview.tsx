@@ -126,24 +126,24 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
     };
 
     return (
-        <div ref={containerRef} className={cn("w-full h-auto min-h-[600px] bg-slate-950 rounded-xl overflow-hidden border border-white/10 shadow-2xl flex flex-col font-sans transition-all duration-500 group", className)}>
+        <div ref={containerRef} className={cn("w-full h-auto min-h-[600px] bg-background dark:bg-slate-950 rounded-xl overflow-hidden border border-border/10 dark:border-white/10 shadow-2xl flex flex-col font-sans transition-all duration-500 group text-foreground", className)}>
 
             {/* --- macOS Header --- */}
-            <div className="h-8 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+            <div className="h-8 bg-muted/40 dark:bg-slate-900 border-b border-border/10 dark:border-white/5 flex items-center px-4 gap-2 shrink-0 transition-colors duration-300">
                 <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
                 <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
                 <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
 
                 {/* Simulated Address Bar */}
                 <div className="flex-1 flex justify-center px-2">
-                    <div className="h-5 bg-slate-800 rounded flex items-center px-2 opacity-50 w-full max-w-sm justify-center">
-                        <div className="text-[10px] text-slate-400 font-medium">budglio.in/dashboard</div>
+                    <div className="h-5 bg-background dark:bg-slate-800 rounded flex items-center px-2 opacity-50 w-full max-w-sm justify-center border border-border/5">
+                        <div className="text-[10px] text-muted-foreground dark:text-slate-400 font-medium">budglio.in/dashboard</div>
                     </div>
                 </div>
 
                 {/* Top Right Stats */}
-                <div className="ml-auto flex items-center gap-4 text-[10px] text-slate-400">
-                    <div className="flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-full border border-white/5">
+                <div className="ml-auto flex items-center gap-4 text-[10px] text-muted-foreground dark:text-slate-400">
+                    <div className="flex items-center gap-1.5 bg-background dark:bg-slate-800 px-2 py-1 rounded-full border border-border/10 dark:border-white/5">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                         <span>Live</span>
                     </div>
@@ -157,12 +157,12 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
 
                 {/* 1. Budget Card (Col 5) */}
                 <div className="col-span-12 md:col-span-5 flex flex-col gap-4">
-                    <Card className="bg-slate-900 border-white/10 shadow-lg relative overflow-hidden group/card transition-colors">
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none" />
+                    <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg relative overflow-hidden group/card transition-colors">
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none" />
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-slate-200 text-lg flex justify-between items-center">
+                            <CardTitle className="text-foreground dark:text-slate-200 text-lg flex justify-between items-center">
                                 <span>Budget Overview</span>
-                                <Wallet className="w-4 h-4 text-slate-500" />
+                                <Wallet className="w-4 h-4 text-muted-foreground dark:text-slate-500" />
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -226,33 +226,33 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
 
                     {/* Quick Stats Row */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 backdrop-blur-sm">
-                            <div className="flex items-center gap-2 mb-2 text-red-400">
+                        <div className="bg-muted/40 dark:bg-slate-900/50 rounded-xl p-4 border border-border/10 dark:border-white/5 backdrop-blur-sm">
+                            <div className="flex items-center gap-2 mb-2 text-red-500 dark:text-red-400">
                                 <div className="p-1.5 bg-red-500/10 rounded-md"><TrendingDown className="w-3 h-3" /></div>
                                 <span className="text-xs font-semibold uppercase tracking-wider">Expenses</span>
                             </div>
                             <motion.div
                                 key={expenses}
-                                className="text-lg font-bold text-white tabular-nums"
+                                className="text-lg font-bold text-foreground dark:text-white tabular-nums"
                             >
                                 {formatCurrency(expenses)}
                             </motion.div>
                         </div>
-                        <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5 backdrop-blur-sm">
-                            <div className="flex items-center gap-2 mb-2 text-emerald-400">
+                        <div className="bg-muted/40 dark:bg-slate-900/50 rounded-xl p-4 border border-border/10 dark:border-white/5 backdrop-blur-sm">
+                            <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
                                 <div className="p-1.5 bg-emerald-500/10 rounded-md"><TrendingUp className="w-3 h-3" /></div>
                                 <span className="text-xs font-semibold uppercase tracking-wider">Savings</span>
                             </div>
-                            <div className="text-lg font-bold text-white tabular-nums">{formatCurrency(savings)}</div>
+                            <div className="text-lg font-bold text-foreground dark:text-white tabular-nums">{formatCurrency(savings)}</div>
                         </div>
                     </div>
                 </div>
 
                 {/* 2. Category Budgets (Col 7) */}
-                <div className="col-span-12 md:col-span-7 bg-slate-900 rounded-xl border border-white/10 p-5 shadow-lg flex flex-col">
+                <div className="col-span-12 md:col-span-7 bg-card dark:bg-slate-900 rounded-xl border border-border/10 dark:border-white/10 p-5 shadow-lg flex flex-col transition-colors">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-semibold text-white">Category Budgets</h3>
-                        <div className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded-md border border-white/5">This Month</div>
+                        <h3 className="text-lg font-semibold text-foreground dark:text-white">Category Budgets</h3>
+                        <div className="text-xs text-muted-foreground dark:text-slate-500 bg-muted dark:bg-slate-800 px-2 py-1 rounded-md border border-border/5 dark:border-white/5">This Month</div>
                     </div>
 
                     <div className="space-y-6 flex-1">
@@ -262,13 +262,13 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                             return (
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-300">Food & Dining</span>
-                                        <span className={cn("text-slate-400", isOverBudget && "text-red-400 font-bold")}>
+                                        <span className="text-muted-foreground dark:text-slate-300">Food & Dining</span>
+                                        <span className={cn("text-muted-foreground dark:text-slate-400", isOverBudget && "text-red-500 dark:text-red-400 font-bold")}>
                                             {formatCurrency(value)} / {formatCurrency(600)}
                                         </span>
                                     </div>
-                                    <Progress value={percentage} className="h-2 bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-blue-500"} />
-                                    <div className="flex justify-between text-[10px] text-slate-500">
+                                    <Progress value={percentage} className="h-2 bg-muted dark:bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-blue-500"} />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground dark:text-slate-500">
                                         <span>{isOverBudget ? 'Over Budget' : `${formatCurrency(600 - value)} left`}</span>
                                         <span className={isOverBudget ? "text-red-500" : ""}>{percentage.toFixed(0)}%</span>
                                     </div>
@@ -282,13 +282,13 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                             return (
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-300">Shopping</span>
-                                        <span className={cn("text-slate-400", isOverBudget && "text-red-400 font-bold")}>
+                                        <span className="text-muted-foreground dark:text-slate-300">Shopping</span>
+                                        <span className={cn("text-muted-foreground dark:text-slate-400", isOverBudget && "text-red-500 dark:text-red-400 font-bold")}>
                                             {formatCurrency(value)} / {formatCurrency(2000)}
                                         </span>
                                     </div>
-                                    <Progress value={percentage} className="h-2 bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-orange-500"} />
-                                    <div className="flex justify-between text-[10px] text-slate-500">
+                                    <Progress value={percentage} className="h-2 bg-muted dark:bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-orange-500"} />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground dark:text-slate-500">
                                         <span>{isOverBudget ? 'Over Budget' : `${formatCurrency(2000 - value)} left`}</span>
                                         <span className={isOverBudget ? "text-red-500" : ""}>{percentage.toFixed(0)}%</span>
                                     </div>
@@ -302,13 +302,13 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                             return (
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-300">Education</span>
-                                        <span className={cn("text-slate-400", isOverBudget && "text-red-400 font-bold")}>
+                                        <span className="text-muted-foreground dark:text-slate-300">Education</span>
+                                        <span className={cn("text-muted-foreground dark:text-slate-400", isOverBudget && "text-red-500 dark:text-red-400 font-bold")}>
                                             {formatCurrency(value)} / {formatCurrency(1000)}
                                         </span>
                                     </div>
-                                    <Progress value={percentage} className="h-2 bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-yellow-500"} />
-                                    <div className="flex justify-between text-[10px] text-slate-500">
+                                    <Progress value={percentage} className="h-2 bg-muted dark:bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-yellow-500"} />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground dark:text-slate-500">
                                         <span>{isOverBudget ? 'Over Budget' : `${formatCurrency(1000 - value)} left`}</span>
                                         <span className={isOverBudget ? "text-red-500" : ""}>{percentage.toFixed(0)}%</span>
                                     </div>
@@ -322,13 +322,13 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                             return (
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-300">Travel</span>
-                                        <span className={cn("text-slate-400", isOverBudget && "text-red-400 font-bold")}>
+                                        <span className="text-muted-foreground dark:text-slate-300">Travel</span>
+                                        <span className={cn("text-muted-foreground dark:text-slate-400", isOverBudget && "text-red-500 dark:text-red-400 font-bold")}>
                                             {formatCurrency(value)} / {formatCurrency(1500)}
                                         </span>
                                     </div>
-                                    <Progress value={percentage} className="h-2 bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-indigo-500"} />
-                                    <div className="flex justify-between text-[10px] text-slate-500">
+                                    <Progress value={percentage} className="h-2 bg-muted dark:bg-slate-800" indicatorColor={isOverBudget ? "bg-red-500" : "bg-indigo-500"} />
+                                    <div className="flex justify-between text-[10px] text-muted-foreground dark:text-slate-500">
                                         <span>{isOverBudget ? 'Over Budget' : `${formatCurrency(1500 - value)} left`}</span>
                                         <span className={isOverBudget ? "text-red-500" : ""}>{percentage.toFixed(0)}%</span>
                                     </div>
@@ -341,10 +341,10 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                 {/* --- Bottom Row --- */}
 
                 {/* 3. Spending Donut (Col 6) */}
-                <div className="col-span-12 md:col-span-5 bg-slate-900 rounded-xl border border-white/10 p-5 shadow-lg relative min-h-[250px]">
+                <div className="col-span-12 md:col-span-5 bg-card dark:bg-slate-900 rounded-xl border border-border/10 dark:border-white/10 p-5 shadow-lg relative min-h-[250px] transition-colors">
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-semibold text-white">Spending by Category</h3>
-                        <div className="flex items-center text-[10px] text-slate-400 gap-1 bg-slate-800 px-2 py-0.5 rounded border border-white/5">
+                        <h3 className="text-sm font-semibold text-foreground dark:text-white">Spending by Category</h3>
+                        <div className="flex items-center text-[10px] text-muted-foreground dark:text-slate-400 gap-1 bg-muted dark:bg-slate-800 px-2 py-0.5 rounded border border-border/5 dark:border-white/5">
                             Dec 2025 <ChevronDown className="w-3 h-3" />
                         </div>
                     </div>
@@ -380,11 +380,11 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <motion.div
                                 key={expenses}
-                                className="text-lg font-bold text-white tabular-nums"
+                                className="text-lg font-bold text-foreground dark:text-white tabular-nums"
                             >
                                 ₹{(expenses / 1000).toFixed(1)}k
                             </motion.div>
-                            <div className="text-[10px] text-slate-400">Total</div>
+                            <div className="text-[10px] text-muted-foreground dark:text-slate-400">Total</div>
                         </div>
                     </div>
 
@@ -400,14 +400,14 @@ export const HeroDashboardPreview = ({ className }: { className?: string }) => {
                 </div>
 
                 {/* 4. Trend Bar Chart (Col 6) */}
-                <div className="col-span-12 md:col-span-7 bg-slate-900 rounded-xl border border-white/10 p-5 shadow-lg min-h-[250px] flex flex-col">
+                <div className="col-span-12 md:col-span-7 bg-card dark:bg-slate-900 rounded-xl border border-border/10 dark:border-white/10 p-5 shadow-lg min-h-[250px] flex flex-col transition-colors">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-semibold text-white">6-Month Trend</h3>
+                        <h3 className="text-sm font-semibold text-foreground dark:text-white">6-Month Trend</h3>
                         <div className="flex gap-2">
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground dark:text-slate-400">
                                 <div className="w-2 h-2 rounded-full bg-red-500" /> Expenses
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground dark:text-slate-400">
                                 <div className="w-2 h-2 rounded-full bg-green-500" /> Income
                             </div>
                         </div>

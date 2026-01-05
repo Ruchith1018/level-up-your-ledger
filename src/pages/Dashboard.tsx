@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { XPBar } from "@/components/gamification/XPBar";
+import { DailyQuote } from "@/components/gamification/DailyQuote";
 import { CategoryPieChart } from "@/components/charts/CategoryPieChart";
 import { MonthlyTrendChart } from "@/components/charts/MonthlyTrendChart";
 import { TransactionList } from "@/components/transactions/TransactionList";
@@ -126,6 +127,7 @@ export default function Dashboard() {
         ) : (
           <>
             <XPBar />
+            <DailyQuote />
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <BudgetOverview />

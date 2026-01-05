@@ -94,17 +94,17 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
     const formatCurrency = (val: number) => `₹${Math.floor(val)}`;
 
     return (
-        <div ref={containerRef} className={cn("w-full h-full bg-slate-950 flex flex-col font-sans overflow-hidden", className)}>
+        <div ref={containerRef} className={cn("w-full h-full bg-background dark:bg-slate-950 flex flex-col font-sans overflow-hidden text-foreground transition-colors duration-300", className)}>
 
             {/* --- macOS Header --- */}
-            <div className="h-8 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+            <div className="h-8 bg-muted/40 dark:bg-slate-900 border-b border-border/10 dark:border-white/5 flex items-center px-4 gap-2 shrink-0 transition-colors duration-300">
                 <div className="flex gap-1.5 group">
                     <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
                     <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
                     <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
                 </div>
                 <div className="flex-1 flex justify-center px-2">
-                    <div className="h-5 bg-slate-800/50 rounded flex items-center px-3 text-[10px] text-slate-500 w-full max-w-[200px] justify-center font-medium">
+                    <div className="h-5 bg-background dark:bg-slate-800/50 rounded flex items-center px-3 text-[10px] text-muted-foreground dark:text-slate-500 w-full max-w-[200px] justify-center font-medium border border-border/5">
                         budglio.in/analytics
                     </div>
                 </div>
@@ -114,10 +114,10 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
             <div className="flex-1 p-4 grid grid-cols-2 grid-rows-[auto_1fr] gap-4 overflow-auto">
 
                 {/* Quadrant 1: Spending Heatmap */}
-                <div className="bg-slate-900/50 rounded-xl border border-white/5 p-4 flex flex-col">
+                <div className="bg-card dark:bg-slate-900/50 rounded-xl border border-border/10 dark:border-white/5 p-4 flex flex-col transition-colors">
                     <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-xs font-semibold text-white">Spending Heatmap</h3>
-                        <div className="flex items-center text-[9px] text-slate-400 gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5">
+                        <h3 className="text-xs font-semibold text-foreground dark:text-white">Spending Heatmap</h3>
+                        <div className="flex items-center text-[9px] text-muted-foreground dark:text-slate-400 gap-1 bg-muted dark:bg-slate-800 px-1.5 py-0.5 rounded border border-border/5 dark:border-white/5">
                             Dec 2025 <ChevronDown className="w-2.5 h-2.5" />
                         </div>
                     </div>
@@ -127,8 +127,8 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
                                 key={d.day}
                                 className="aspect-square rounded-sm flex items-center justify-center text-xs font-bold transition-colors duration-300"
                                 style={{
-                                    backgroundColor: d.day <= currentDay ? SPENDING_PALETTE[d.intensity] : '#1e293b',
-                                    color: d.day <= currentDay ? 'white' : 'rgba(255,255,255,0.3)'
+                                    backgroundColor: d.day <= currentDay ? SPENDING_PALETTE[d.intensity] : 'var(--muted)',
+                                    color: d.day <= currentDay ? 'white' : 'rgba(100,116,139,0.3)'
                                 }}
                             >
                                 {d.day}
@@ -138,10 +138,10 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
                 </div>
 
                 {/* Quadrant 2: Earning Heatmap */}
-                <div className="bg-slate-900/50 rounded-xl border border-white/5 p-4 flex flex-col">
+                <div className="bg-card dark:bg-slate-900/50 rounded-xl border border-border/10 dark:border-white/5 p-4 flex flex-col transition-colors">
                     <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-xs font-semibold text-white">Earning Heatmap</h3>
-                        <div className="flex items-center text-[9px] text-slate-400 gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5">
+                        <h3 className="text-xs font-semibold text-foreground dark:text-white">Earning Heatmap</h3>
+                        <div className="flex items-center text-[9px] text-muted-foreground dark:text-slate-400 gap-1 bg-muted dark:bg-slate-800 px-1.5 py-0.5 rounded border border-border/5 dark:border-white/5">
                             Dec 2025 <ChevronDown className="w-2.5 h-2.5" />
                         </div>
                     </div>
@@ -151,8 +151,8 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
                                 key={d.day}
                                 className="aspect-square rounded-sm flex items-center justify-center text-xs font-bold transition-colors duration-300"
                                 style={{
-                                    backgroundColor: d.day <= currentDay ? EARNING_PALETTE[d.intensity] : '#1e293b',
-                                    color: d.day <= currentDay ? 'white' : 'rgba(255,255,255,0.3)'
+                                    backgroundColor: d.day <= currentDay ? EARNING_PALETTE[d.intensity] : 'var(--muted)',
+                                    color: d.day <= currentDay ? 'white' : 'rgba(100,116,139,0.3)'
                                 }}
                             >
                                 {d.day}
@@ -162,9 +162,9 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
                 </div>
 
                 {/* Quadrant 3: Spending Donut */}
-                <div className="bg-slate-900/50 rounded-xl border border-white/5 p-4 flex flex-col relative">
+                <div className="bg-card dark:bg-slate-900/50 rounded-xl border border-border/10 dark:border-white/5 p-4 flex flex-col relative transition-colors">
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-xs font-semibold text-white">Spending by Category</h3>
+                        <h3 className="text-xs font-semibold text-foreground dark:text-white">Spending by Category</h3>
                     </div>
                     <div className="flex-1 min-h-[180px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -188,24 +188,24 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <div className="text-sm font-bold text-white tabular-nums">{formatCurrency(currentSpendingTotal)}</div>
-                            <div className="text-[8px] text-slate-400">Total</div>
+                            <div className="text-sm font-bold text-foreground dark:text-white tabular-nums">{formatCurrency(currentSpendingTotal)}</div>
+                            <div className="text-[8px] text-muted-foreground dark:text-slate-400">Total</div>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center mt-2">
                         {spendingCategories.map((cat, i) => (
                             <div key={i} className="flex items-center gap-1.5">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                                <span className="text-[10px] text-slate-400">{cat.name}</span>
+                                <span className="text-[10px] text-muted-foreground dark:text-slate-400">{cat.name}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Quadrant 4: Earning Donut */}
-                <div className="bg-slate-900/50 rounded-xl border border-white/5 p-4 flex flex-col relative">
+                <div className="bg-card dark:bg-slate-900/50 rounded-xl border border-border/10 dark:border-white/5 p-4 flex flex-col relative transition-colors">
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-xs font-semibold text-white">Earnings by Category</h3>
+                        <h3 className="text-xs font-semibold text-foreground dark:text-white">Earnings by Category</h3>
                     </div>
                     <div className="flex-1 min-h-[180px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -229,15 +229,15 @@ export const AnalyticsPreview = ({ className }: { className?: string }) => {
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <div className="text-sm font-bold text-white tabular-nums">{formatCurrency(currentEarningTotal)}</div>
-                            <div className="text-[8px] text-slate-400">Total</div>
+                            <div className="text-sm font-bold text-foreground dark:text-white tabular-nums">{formatCurrency(currentEarningTotal)}</div>
+                            <div className="text-[8px] text-muted-foreground dark:text-slate-400">Total</div>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center mt-2">
                         {earningCategories.map((cat, i) => (
                             <div key={i} className="flex items-center gap-1.5">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                                <span className="text-[10px] text-slate-400">{cat.name}</span>
+                                <span className="text-[10px] text-muted-foreground dark:text-slate-400">{cat.name}</span>
                             </div>
                         ))}
                     </div>
