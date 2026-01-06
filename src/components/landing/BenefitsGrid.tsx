@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Users,
@@ -12,7 +12,90 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const BENEFITS = [
+    {
+        iconImage: "/assets/benefits/family.png",
+        title: "One App for the Entire Family",
+        description: "Collaborate on budgets, share expenses, and track household goals in one unified space. Sync effortlessly with your partner and kids.",
+        gradient: "bg-blue-500/10",
+        className: "bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900 border-blue-100 dark:border-blue-500/20"
+    },
+    {
+        iconImage: "/assets/benefits/protection.png",
+        title: "Fully Protected",
+        description: "Your financial data is secured with bank-grade encryption and biometric locks.",
+        gradient: "bg-emerald-500/10",
+        className: "bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-slate-900 border-emerald-100 dark:border-emerald-500/20"
+    },
+    {
+        iconImage: "/assets/benefits/referral.png",
+        title: "Referral Bonus",
+        description: "Invite friends to level up their ledger and earn massive coin bonuses together.",
+        gradient: "bg-yellow-500/10",
+        className: "bg-gradient-to-br from-amber-50 to-white dark:from-yellow-900/20 dark:to-slate-900 border-amber-100 dark:border-yellow-500/20"
+    },
+    {
+        iconImage: "/assets/benefits/goals.png",
+        title: "Achieve Goals Together",
+        description: "Set shared targets for vacations, new gadgets, or emergency funds. visual progress bars keep everyone motivated.",
+        gradient: "bg-purple-500/10",
+        className: "bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-slate-900 border-purple-100 dark:border-purple-500/20"
+    },
+    {
+        iconImage: "/assets/benefits/analytics.png",
+        title: "Premium Level Analytics",
+        description: "Unlock deep insights with Elite Agent status. Visualize cash flow, category breakdowns, and future projections.",
+        gradient: "bg-indigo-500/10",
+        className: "bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900 border-indigo-100 dark:border-indigo-500/20"
+    },
+    {
+        iconImage: "/assets/benefits/rewards.png",
+        title: "Rewards Redeem",
+        description: "Turn your savings streaks into real-world rewards. Shop with earned coins.",
+        gradient: "bg-orange-500/10",
+        className: "bg-gradient-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-slate-900 border-orange-100 dark:border-orange-500/20"
+    }
+];
+
 export const BenefitsGrid = () => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [isPaused, setIsPaused] = useState(false);
+
+    useEffect(() => {
+        const scroller = scrollRef.current;
+        if (!scroller || window.innerWidth >= 768) return; // Only on mobile
+
+        let animationId: number;
+        let lastTimestamp: number = 0;
+        const speed = 0.5; // Pixels per frame
+
+        const step = (timestamp: number) => {
+            if (isPaused) {
+                lastTimestamp = timestamp;
+                animationId = requestAnimationFrame(step);
+                return;
+            }
+
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const elapsed = timestamp - lastTimestamp;
+
+            if (elapsed > 16) {
+                if (scroller.scrollLeft >= (scroller.scrollWidth - scroller.clientWidth) / 2) {
+                    scroller.scrollLeft = 0; // Seamless reset
+                } else {
+                    scroller.scrollLeft += speed;
+                }
+                lastTimestamp = timestamp;
+            }
+
+            animationId = requestAnimationFrame(step);
+        };
+
+        animationId = requestAnimationFrame(step);
+
+        return () => cancelAnimationFrame(animationId);
+    }, [isPaused]);
+
     return (
         <section id="benefits" className="py-24 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
             {/* Background Elements */}
@@ -43,66 +126,54 @@ export const BenefitsGrid = () => {
                     {/* Inner Background Blob */}
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                        {/* Item 1: Family (Large) */}
-                        <BentoCard
-                            className="md:col-span-2 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900 border-blue-100 dark:border-blue-500/20"
-                            iconImage="/assets/benefits/family.png"
-                            title="One App for the Entire Family"
-                            description="Collaborate on budgets, share expenses, and track household goals in one unified space. Sync effortlessly with your partner and kids."
-                            gradient="bg-blue-500/10"
+                    {/* Mobile Auto-Scroll Container */}
+                    <div
+                        className="md:hidden relative"
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                        onTouchStart={() => setIsPaused(true)}
+                        onTouchEnd={() => setIsPaused(false)}
+                    >
+                        {/* Fade Masks */}
+                        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-card/50 dark:from-slate-900/50 to-transparent z-20 pointer-events-none" />
+                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card/50 dark:from-slate-900/50 to-transparent z-20 pointer-events-none" />
+
+                        <div
+                            ref={scrollRef}
+                            className="flex gap-4 overflow-x-auto scrollbar-hide pb-6 relative z-10"
                         >
+                            {/* Triple render for infinite loop */}
+                            {[...BENEFITS, ...BENEFITS, ...BENEFITS].map((benefit, idx) => (
+                                <BentoCard
+                                    key={idx}
+                                    className={cn("w-full snap-center shrink-0 cursor-grab active:cursor-grabbing", benefit.className)}
+                                    iconImage={benefit.iconImage}
+                                    title={benefit.title}
+                                    description={benefit.description}
+                                    gradient={benefit.gradient}
+                                />
+                            ))}
+                        </div>
+                    </div>
 
-                        </BentoCard>
-
-                        {/* Item 2: Security */}
-                        <BentoCard
-                            className="md:col-span-1 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-slate-900 border-emerald-100 dark:border-emerald-500/20"
-                            iconImage="/assets/benefits/protection.png"
-                            title="Fully Protected"
-                            description="Your financial data is secured with bank-grade encryption and biometric locks."
-                            gradient="bg-emerald-500/10"
-                        />
-
-                        {/* Item 3: Referrals */}
-                        <BentoCard
-                            className="md:col-span-1 bg-gradient-to-br from-amber-50 to-white dark:from-yellow-900/20 dark:to-slate-900 border-amber-100 dark:border-yellow-500/20"
-                            iconImage="/assets/benefits/referral.png"
-                            title="Referral Bonus"
-                            description="Invite friends to level up their ledger and earn massive coin bonuses together."
-                            gradient="bg-yellow-500/10"
-                        />
-
-                        {/* Item 4: Goals (Large) */}
-                        <BentoCard
-                            className="md:col-span-2 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-slate-900 border-purple-100 dark:border-purple-500/20"
-                            iconImage="/assets/benefits/goals.png"
-                            title="Achieve Goals Together"
-                            description="Set shared targets for vacations, new gadgets, or emergency funds. visual progress bars keep everyone motivated."
-                            gradient="bg-purple-500/10"
-                        >
-
-                        </BentoCard>
-
-                        {/* Item 5: Analytics (Large) - Swapped to Left */}
-                        <BentoCard
-                            className="md:col-span-2 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900 border-indigo-100 dark:border-indigo-500/20"
-                            iconImage="/assets/benefits/analytics.png"
-                            title="Premium Level Analytics"
-                            description="Unlock deep insights with Elite Agent status. Visualize cash flow, category breakdowns, and future projections."
-                            gradient="bg-indigo-500/10"
-                        >
-
-                        </BentoCard>
-
-                        {/* Item 6: Rewards (Small) - Swapped to Right */}
-                        <BentoCard
-                            className="md:col-span-1 bg-gradient-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-slate-900 border-orange-100 dark:border-orange-500/20"
-                            iconImage="/assets/benefits/rewards.png"
-                            title="Rewards Redeem"
-                            description="Turn your savings streaks into real-world rewards. Shop with earned coins."
-                            gradient="bg-orange-500/10"
-                        />
+                    {/* Desktop Grid (unchanged) */}
+                    <div className="hidden md:grid md:grid-cols-3 gap-6 relative z-10">
+                        {BENEFITS.map((benefit, idx) => (
+                            <BentoCard
+                                key={idx}
+                                className={cn(
+                                    "snap-center",
+                                    idx === 0 && "md:col-span-2",
+                                    idx === 3 && "md:col-span-2",
+                                    idx === 4 && "md:col-span-2",
+                                    benefit.className
+                                )}
+                                iconImage={benefit.iconImage}
+                                title={benefit.title}
+                                description={benefit.description}
+                                gradient={benefit.gradient}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
@@ -156,8 +227,8 @@ const BentoCard = ({
                         </div>
                     )}
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-foreground dark:text-white mb-3">{title}</h3>
-                <p className="text-muted-foreground dark:text-slate-400 leading-relaxed text-sm md:text-base">{description}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-foreground dark:text-white mb-3 text-wrap break-words">{title}</h3>
+                <p className="text-muted-foreground dark:text-slate-400 leading-relaxed text-sm md:text-base text-wrap break-words">{description}</p>
             </div>
 
             {/* Decorative Children */}

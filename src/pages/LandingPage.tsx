@@ -11,6 +11,7 @@ import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent }
 import { cn } from "@/lib/utils";
 import { HeroDashboardPreview } from "@/components/landing/HeroDashboardPreview";
 import { useSettings } from "@/contexts/SettingsContext";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -96,7 +97,8 @@ const LandingPage = () => {
                     </div>
 
                     {/* Desktop Split Nav */}
-                    <nav className="hidden md:flex items-center gap-8 xl:gap-12 whitespace-nowrap">
+                    {/* Desktop Split Nav - Visible only on LG and up */}
+                    <nav className="hidden lg:flex items-center gap-6 xl:gap-10 whitespace-nowrap">
                         {[
                             { label: 'Features', id: 'features' },
                             { label: 'Card Themes', id: 'card-themes' },
@@ -139,7 +141,7 @@ const LandingPage = () => {
                         >
                             Start Saving
                         </Button>
-                        <button className="md:hidden p-2 text-muted-foreground hover:bg-foreground/5 rounded-full" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                        <button className="lg:hidden p-2 text-muted-foreground hover:bg-foreground/5 rounded-full" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                     </div>
@@ -152,7 +154,7 @@ const LandingPage = () => {
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                        className="fixed inset-x-4 top-24 z-40 bg-background/95 dark:bg-slate-900/95 backdrop-blur-xl border border-border/10 rounded-3xl md:hidden flex flex-col p-6 space-y-2 shadow-2xl transition-colors duration-300"
+                        className="fixed inset-x-4 top-24 z-40 bg-background/95 dark:bg-slate-900/95 backdrop-blur-xl border border-border/10 rounded-3xl lg:hidden flex flex-col p-6 space-y-2 shadow-2xl transition-colors duration-300"
                     >
                         {[
                             { label: 'Features', id: 'features' },
@@ -170,7 +172,7 @@ const LandingPage = () => {
                             </button>
                         ))}
                         <div className="pt-4 mt-2 border-t border-border/5 flex flex-col gap-3">
-                            <Button variant="outline" className="w-full justify-center border-border/10 text-muted-foreground hover:bg-foreground/5 rounded-xl" onClick={() => navigate("/auth")}>Login</Button>
+                            <Button className="w-full justify-center bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-700 rounded-xl" onClick={() => navigate("/auth")}>Login</Button>
                         </div>
                     </motion.div>
                 )}
@@ -330,6 +332,9 @@ const LandingPage = () => {
                 </div>
             </section>
 
+            {/* Testimonials Marquee Section */}
+            <TestimonialsSection />
+
             {/* Pricing Section */}
             <section id="pricing" className="py-24 px-4 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-green-500/5 rounded-full blur-[120px]" />
@@ -423,22 +428,31 @@ const LandingPage = () => {
             </section>
 
             {/* Footer */}
-            <footer className="py-12 bg-background dark:bg-slate-950 border-t border-border/10 transition-colors duration-300">
-                <div className="container mx-auto px-4 text-center">
-                    <div className="flex items-center justify-center gap-2 font-bold text-2xl mb-6 opacity-80">
-                        <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white">
-                            <TrendingUp className="w-5 h-5" />
+            <footer className="py-16 bg-background dark:bg-slate-950 border-t border-border/10 transition-colors duration-300">
+                <div className="container mx-auto px-6 md:px-12">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                        {/* Brand */}
+                        <div className="flex items-center gap-3">
+                            <img
+                                src="/logo.jpg"
+                                alt="BudGlio Logo"
+                                className="w-10 h-10 rounded-full object-cover shadow-sm opacity-90"
+                            />
+                            <span className="text-xl font-bold tracking-tight text-foreground/90">BudGlio</span>
                         </div>
-                        <span className="text-foreground">BudGlio</span>
+
+                        {/* Navigation */}
+                        <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-muted-foreground/80">
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors duration-200">Terms of Service</a>
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
+                            <a href="#" className="hover:text-foreground transition-colors duration-200">Contact Support</a>
+                        </div>
+
+                        {/* Copyright */}
+                        <div className="text-sm text-muted-foreground/60 font-medium">
+                            &copy; {new Date().getFullYear()} BudGlio Inc.
+                        </div>
                     </div>
-                    <div className="flex justify-center gap-8 mb-8 text-sm text-muted-foreground">
-                        <a href="#" className="hover:text-green-400 transition-colors">Terms</a>
-                        <a href="#" className="hover:text-green-400 transition-colors">Privacy</a>
-                        <a href="#" className="hover:text-green-400 transition-colors">Contact</a>
-                    </div>
-                    <p className="text-muted-foreground text-sm">
-                        © {new Date().getFullYear()} BudGlio. All rights reserved. Made with 💚 for savers.
-                    </p>
                 </div>
             </footer>
 

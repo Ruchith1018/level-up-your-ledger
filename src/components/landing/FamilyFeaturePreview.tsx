@@ -5,8 +5,36 @@ import { PiggyBank, Target, ChevronRight, Globe } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const FamilyFeaturePreview = ({ className }: { className?: string }) => {
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.1 });
+    const [scale, setScale] = useState(1);
+    const [containerHeight, setContainerHeight] = useState<number | 'auto'>('auto');
+
+    // Handle Auto-Scaling for Mobile
+    useEffect(() => {
+        const handleResize = () => {
+            if (containerRef.current && contentRef.current && window.innerWidth < 1024) { // Only scale on mobile/tablet
+                const containerWidth = containerRef.current.offsetWidth;
+                const baseWidth = 1200; // Updated to match Dashboard for better density
+                // Calculate scale but cap it at 1
+                const newScale = Math.min(containerWidth / baseWidth, 1);
+                setScale(newScale);
+
+                // Calculate dynamic height
+                // Calculate dynamic height with a small buffer to prevent cutoff
+                const contentHeight = contentRef.current.scrollHeight || 600;
+                setContainerHeight(Math.ceil(contentHeight * newScale) + 100);
+            } else {
+                setScale(1);
+                setContainerHeight('auto');
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // --- State for Budget Simulation ---
     const budgetLimit = 500;
@@ -154,257 +182,277 @@ export const FamilyFeaturePreview = ({ className }: { className?: string }) => {
     };
 
     return (
-        <div ref={containerRef} className={cn("w-full h-auto min-h-[600px] bg-background dark:bg-slate-950 rounded-xl overflow-hidden border border-border/10 dark:border-white/10 shadow-2xl flex flex-col font-sans transition-all duration-500 group relative text-foreground", className)}>
+        <div
+            ref={containerRef}
+            className={cn(
+                "w-full bg-background dark:bg-slate-950 rounded-xl overflow-hidden border border-border/10 dark:border-white/10 shadow-2xl flex flex-col font-sans transition-all duration-500 group relative text-foreground",
+                "lg:h-full", // Full height on desktop
+                className
+            )}
+            style={{
+                height: containerHeight === 'auto' ? '100%' : `${containerHeight}px`,
+            }}
+        >
+            <div
+                ref={contentRef}
+                className="lg:w-full lg:h-full flex flex-col origin-top-left"
+                style={{
+                    width: window.innerWidth < 1024 ? '1200px' : '100%',
+                    transform: window.innerWidth < 1024 ? `scale(${scale})` : 'none',
+                    height: window.innerWidth < 1024 ? 'auto' : '100%'
+                }}
+            >
 
-            {/* --- macOS Header --- */}
-            <div className="h-8 bg-muted/40 dark:bg-slate-900 border-b border-border/10 dark:border-white/5 flex items-center px-4 gap-2 shrink-0 transition-colors duration-300">
-                <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
-                <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
-                <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
-                <div className="flex-1 flex justify-center px-2">
-                    <div className="h-5 bg-background dark:bg-slate-800 rounded flex items-center px-2 opacity-50 w-full max-w-sm justify-center border border-border/5">
-                        <div className="text-[10px] text-muted-foreground dark:text-slate-400 font-medium">budglio.in/family</div>
+                {/* --- macOS Header --- */}
+                <div className="h-8 bg-muted/40 dark:bg-slate-900 border-b border-border/10 dark:border-white/5 flex items-center px-4 gap-2 shrink-0 transition-colors duration-300">
+                    <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
+                    <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+                    <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
+                    <div className="flex-1 flex justify-center px-2">
+                        <div className="h-5 bg-background dark:bg-slate-800 rounded flex items-center px-2 opacity-50 w-full max-w-sm justify-center border border-border/5">
+                            <div className="text-[10px] text-muted-foreground dark:text-slate-400 font-medium">budglio.in/family</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="flex-1 p-6 grid grid-cols-12 gap-6 bg-background dark:bg-slate-950 text-foreground dark:text-white overflow-hidden relative transition-colors duration-300">
-                {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-[80px]" />
+                <div className="flex-1 p-4 grid grid-cols-12 gap-4 bg-background dark:bg-slate-950 text-foreground dark:text-white overflow-hidden relative transition-colors duration-300">
+                    {/* Background Decor */}
+                    <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-[80px]" />
 
-                {/* Left Column */}
-                <div className="col-span-12 md:col-span-7 flex flex-col gap-6">
+                    {/* Left Column */}
+                    <div className="col-span-7 flex flex-col gap-4">
 
-                    {/* Hero Card: Monthly Budget */}
-                    <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-xl relative overflow-hidden group/card min-h-[220px] flex flex-col justify-center transition-colors">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        {/* Hero Card: Monthly Budget */}
+                        <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-xl relative overflow-hidden group/card min-h-[220px] flex flex-col justify-center transition-colors">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                        <AnimatePresence mode="wait">
-                            {isCelebration ? (
-                                <motion.div
-                                    key="celebration"
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 1.1 }}
-                                    className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-20 bg-card/95 dark:bg-slate-900/95"
-                                >
-                                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600 dark:from-blue-400 dark:to-green-400 mb-3">
-                                        That's a wrap for {month.split(' ')[0]}!
-                                    </h3>
-                                    <p className="text-muted-foreground dark:text-slate-400 max-w-xs leading-relaxed">
-                                        You and your family stayed on track. <br /> Getting ready for next month...
-                                    </p>
-                                    <div className="mt-6 flex gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0s' }} />
-                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
-                                    </div>
-                                </motion.div>
-                            ) : (
-                                <motion.div key="content" className="relative z-10 w-full">
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="flex justify-between items-center text-foreground dark:text-slate-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
-                                                    <PiggyBank className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-lg font-bold text-foreground dark:text-white">Monthly Budget</div>
-                                                    <div className="text-xs text-muted-foreground dark:text-slate-400 font-normal">{month}</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <span className="text-[10px] px-2 py-1 bg-green-500/20 text-green-400 rounded-full font-bold uppercase tracking-wider">Active</span>
-                                            </div>
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        {/* Budget Progress */}
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-end">
-                                                <span className="text-sm text-muted-foreground dark:text-slate-400">Remaining</span>
-                                                <div className="flex items-baseline gap-1">
-                                                    <span className={cn("text-2xl font-bold transition-colors duration-300", spent >= budgetLimit ? "text-red-500 dark:text-red-400" : "text-green-600 dark:text-green-400")}>
-                                                        ₹{budgetLimit - spent}
-                                                    </span>
-                                                    <span className="text-sm text-muted-foreground dark:text-slate-500">/ ₹{budgetLimit}</span>
-                                                </div>
-                                            </div>
-                                            <div className="h-2 bg-muted dark:bg-slate-800 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    className={cn("h-full rounded-full transition-colors duration-300",
-                                                        spent >= budgetLimit * 0.9 ? "bg-red-500" : "bg-blue-600"
-                                                    )}
-                                                    initial={{ width: "0%" }}
-                                                    animate={{ width: `${(spent / budgetLimit) * 100}%` }}
-                                                    transition={{ type: "tween", ease: "linear", duration: 0.8 }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Spending Limit Card */}
-                                        <div className="bg-blue-500/10 dark:bg-blue-900/10 rounded-xl p-4 border border-blue-500/10">
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground dark:text-slate-300 mb-1">
-                                                <div className="w-1 h-3 bg-green-500 rounded-full" />
-                                                Family Limit
-                                            </div>
-                                            <div className="text-2xl font-bold text-foreground dark:text-white mb-1">₹500</div>
-                                            <div className="text-xs text-muted-foreground dark:text-slate-400">Total Budget set by Admin</div>
-                                        </div>
-                                    </CardContent>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </Card>
-
-                    {/* Recent Activity Feed */}
-                    <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg flex-1 min-h-[220px] overflow-hidden flex flex-col transition-colors">
-                        <CardHeader className="pb-2 shrink-0">
-                            <CardTitle className="text-sm font-semibold text-foreground dark:text-slate-200 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Target className="w-4 h-4 text-muted-foreground dark:text-slate-400" />
-                                    Live Updates
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-2 relative flex-1 overflow-hidden">
-                            <div className="space-y-3">
-                                <AnimatePresence mode='popLayout'>
-                                    {activities.map((activity) => (
-                                        <motion.div
-                                            key={activity.id}
-                                            layout
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            className="flex items-center gap-4 p-3 rounded-xl bg-muted/50 dark:bg-slate-800/50 border border-border/10 dark:border-white/5"
-                                        >
-                                            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", activity.color)}>
-                                                {activity.avatar}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-foreground dark:text-slate-200 truncate">
-                                                    <span className="font-bold">{activity.user}</span> {activity.action}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground dark:text-slate-400">{activity.time}</div>
-                                            </div>
-                                            <div className={cn("text-sm font-bold shrink-0", activity.action === 'Budget Reset' ? "text-blue-600 dark:text-blue-400" : "text-red-500 dark:text-red-400")}>
-                                                {activity.amount > 0 ? `+₹${activity.amount}` : ''}
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Right Column */}
-                <div className="col-span-12 md:col-span-5 flex flex-col gap-4">
-
-                    {/* Lifetime Stats Card */}
-                    <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg transition-colors">
-                        <CardHeader className="pb-3 pt-5">
-                            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 flex items-center gap-2">
-                                <Globe className="w-4 h-4" />
-                                Lifetime Stats
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Raised */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-green-500 dark:bg-green-400 rounded-full animate-pulse" /> Raised</span>
-                                    <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(stats.raised)}</span>
-                                </div>
-                                <div className="h-1.5 bg-muted dark:bg-slate-800 rounded-full overflow-hidden">
+                            <AnimatePresence mode="wait">
+                                {isCelebration ? (
                                     <motion.div
-                                        className="h-full bg-emerald-500 rounded-full"
-                                        initial={{ width: "100%" }}
-                                        animate={{ width: "100%" }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Spent */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full" /> Spent</span>
-                                    <span className="font-bold text-red-500 dark:text-red-400">₹{stats.spent}</span>
-                                </div>
-                                <div className="h-1.5 bg-muted dark:bg-slate-800 rounded-full overflow-hidden">
-                                    <motion.div
-                                        className="h-full bg-blue-600 rounded-full"
-                                        animate={{ width: `${stats.usage}%` }}
-                                        transition={{ type: "tween", ease: "linear", duration: 0.5 }}
-                                    />
-                                </div>
-                                <div className="text-right text-[10px] text-slate-500">
-                                    {stats.usage.toFixed(1)}% Usage
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Family Savings Link */}
-                    <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg hover:border-indigo-500/50 transition-colors cursor-pointer group">
-                        <CardContent className="p-5 flex items-center justify-between">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
-                                    <PiggyBank className="w-4 h-4" />
-                                    Family Savings
-                                </div>
-                                <div className="text-xs text-muted-foreground dark:text-slate-400">Manage contributions and goals</div>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-muted dark:bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                <ChevronRight className="w-4 h-4" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Family Members */}
-                    <div>
-                        <h3 className="text-sm font-bold text-foreground dark:text-white mb-3 pl-1 flex items-center justify-between">
-                            Family Members
-                            <AnimatePresence>
-                                {members.some(m => m.isNew) && (
-                                    <motion.span
-                                        initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                                        className="text-[10px] text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full"
+                                        key="celebration"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 1.1 }}
+                                        className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-20 bg-card/95 dark:bg-slate-900/95"
                                     >
-                                        Updated
-                                    </motion.span>
+                                        <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600 dark:from-blue-400 dark:to-green-400 mb-3">
+                                            That's a wrap for {month.split(' ')[0]}!
+                                        </h3>
+                                        <p className="text-muted-foreground dark:text-slate-400 max-w-xs leading-relaxed">
+                                            You and your family stayed on track. <br /> Getting ready for next month...
+                                        </p>
+                                        <div className="mt-6 flex gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0s' }} />
+                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div key="content" className="relative z-10 w-full">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="flex justify-between items-center text-foreground dark:text-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
+                                                        <PiggyBank className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-lg font-bold text-foreground dark:text-white">Monthly Budget</div>
+                                                        <div className="text-xs text-muted-foreground dark:text-slate-400 font-normal">{month}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <span className="text-[10px] px-2 py-1 bg-green-500/20 text-green-400 rounded-full font-bold uppercase tracking-wider">Active</span>
+                                                </div>
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-6">
+                                            {/* Budget Progress */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-end">
+                                                    <span className="text-sm text-muted-foreground dark:text-slate-400">Remaining</span>
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className={cn("text-2xl font-bold transition-colors duration-300", spent >= budgetLimit ? "text-red-500 dark:text-red-400" : "text-green-600 dark:text-green-400")}>
+                                                            ₹{budgetLimit - spent}
+                                                        </span>
+                                                        <span className="text-sm text-muted-foreground dark:text-slate-500">/ ₹{budgetLimit}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="h-2 bg-muted dark:bg-slate-800 rounded-full overflow-hidden">
+                                                    <motion.div
+                                                        className={cn("h-full rounded-full transition-colors duration-300",
+                                                            spent >= budgetLimit * 0.9 ? "bg-red-500" : "bg-blue-600"
+                                                        )}
+                                                        initial={{ width: "0%" }}
+                                                        animate={{ width: `${(spent / budgetLimit) * 100}%` }}
+                                                        transition={{ type: "tween", ease: "linear", duration: 0.8 }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Spending Limit Card */}
+                                            <div className="bg-blue-500/10 dark:bg-blue-900/10 rounded-xl p-4 border border-blue-500/10">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground dark:text-slate-300 mb-1">
+                                                    <div className="w-1 h-3 bg-green-500 rounded-full" />
+                                                    Family Limit
+                                                </div>
+                                                <div className="text-2xl font-bold text-foreground dark:text-white mb-1">₹500</div>
+                                                <div className="text-xs text-muted-foreground dark:text-slate-400">Total Budget set by Admin</div>
+                                            </div>
+                                        </CardContent>
+                                    </motion.div>
                                 )}
                             </AnimatePresence>
-                        </h3>
-                        <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg min-h-[140px] transition-colors">
-                            <CardContent className="p-4 space-y-3">
-                                <AnimatePresence mode='popLayout'>
-                                    {members.map((member) => (
-                                        <motion.div
-                                            key={member.id}
-                                            layout
-                                            initial={{ opacity: 0, height: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, height: 'auto', scale: 1 }}
-                                            exit={{ opacity: 0, height: 0, scale: 0.9 }}
-                                            className="flex items-center gap-3 overflow-hidden"
-                                        >
-                                            <div className={cn("w-10 h-10 rounded-full border border-border/10 dark:border-white/10 flex items-center justify-center text-sm font-bold text-white shrink-0", member.color)}>
-                                                {member.initials}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-foreground dark:text-white">{member.name}</span>
-                                                <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded border border-purple-500/20 font-medium">{member.role}</span>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
+                        </Card>
+
+                        {/* Recent Activity Feed */}
+                        <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg flex-1 min-h-[220px] overflow-hidden flex flex-col transition-colors">
+                            <CardHeader className="pb-2 shrink-0">
+                                <CardTitle className="text-sm font-semibold text-foreground dark:text-slate-200 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Target className="w-4 h-4 text-muted-foreground dark:text-slate-400" />
+                                        Live Updates
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-2 relative flex-1 overflow-hidden">
+                                <div className="space-y-3">
+                                    <AnimatePresence mode='popLayout'>
+                                        {activities.map((activity) => (
+                                            <motion.div
+                                                key={activity.id}
+                                                layout
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 20 }}
+                                                className="flex items-center gap-4 p-3 rounded-xl bg-muted/50 dark:bg-slate-800/50 border border-border/10 dark:border-white/5"
+                                            >
+                                                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0", activity.color)}>
+                                                    {activity.avatar}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-foreground dark:text-slate-200 truncate">
+                                                        <span className="font-bold">{activity.user}</span> {activity.action}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground dark:text-slate-400">{activity.time}</div>
+                                                </div>
+                                                <div className={cn("text-sm font-bold shrink-0", activity.action === 'Budget Reset' ? "text-blue-600 dark:text-blue-400" : "text-red-500 dark:text-red-400")}>
+                                                    {activity.amount > 0 ? `+₹${activity.amount}` : ''}
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                </div>
+                    {/* Right Column */}
+                    <div className="col-span-5 flex flex-col gap-4">
 
+                        {/* Lifetime Stats Card */}
+                        <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg transition-colors">
+                            <CardHeader className="pb-3 pt-5">
+                                <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 flex items-center gap-2">
+                                    <Globe className="w-4 h-4" />
+                                    Lifetime Stats
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Raised */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-green-500 dark:bg-green-400 rounded-full animate-pulse" /> Raised</span>
+                                        <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(stats.raised)}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-muted dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="h-full bg-emerald-500 rounded-full"
+                                            initial={{ width: "100%" }}
+                                            animate={{ width: "100%" }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Spent */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full" /> Spent</span>
+                                        <span className="font-bold text-red-500 dark:text-red-400">₹{stats.spent}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-muted dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="h-full bg-blue-600 rounded-full"
+                                            animate={{ width: `${stats.usage}%` }}
+                                            transition={{ type: "tween", ease: "linear", duration: 0.5 }}
+                                        />
+                                    </div>
+                                    <div className="text-right text-[10px] text-slate-500">
+                                        {stats.usage.toFixed(1)}% Usage
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Family Savings Link */}
+                        <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg hover:border-indigo-500/50 transition-colors cursor-pointer group">
+                            <CardContent className="p-5 flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
+                                        <PiggyBank className="w-4 h-4" />
+                                        Family Savings
+                                    </div>
+                                    <div className="text-xs text-muted-foreground dark:text-slate-400">Manage contributions and goals</div>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-muted dark:bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                    <ChevronRight className="w-4 h-4" />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Family Members */}
+                        <div>
+                            <h3 className="text-sm font-bold text-foreground dark:text-white mb-3 pl-1 flex items-center justify-between">
+                                Family Members
+                                <AnimatePresence>
+                                    {members.some(m => m.isNew) && (
+                                        <motion.span
+                                            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                                            className="text-[10px] text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full"
+                                        >
+                                            Updated
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
+                            </h3>
+                            <Card className="bg-card dark:bg-slate-900 border-border/10 dark:border-white/10 shadow-lg min-h-[140px] transition-colors">
+                                <CardContent className="p-4 space-y-3">
+                                    <AnimatePresence mode='popLayout'>
+                                        {members.map((member) => (
+                                            <motion.div
+                                                key={member.id}
+                                                layout
+                                                initial={{ opacity: 0, height: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                                exit={{ opacity: 0, height: 0, scale: 0.9 }}
+                                                className="flex items-center gap-3 overflow-hidden"
+                                            >
+                                                <div className={cn("w-10 h-10 rounded-full border border-border/10 dark:border-white/10 flex items-center justify-center text-sm font-bold text-white shrink-0", member.color)}>
+                                                    {member.initials}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-foreground dark:text-white">{member.name}</span>
+                                                    <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded border border-purple-500/20 font-medium">{member.role}</span>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                    </div>
+
+                </div>
             </div>
         </div>
     );

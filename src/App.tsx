@@ -43,6 +43,8 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import PremiumPage from "./pages/PremiumPage";
 import FamilySavingsPage from "./pages/FamilySavingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +68,8 @@ const App = () => (
                                                 <Routes>
                                                     {/* Public Routes */}
                                                     <Route path="/" element={<LandingPage />} />
+                                                    <Route path="/terms" element={<TermsOfService />} />
+                                                    <Route path="/privacy" element={<PrivacyPolicy />} />
 
                                                     <Route path="/auth" element={<AuthPage />} />
 

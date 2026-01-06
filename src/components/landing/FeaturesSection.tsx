@@ -237,50 +237,41 @@ export const FeaturesSection = () => {
 
                     {/* Right Side: Dynamic Image/Preview Area */}
                     <div className="lg:col-span-8 bg-card dark:bg-slate-950 rounded-2xl border border-border/10 dark:border-white/10 relative overflow-hidden aspect-[4/3] flex items-center justify-center transition-colors duration-300">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeFeatureIndex}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 1.05 }}
-                                transition={{ duration: 0.4 }}
-                                className="w-full h-full flex items-center justify-center bg-transparent"
-                            >
-                                {features[activeFeatureIndex].id === 'dashboard' ? (
-                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
-                                        <HeroDashboardPreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none transform scale-100" />
+                        <div className="w-full h-full flex items-center justify-center bg-transparent">
+                            {features[activeFeatureIndex].id === 'dashboard' ? (
+                                <div className="lg:absolute lg:inset-0 lg:w-[133.33%] lg:h-[133.33%] lg:transform lg:scale-[0.75] lg:origin-top-left relative w-full h-auto">
+                                    <HeroDashboardPreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none transform scale-100" />
+                                </div>
+                            ) : features[activeFeatureIndex].id === 'analytics' ? (
+                                <div className="lg:absolute lg:inset-0 lg:w-[133.33%] lg:h-[133.33%] lg:transform lg:scale-[0.75] lg:origin-top-left relative w-full h-auto">
+                                    <AnalyticsPreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none" />
+                                </div>
+                            ) : features[activeFeatureIndex].id === 'family' ? (
+                                <div className="lg:absolute lg:inset-0 lg:w-[133.33%] lg:h-[133.33%] lg:transform lg:scale-[0.75] lg:origin-top-left relative w-full h-auto">
+                                    <FamilyFeaturePreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none" />
+                                </div>
+                            ) : features[activeFeatureIndex].id === 'profile' ? (
+                                <div className="lg:absolute lg:inset-0 lg:w-[133.33%] lg:h-[133.33%] lg:transform lg:scale-[0.75] lg:origin-top-left relative w-full h-auto">
+                                    <ProfileFeaturePreview className="w-full h-full min-h-0 lg:shadow-none lg:border-none lg:bg-transparent lg:rounded-none" />
+                                </div>
+                            ) : ['gamification', 'leaderboard'].includes(features[activeFeatureIndex].id) ? (
+                                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                                    <div className="w-24 h-24 rounded-full bg-muted dark:bg-white/5 flex items-center justify-center mb-6 ring-1 ring-border/10 dark:ring-white/10 shadow-xl">
+                                        {React.createElement(features[activeFeatureIndex].icon, { className: "w-10 h-10 text-muted-foreground dark:text-slate-400" })}
                                     </div>
-                                ) : features[activeFeatureIndex].id === 'analytics' ? (
-                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
-                                        <AnalyticsPreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none" />
-                                    </div>
-                                ) : features[activeFeatureIndex].id === 'family' ? (
-                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
-                                        <FamilyFeaturePreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none" />
-                                    </div>
-                                ) : features[activeFeatureIndex].id === 'profile' ? (
-                                    <div className="absolute inset-0 w-[133.33%] h-[133.33%] transform scale-[0.75] origin-top-left">
-                                        <ProfileFeaturePreview className="w-full h-full min-h-0 shadow-none border-none bg-transparent rounded-none" />
-                                    </div>
-                                ) : ['gamification', 'leaderboard'].includes(features[activeFeatureIndex].id) ? (
-                                    <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-in fade-in zoom-in duration-500">
-                                        <div className="w-24 h-24 rounded-full bg-muted dark:bg-white/5 flex items-center justify-center mb-6 ring-1 ring-border/10 dark:ring-white/10 shadow-xl">
-                                            {React.createElement(features[activeFeatureIndex].icon, { className: "w-10 h-10 text-muted-foreground dark:text-slate-400" })}
-                                        </div>
-                                        <h3 className="text-3xl font-bold text-foreground dark:text-white mb-3 tracking-tight">Under Development</h3>
-                                        <p className="text-muted-foreground dark:text-slate-400 text-lg max-w-md leading-relaxed">
-                                            We're crafting something special here. Check back soon for updates!
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={features[activeFeatureIndex].image}
-                                        alt={features[activeFeatureIndex].title}
-                                        className="w-full h-auto rounded-xl shadow-2xl border border-border/10 dark:border-white/10 object-contain hover:scale-105 transition-transform duration-500"
-                                    />
-                                )}
-                            </motion.div>
-                        </AnimatePresence>
+                                    <h3 className="text-3xl font-bold text-foreground dark:text-white mb-3 tracking-tight">Under Development</h3>
+                                    <p className="text-muted-foreground dark:text-slate-400 text-lg max-w-md leading-relaxed">
+                                        We're crafting something special here. Check back soon for updates!
+                                    </p>
+                                </div>
+                            ) : (
+                                <img
+                                    src={features[activeFeatureIndex].image}
+                                    alt={features[activeFeatureIndex].title}
+                                    className="w-full h-auto rounded-xl shadow-2xl border border-border/10 dark:border-white/10 object-contain hover:scale-105 transition-transform duration-500"
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

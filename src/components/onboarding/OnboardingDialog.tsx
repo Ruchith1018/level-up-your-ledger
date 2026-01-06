@@ -41,7 +41,7 @@ export function OnboardingDialog() {
     const [currency, setCurrency] = useState("USD");
     const [budgetAmount, setBudgetAmount] = useState("");
     const [acceptedTerms, setAcceptedTerms] = useState(false);
-    const [termsUrl, setTermsUrl] = useState("");
+
     const [isUploading, setIsUploading] = useState(false);
 
     // Category State
@@ -56,40 +56,7 @@ export function OnboardingDialog() {
         }
     }, [settings.hasAcceptedTerms, step]);
 
-    useEffect(() => {
-        const fetchTermsUrl = async () => {
-            try {
-                console.log("Fetching terms URL...");
-                // Using direct fetch to ensure we hit the correct endpoint
-                const response = await fetch('https://lsjqmpdoalkeirfhtraj.supabase.co/functions/v1/get-terms-link', {
-                    method: 'GET',
-                });
 
-                if (!response.ok) {
-                    throw new Error(`Function returned ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log("Terms URL fetch result:", data);
-
-                if (data?.url) {
-                    setTermsUrl(data.url);
-                } else {
-                    console.warn("No URL returned from Edge Function");
-                    setTermsUrl("#");
-                    toast.error("Could not load Terms link. Please check console.");
-                }
-            } catch (error: any) {
-                console.error("Failed to fetch terms URL:", error);
-                setTermsUrl("#"); // Fallback
-                toast.error(`Error loading Terms: ${error.message || "Unknown error"}`);
-            }
-        };
-
-        if (step === 0 && !termsUrl) {
-            fetchTermsUrl();
-        }
-    }, [step, termsUrl]);
 
     if (isLoading) return null;
 
@@ -265,18 +232,16 @@ export function OnboardingDialog() {
                         <div className="space-y-6 py-4">
                             <div className="text-sm text-muted-foreground text-center">
                                 By continuing, you acknowledge that you have read and agree to our{" "}
-                                {termsUrl ? (
+                                {
                                     <a
-                                        href={termsUrl}
+                                        href="/terms"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-primary hover:underline font-medium"
                                     >
                                         Terms and Conditions
                                     </a>
-                                ) : (
-                                    <span className="text-muted-foreground cursor-wait">Terms and Conditions...</span>
-                                )}
+                                }
                                 .
                             </div>
 
