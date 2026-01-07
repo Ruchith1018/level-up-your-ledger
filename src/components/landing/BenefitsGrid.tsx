@@ -60,41 +60,54 @@ const BENEFITS = [
 export const BenefitsGrid = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isPaused, setIsPaused] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        // Initialize with proper check to avoid delay
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768;
+        }
+        return false;
+    });
+
+    // Detect mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const scroller = scrollRef.current;
-        if (!scroller || window.innerWidth >= 768) return; // Only on mobile
+        if (!scroller || !isMobile) return; // Only run on mobile
 
         let animationId: number;
-        let lastTimestamp: number = 0;
-        const speed = 0.5; // Pixels per frame
+        const speed = 1.5; // Increased pixels per frame for more visible scrolling
 
-        const step = (timestamp: number) => {
-            if (isPaused) {
-                lastTimestamp = timestamp;
-                animationId = requestAnimationFrame(step);
-                return;
-            }
+        const step = () => {
+            if (!isPaused && scroller) {
+                // Check if we've scrolled to the halfway point (where duplicated content starts)
+                const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+                const resetPoint = maxScroll / 2;
 
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            const elapsed = timestamp - lastTimestamp;
-
-            if (elapsed > 16) {
-                if (scroller.scrollLeft >= (scroller.scrollWidth - scroller.clientWidth) / 2) {
+                if (scroller.scrollLeft >= resetPoint) {
                     scroller.scrollLeft = 0; // Seamless reset
                 } else {
                     scroller.scrollLeft += speed;
                 }
-                lastTimestamp = timestamp;
             }
 
             animationId = requestAnimationFrame(step);
         };
 
+        // Start animation immediately
         animationId = requestAnimationFrame(step);
 
         return () => cancelAnimationFrame(animationId);
-    }, [isPaused]);
+    }, [isPaused, isMobile]);
 
     return (
         <section id="benefits" className="py-24 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
@@ -133,6 +146,7 @@ export const BenefitsGrid = () => {
                         onMouseLeave={() => setIsPaused(false)}
                         onTouchStart={() => setIsPaused(true)}
                         onTouchEnd={() => setIsPaused(false)}
+                        onTouchCancel={() => setIsPaused(false)}
                     >
                         {/* Fade Masks */}
                         <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-card/50 dark:from-slate-900/50 to-transparent z-20 pointer-events-none" />
@@ -141,6 +155,7 @@ export const BenefitsGrid = () => {
                         <div
                             ref={scrollRef}
                             className="flex gap-4 overflow-x-auto scrollbar-hide pb-6 relative z-10"
+                            style={{ scrollBehavior: 'auto' }}
                         >
                             {/* Triple render for infinite loop */}
                             {[...BENEFITS, ...BENEFITS, ...BENEFITS].map((benefit, idx) => (

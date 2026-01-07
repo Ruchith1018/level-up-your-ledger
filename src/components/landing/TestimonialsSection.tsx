@@ -9,87 +9,99 @@ const TESTIMONIALS = [
         role: "Freelance Designer",
         content: "BudGlio totally changed how I look at my finances. The 'Money-Curious' mode was exactly what I needed—clean, simple, but powerful.",
         rating: 5,
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ananya"
+        image: "https://api.dicebear.com/7.x/big-smile/svg?seed=Ananya&hair=long01,long02,long03&mouth=smile"
     },
     {
         name: "Rahul Verma",
         role: "Software Engineer",
         content: "I've tried every spreadsheet and app out there. Nothing beats the gamification here. Leveling up my ledger is actually addictive!",
         rating: 5,
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+        image: "https://api.dicebear.com/7.x/big-smile/svg?seed=Rahul&hair=short01,short02&mouth=smile"
     },
     {
         name: "Priya Patel",
         role: "Small Business Owner",
         content: "The family tracking feature is a lifesaver. Finally got my husband and kids on the same page with our monthly budget.",
         rating: 4,
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya"
+        image: "https://api.dicebear.com/7.x/big-smile/svg?seed=Priya&hair=long04,long05&mouth=smile"
     },
     {
         name: "Arjun Singh",
         role: "Marketing Director",
         content: "Premium is a no-brainer. The custom card themes are gorgeous, and the deep insights helped me trim 20% of my waste expenses.",
         rating: 5,
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun"
+        image: "https://api.dicebear.com/7.x/big-smile/svg?seed=Arjun&hair=short03,short04&mouth=smile"
     },
     {
         name: "Neha Gupta",
         role: "Student",
         content: "Being a student, every rupee counts. BudGlio helps me save for trips without feeling restricted. Love the rewards too!",
         rating: 5,
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Neha"
+        image: "https://api.dicebear.com/7.x/big-smile/svg?seed=Neha&hair=long06,long07&mouth=smile"
     },
     {
         name: "Vikram Malhotra",
         role: "Architect",
         content: "Simple pricing, no hidden fees. Exactly what I wanted. The UI is honestly the best I've seen in a fintech app.",
         rating: 5,
-        image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram2"
+        image: "https://api.dicebear.com/7.x/big-smile/svg?seed=Vikram&hair=short05,short06&mouth=smile"
     }
 ];
 
 export const TestimonialsSection = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isPaused, setIsPaused] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        // Initialize with proper check to avoid delay
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768;
+        }
+        return false;
+    });
+
+    // Detect mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const scroller = scrollRef.current;
-        if (!scroller) return;
+        if (!scroller) return; // Run on all devices for testimonials
 
         let animationId: number;
-        let lastTimestamp: number = 0;
-        const speed = 0.5; // Pixels per frame (approx 30px/sec at 60fps)
+        const speed = 1.5; // Increased pixels per frame for more visible scrolling
 
-        const step = (timestamp: number) => {
-            if (isPaused) {
-                lastTimestamp = timestamp;
-                animationId = requestAnimationFrame(step);
-                return;
-            }
+        const step = () => {
+            if (!isPaused && scroller) {
+                // Check if we've scrolled to the halfway point (where duplicated content starts)
+                const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+                const resetPoint = maxScroll / 2;
 
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            const elapsed = timestamp - lastTimestamp;
-
-            // Basic frame limiting/normalizing
-            if (elapsed > 16) {
-                if (scroller.scrollLeft >= (scroller.scrollWidth - scroller.clientWidth) / 2) {
+                if (scroller.scrollLeft >= resetPoint) {
                     scroller.scrollLeft = 0; // Seamless reset
                 } else {
                     scroller.scrollLeft += speed;
                 }
-                lastTimestamp = timestamp;
             }
 
             animationId = requestAnimationFrame(step);
         };
 
+        // Start animation immediately
         animationId = requestAnimationFrame(step);
 
         return () => cancelAnimationFrame(animationId);
     }, [isPaused]);
 
     return (
-        <section className="py-24 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
+        <section className="py-24 bg-background dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 testimonials-section">
             {/* Background Decorations */}
             <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none -translate-x-1/2 -translate-y-1/2" />
 
@@ -107,15 +119,12 @@ export const TestimonialsSection = () => {
                 onMouseLeave={() => setIsPaused(false)}
                 onTouchStart={() => setIsPaused(true)}
                 onTouchEnd={() => setIsPaused(false)}
+                onTouchCancel={() => setIsPaused(false)}
             >
-                {/* Fade Masks */}
-                <div className="absolute left-0 top-0 bottom-0 w-24 md:w-48 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-24 md:w-48 bg-gradient-to-l from-background to-transparent z-20 pointer-events-none" />
-
                 <div
                     ref={scrollRef}
                     className="flex gap-6 overflow-x-auto no-scrollbar pb-8 px-4 md:px-0"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', scrollBehavior: 'auto' }}
                 >
                     {/* Render Double for Infinite Loop Illusion */}
                     {[...TESTIMONIALS, ...TESTIMONIALS, ...TESTIMONIALS].map((testimonial, idx) => (

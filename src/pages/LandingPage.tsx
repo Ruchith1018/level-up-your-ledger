@@ -10,24 +10,44 @@ import { BenefitsGrid } from "@/components/landing/BenefitsGrid";
 import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { HeroDashboardPreview } from "@/components/landing/HeroDashboardPreview";
-import { useSettings } from "@/contexts/SettingsContext";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const { loading } = useAuth();
-    const { settings, updateSettings } = useSettings();
     const [selectedPlan, setSelectedPlan] = useState<'standard' | 'premium' | null>(null);
     const [minLoading, setMinLoading] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [hidden, setHidden] = useState(false);
     const { scrollY } = useScroll();
 
-    const isDark = settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    // Use localStorage for theme on landing page (public page, no auth required)
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+        if (typeof window !== 'undefined') {
+            const savedTheme = localStorage.getItem('landing-theme');
+            if (savedTheme === 'light' || savedTheme === 'dark') {
+                return savedTheme;
+            }
+            // Default to dark mode
+            return 'dark';
+        }
+        return 'dark';
+    });
+
+    const isDark = theme === 'dark';
 
     const toggleTheme = () => {
-        updateSettings({ theme: isDark ? 'light' : 'dark' });
+        const newTheme = isDark ? 'light' : 'dark';
+        setTheme(newTheme);
+        localStorage.setItem('landing-theme', newTheme);
     };
+
+    // Apply theme to document
+    useEffect(() => {
+        const root = window.document.documentElement;
+        root.classList.remove('light', 'dark');
+        root.classList.add(theme);
+    }, [theme]);
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         const previous = scrollY.getPrevious() || 0;
@@ -267,6 +287,49 @@ const LandingPage = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Regional Message & CTA */}
+                    <div className="max-w-3xl mx-auto mt-16 text-center space-y-8 relative z-10">
+                        {/* Info Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-700/30 rounded-3xl p-8 shadow-lg"
+                        >
+                            <div className="flex items-start gap-4 text-left">
+                                <div className="flex-shrink-0 w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">India-Focused Rewards</h3>
+                                    <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
+                                        The reward system is currently focused for Indians. For other countries, updates will roll over soon. Stay tuned!
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* CTA */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <p className="text-2xl font-bold text-foreground mb-6">
+                                If you are Indian, don't wait. <span className="text-green-600 dark:text-green-400">Sign up now!</span>
+                            </p>
+                            <Button
+                                onClick={() => scrollToSection('pricing')}
+                                className="bg-green-600 hover:bg-green-700 text-white px-12 py-6 rounded-full text-lg font-bold shadow-2xl shadow-green-500/30 hover:shadow-green-500/50 transition-all hover:scale-105"
+                            >
+                                Sign Up Now
+                            </Button>
+                        </motion.div>
+                    </div>
                 </div>
             </section>
 
@@ -282,7 +345,13 @@ const LandingPage = () => {
                         <p className="text-xl text-muted-foreground font-light">If you relate to any of these, you're ready.</p>
                     </div>
 
-                    <div className="bg-card/50 dark:bg-slate-900/50 border border-border/10 dark:border-white/5 rounded-[3rem] p-8 md:p-12 max-w-7xl mx-auto shadow-2xl backdrop-blur-sm relative overflow-hidden transition-colors duration-300">
+                    {/* Mobile: Story-Style Interface */}
+                    <div className="md:hidden">
+                        <StoryStyleEligibility scrollToSection={scrollToSection} />
+                    </div>
+
+                    {/* Desktop: Original Grid */}
+                    <div className="hidden md:block bg-card/50 dark:bg-slate-900/50 border border-border/10 dark:border-white/5 rounded-[3rem] p-8 md:p-12 max-w-7xl mx-auto shadow-2xl backdrop-blur-sm relative overflow-hidden transition-colors duration-300">
                         {/* Inner Background Blob */}
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
 
@@ -442,16 +511,33 @@ const LandingPage = () => {
                         </div>
 
                         {/* Navigation */}
-                        <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-muted-foreground/80">
+                        <div className="flex flex-wrap justify-center items-center gap-8 text-sm font-medium text-muted-foreground/80">
                             <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors duration-200">Terms of Service</a>
                             <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors duration-200">Privacy Policy</a>
                             <a href="#" className="hover:text-foreground transition-colors duration-200">Contact Support</a>
+
+
                         </div>
 
                         {/* Copyright */}
                         <div className="text-sm text-muted-foreground/60 font-medium">
                             &copy; {new Date().getFullYear()} BudGlio Inc.
                         </div>
+                    </div>
+
+                    {/* Instagram Icon - Below Copyright */}
+                    <div className="flex justify-center mt-8">
+                        <a
+                            href="https://www.instagram.com/budglio"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 hover:scale-110 transition-transform duration-200 shadow-lg hover:shadow-pink-500/30"
+                            aria-label="Follow us on Instagram"
+                        >
+                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </footer>
@@ -539,6 +625,272 @@ function HeroIntro({ scrollToSection }: { scrollToSection: (id: string) => void 
         </section>
     );
 };
+
+// Story-Style Eligibility Component for Mobile
+function StoryStyleEligibility({ scrollToSection }: { scrollToSection: (id: string) => void }) {
+    const [currentStory, setCurrentStory] = useState(0);
+    const [progress, setProgress] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const stories = [
+        {
+            title: "Where Did It Go?",
+            highlightText: "Money Mystery",
+            subtitle: "Watch your salary vanish without a trace?",
+            description: "Track every rupee, no more guessing games",
+            backgroundImage: "/assets/stories/money-mystery.png",
+            titleGradient: "from-yellow-200 to-white",
+            highlightColor: "text-yellow-300"
+        },
+        {
+            title: "Spreadsheet Fatigue",
+            highlightText: "Manual Hell",
+            subtitle: "Tired of endless rows and formulas?",
+            description: "Smart automation does the heavy lifting for you",
+            backgroundImage: "/assets/stories/spreadsheet-fatigue.png",
+            titleGradient: "from-cyan-200 to-white",
+            highlightColor: "text-cyan-300"
+        },
+        {
+            title: "Money-Curious?",
+            highlightText: "Build Wealth",
+            subtitle: "Ready to take control of your finances?",
+            description: "Simple insights that actually make sense",
+            backgroundImage: "/assets/stories/build-wealth.png",
+            titleGradient: "from-yellow-200 to-white",
+            highlightColor: "text-yellow-300"
+        },
+        {
+            title: "Competitive Streak",
+            highlightText: "Gamified",
+            subtitle: "Love challenges and leveling up?",
+            description: "Turn saving money into an addictive game",
+            backgroundImage: "/assets/stories/competitive-game.png",
+            titleGradient: "from-purple-200 to-white",
+            highlightColor: "text-purple-300"
+        },
+        {
+            title: "Loved by Thousands",
+            highlightText: "Real Stories",
+            subtitle: "Don't just take our word for it",
+            description: "See what other users are saying about BudGlio",
+            backgroundImage: "/assets/stories/testimonials.png",
+            titleGradient: "from-orange-200 to-white",
+            highlightColor: "text-orange-300",
+            isTestimonials: true
+        },
+        {
+            title: "Save Not Stress",
+            highlightText: "Freedom",
+            subtitle: "Want peace of mind with your money?",
+            description: "Automated savings that work while you sleep",
+            backgroundImage: "/assets/stories/save-not-stress.png",
+            titleGradient: "from-pink-200 to-white",
+            highlightColor: "text-pink-300"
+        }
+    ];
+
+    const startProgress = () => {
+        setProgress(0);
+
+        // Clear existing timers
+        if (timerRef.current) clearTimeout(timerRef.current);
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+
+        // Progress bar animation - optimized for mobile
+        const duration = 5000; // 5 seconds per story
+        const intervalTime = 100; // Increased from 50ms to reduce updates
+        const increment = (intervalTime / duration) * 100;
+
+        progressIntervalRef.current = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    return 100;
+                }
+                return prev + increment;
+            });
+        }, intervalTime);
+
+        // Auto-advance timer
+        timerRef.current = setTimeout(() => {
+            nextStory();
+        }, duration);
+    };
+
+    useEffect(() => {
+        startProgress();
+
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+        };
+    }, [currentStory]);
+
+    const nextStory = () => {
+        // Clear timers first to prevent stuck state
+        if (timerRef.current) clearTimeout(timerRef.current);
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+
+        setProgress(0); // Reset progress immediately
+
+        if (currentStory < stories.length - 1) {
+            setCurrentStory(prev => prev + 1);
+        } else {
+            setCurrentStory(0); // Loop back to start
+        }
+    };
+
+    const prevStory = () => {
+        // Clear timers first to prevent stuck state
+        if (timerRef.current) clearTimeout(timerRef.current);
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+
+        setProgress(0); // Reset progress immediately
+
+        if (currentStory > 0) {
+            setCurrentStory(prev => prev - 1);
+        }
+    };
+
+    const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const tapArea = rect.width / 3;
+
+        if (x < tapArea) {
+            prevStory();
+        } else if (x > rect.width - tapArea) {
+            nextStory();
+        }
+    };
+
+    const currentStoryData = stories[currentStory];
+
+    return (
+        <div
+            className="relative bg-slate-950 dark:bg-slate-900 rounded-3xl overflow-hidden max-w-md mx-auto shadow-2xl border border-white/10"
+            style={{ height: '80vh', minHeight: '500px' }}
+        >
+            {/* Progress Bars */}
+            <div className="absolute top-0 left-0 right-0 z-50 flex gap-1 p-4">
+                {stories.map((_, index) => (
+                    <div key={index} className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                        <div
+                            className="h-full bg-white rounded-full transition-all duration-100"
+                            style={{
+                                width: index === currentStory ? `${progress}%` : index < currentStory ? '100%' : '0%'
+                            }}
+                        />
+                    </div>
+                ))}
+            </div>
+
+            {/* Story Content */}
+            <div
+                onClick={handleTap}
+                className="absolute inset-0 flex flex-col items-center justify-center p-8 cursor-pointer"
+                style={{
+                    backgroundImage: `url(${currentStoryData.backgroundImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: '#1e293b',
+                    transform: 'translate3d(0, 0, 0)',
+                    willChange: 'contents'
+                }}
+            >
+                {/* Dark overlay for better text readability - z-index lower than content */}
+                <div className="absolute inset-0 bg-black/70 z-0" />
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentStory}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="text-center space-y-4 max-w-sm relative z-10"
+                        style={{ willChange: 'opacity' }}
+                    >
+                        {/* Title with gradient */}
+                        <h2 className={`text-5xl font-black leading-tight bg-gradient-to-r ${currentStoryData.titleGradient} bg-clip-text text-transparent drop-shadow-lg`}>
+                            {currentStoryData.title}
+                        </h2>
+
+                        {/* Highlight Badge */}
+                        <div className={`inline-block px-6 py-2 bg-white/20 backdrop-blur-sm rounded-full ${currentStoryData.highlightColor} font-bold text-lg border border-white/30`}>
+                            {currentStoryData.highlightText}
+                        </div>
+
+                        {/* Subtitle */}
+                        <p className="text-white text-xl font-semibold leading-relaxed">
+                            {currentStoryData.subtitle}
+                        </p>
+
+                        {/* Description */}
+                        <p className="text-white/90 text-base font-medium leading-relaxed pt-2 px-4">
+                            {currentStoryData.description}
+                        </p>
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* Tap Hint - only show on first story */}
+                {currentStory === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1 }}
+                        className="absolute bottom-8 left-0 right-0 text-center"
+                    >
+                        <p className="text-white/70 text-sm font-medium">Tap sides to navigate</p>
+                    </motion.div>
+                )}
+            </div>
+
+            {/* Testimonials Button on slide 5 (before final CTA) */}
+            {currentStory === 4 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="absolute bottom-12 left-0 right-0 px-8"
+                >
+                    <Button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const testimonialsSection = document.querySelector('.testimonials-section');
+                            if (testimonialsSection) {
+                                testimonialsSection.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }}
+                        className="w-full bg-white text-slate-950 hover:bg-slate-100 font-black text-lg py-7 rounded-full shadow-2xl transform hover:scale-105 transition-all"
+                    >
+                        See What Others Say
+                    </Button>
+                </motion.div>
+            )}
+
+            {/* CTA on last story (index 5) */}
+            {currentStory === stories.length - 1 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="absolute bottom-12 left-0 right-0 px-8"
+                >
+                    <Button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            scrollToSection('pricing');
+                        }}
+                        className="w-full bg-white text-slate-950 hover:bg-slate-100 font-black text-lg py-7 rounded-full shadow-2xl transform hover:scale-105 transition-all"
+                    >
+                        Start Your Journey
+                    </Button>
+                </motion.div>
+            )}
+        </div>
+    );
+}
 
 function FloatingTag({ text, icon, color, className }: { text: string, icon: React.ReactNode, color: string, className?: string }) {
     return (
@@ -1206,14 +1558,14 @@ function StickyScrollShowcase() {
                         </div>
 
                         {/* Card Content Overlay */}
-                        <div className="relative z-10 w-full h-full p-8 flex flex-col justify-between">
+                        <div className="relative z-10 w-full h-full p-4 sm:p-6 md:p-8 flex flex-col justify-between">
 
                             {/* Top Row */}
                             <div className="flex justify-between items-start">
                                 {/* Left: Label and Chip */}
-                                <div className="space-y-5">
-                                    <div className={`text-lg font-bold tracking-wide opacity-90 ${currentTheme.textColor}`}>BudGlio Card</div>
-                                    <div className={`w-12 h-9 bg-gradient-to-br ${currentTheme.chipColor} rounded-md border border-white/20 relative overflow-hidden shadow-sm`}>
+                                <div className="space-y-3 sm:space-y-4 md:space-y-5">
+                                    <div className={`text-sm sm:text-base md:text-lg font-bold tracking-wide opacity-90 ${currentTheme.textColor}`}>BudGlio Card</div>
+                                    <div className={`w-10 h-8 sm:w-11 sm:h-8 md:w-12 md:h-9 bg-gradient-to-br ${currentTheme.chipColor} rounded-md border border-white/20 relative overflow-hidden shadow-sm`}>
                                         <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black/20" />
                                         <div className="absolute top-0 left-1/2 h-full w-[1px] bg-black/20" />
                                         <div className="absolute top-1/2 left-1/2 w-5 h-5 border border-black/20 rounded-sm -translate-x-1/2 -translate-y-1/2" />
@@ -1222,28 +1574,28 @@ function StickyScrollShowcase() {
                                 </div>
 
                                 {/* Right: BudGlio Logo Symbol */}
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`w-10 h-10 opacity-90 ${currentTheme.textColor}`} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 opacity-90 ${currentTheme.textColor}`} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M5 8.5C5 8.5 9 4.5 12 4.5C15 4.5 19 8.5 19 8.5" />
                                     <path d="M8 18.5C8 18.5 9.5 15.5 9.5 13.5C9.5 12 10.5 11 12 11C13.5 11 14.5 12 14.5 13.5C14.5 15.5 16 18.5 16 18.5" />
                                 </svg>
                             </div>
 
                             {/* Middle/Bottom Section */}
-                            <div className="space-y-8">
+                            <div className="space-y-4 sm:space-y-6 md:space-y-8">
                                 {/* Card Number */}
-                                <div className={`text-2xl font-mono tracking-widest opacity-90 text-shadow-glow ${currentTheme.textColor}`}>
+                                <div className={`text-lg sm:text-xl md:text-2xl font-mono tracking-wider sm:tracking-widest opacity-90 text-shadow-glow ${currentTheme.textColor}`}>
                                     **** **** **** 3728
                                 </div>
 
                                 {/* Details Row */}
                                 <div className={`flex justify-between items-end ${currentTheme.textColor}`}>
                                     <div>
-                                        <div className="text-[10px] uppercase tracking-wider mb-1 opacity-70">Card Holder</div>
-                                        <div className="text-lg font-medium tracking-wide">JOHN DOE</div>
+                                        <div className="text-[8px] sm:text-[9px] md:text-[10px] uppercase tracking-wider mb-0.5 sm:mb-1 opacity-70">Card Holder</div>
+                                        <div className="text-sm sm:text-base md:text-lg font-medium tracking-wide">JOHN DOE</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-[10px] uppercase tracking-wider mb-1 opacity-70">Issued</div>
-                                        <div className="text-lg font-medium tracking-wide">12/30</div>
+                                        <div className="text-[8px] sm:text-[9px] md:text-[10px] uppercase tracking-wider mb-0.5 sm:mb-1 opacity-70">Issued</div>
+                                        <div className="text-sm sm:text-base md:text-lg font-medium tracking-wide">12/30</div>
                                     </div>
                                 </div>
 
